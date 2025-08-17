@@ -95,11 +95,23 @@ def home(request):
         'entrepreneur_profile', 'investor_profile'
     )
 
-    # Get posts with media files
+    # Get all posts with media files, ordered by creation date
     try:
         from Entrepreneurs.models import Post
-        posts = Post.objects.select_related('author').prefetch_related('media_files', 'likes', 'comments').order_by('-created_at')[:10]
-    except:
+        posts = Post.objects.select_related(
+            'author', 
+            'author__entrepreneur_profile', 
+            'author__investor_profile'
+        ).prefetch_related(
+            'media_files', 
+            'likes', 
+            'comments',
+            'comments__author',
+            'comments__author__entrepreneur_profile',
+            'comments__author__investor_profile'
+        ).order_by('-created_at')[:20]  # Show last 20 posts
+    except Exception as e:
+        print(f"Error fetching posts: {e}")
         posts = []
 
     context = {

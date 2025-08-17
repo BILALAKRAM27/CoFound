@@ -199,10 +199,18 @@
         /* Main Content */
         .main-content {
             margin-left: 280px;
+            margin-right: 300px;
             padding: 2rem;
             min-height: calc(100vh - 76px);
             transition: all 0.3s ease;
             background-color: var(--cf-sidebar-bg);
+            display: flex;
+            justify-content: center;
+        }
+
+        .main-content > * {
+            width: 100%;
+            max-width: 800px;
         }
 
         /* Cards */

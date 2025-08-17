@@ -424,4 +424,362 @@
             }, 1000);
         }
     });
+
+    // Media Gallery Functionality
+    function openMediaGallery(postId) {
+        const post = document.querySelector(`[data-post-id="${postId}"]`);
+        if (!post) return;
+        
+        // Collect all media files from the post - get the actual media data, not just DOM elements
+        const allMedia = [];
+        
+        // Get all media files from the post data attributes or collect from DOM
+        const mediaElements = post.querySelectorAll('.media-main img, .media-main video, .media-main .media-main-doc, .media-secondary img, .media-secondary video, .media-secondary .media-secondary-doc, .media-single img, .media-single video, .media-single .media-single-doc');
+        
+        // Convert DOM elements to media objects with proper data
+        mediaElements.forEach((element, index) => {
+            let mediaObj = {
+                element: element,
+                index: index,
+                type: element.tagName.toLowerCase(),
+                src: element.src || null,
+                alt: element.alt || null,
+                fileType: element.dataset.fileType || 'image/jpeg',
+                fileName: element.dataset.fileName || 'Media',
+                fileData: element.dataset.fileData || null
+            };
+            
+            // Handle different media types
+            if (element.tagName === 'IMG') {
+                mediaObj.src = element.src;
+                mediaObj.alt = element.alt;
+            } else if (element.tagName === 'VIDEO') {
+                const source = element.querySelector('source');
+                if (source) {
+                    mediaObj.src = source.src;
+                    mediaObj.fileType = source.type;
+                }
+            } else if (element.classList.contains('media-main-doc') || element.classList.contains('media-secondary-doc') || element.classList.contains('media-single-doc')) {
+                const span = element.querySelector('span');
+                if (span) {
+                    mediaObj.fileName = span.textContent;
+                }
+            }
+            
+            allMedia.push(mediaObj);
+        });
+        
+        if (allMedia.length === 0) return;
+        
+        // Create modal for gallery
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'mediaGalleryModal';
+        modal.setAttribute('tabindex', '-1');
+        modal.setAttribute('aria-labelledby', 'mediaGalleryModalLabel');
+        modal.setAttribute('aria-hidden', 'true');
+        
+        const modalContent = `
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="mediaGalleryModalLabel">Media Gallery (${allMedia.length} items)</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="gallery-container">
+                            <div class="gallery-main">
+                                <div class="gallery-item active" data-index="0">
+                                    ${getMediaHTML(allMedia[0])}
+                                </div>
+                            </div>
+                            ${allMedia.length > 1 ? `
+                                <div class="gallery-thumbnails">
+                                    ${Array.from(allMedia).map((media, index) => `
+                                        <div class="gallery-thumbnail ${index === 0 ? 'active' : ''}" data-index="${index}">
+                                            ${getThumbnailHTML(media)}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        modal.innerHTML = modalContent;
+        document.body.appendChild(modal);
+        
+        // Initialize Bootstrap modal
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+        
+        // Handle thumbnail clicks
+        const thumbnails = modal.querySelectorAll('.gallery-thumbnail');
+        const mainItems = modal.querySelectorAll('.gallery-item');
+        
+        thumbnails.forEach(thumbnail => {
+            thumbnail.addEventListener('click', function() {
+                const index = parseInt(this.dataset.index);
+                
+                // Update active states
+                thumbnails.forEach(t => t.classList.remove('active'));
+                mainItems.forEach(item => item.classList.remove('active'));
+                
+                this.classList.add('active');
+                mainItems[index].classList.add('active');
+                
+                // Update main content with the selected media
+                const mainContent = modal.querySelector('.gallery-main .gallery-item.active');
+                mainContent.innerHTML = getMediaHTML(allMedia[index]);
+            });
+        });
+        
+        // Clean up modal when hidden
+        modal.addEventListener('hidden.bs.modal', function() {
+            document.body.removeChild(modal);
+        });
+    }
+
+    function getMediaHTML(mediaObj) {
+        if (mediaObj.type === 'img') {
+            return `<img src="${mediaObj.src}" class="img-fluid" alt="${mediaObj.alt || 'Media'}">`;
+        } else if (mediaObj.type === 'video') {
+            return `<video controls class="img-fluid">
+                <source src="${mediaObj.src}" type="${mediaObj.fileType}">
+            </video>`;
+        } else if (mediaObj.element.classList.contains('media-main-doc') || mediaObj.element.classList.contains('media-secondary-doc') || mediaObj.element.classList.contains('media-single-doc')) {
+            return `<div class="gallery-document">
+                <i class="bi bi-file-earmark fs-1"></i>
+                <p class="mt-3">${mediaObj.fileName}</p>
+                <button class="btn btn-primary mt-2" onclick="downloadDocument('${mediaObj.fileName}', '${mediaObj.fileType}', '${mediaObj.fileData || ''}')">
+                    <i class="bi bi-download me-2"></i>Download Document
+                </button>
+            </div>`;
+        }
+        return '';
+    }
+
+    function getThumbnailHTML(mediaObj) {
+        if (mediaObj.type === 'img') {
+            return `<img src="${mediaObj.src}" class="img-fluid" alt="${mediaObj.alt || 'Media'}">`;
+        } else if (mediaObj.type === 'video') {
+            return `<video muted class="img-fluid">
+                <source src="${mediaObj.src}" type="${mediaObj.fileType}">
+            </video>`;
+        } else if (mediaObj.element.classList.contains('media-main-doc') || mediaObj.element.classList.contains('media-secondary-doc') || mediaObj.element.classList.contains('media-single-doc')) {
+            return `<div class="gallery-doc-thumbnail">
+                <i class="bi bi-file-earmark"></i>
+            </div>`;
+        }
+        return '';
+    }
+
+    // Document download functionality
+    function downloadDocument(fileName, fileType, fileData) {
+        try {
+            // Create a blob from the base64 data
+            const byteCharacters = atob(fileData);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: fileType });
+            
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Error downloading document:', error);
+            alert('Error downloading document. Please try again.');
+        }
+    }
+
+    // Add gallery styles to head
+    const galleryStyles = `
+    <style>
+    .gallery-container {
+        text-align: center;
+    }
+
+    .gallery-main {
+        margin-bottom: 1rem;
+        min-height: 400px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .gallery-item {
+        display: none;
+        width: 100%;
+        height: 100%;
+    }
+
+    .gallery-item.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .gallery-item img,
+    .gallery-item video {
+        max-width: 100%;
+        max-height: 70vh;
+        object-fit: contain;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .gallery-document {
+        padding: 2rem;
+        text-align: center;
+        background: var(--cf-sidebar-bg);
+        border-radius: 12px;
+        border: 2px dashed var(--cf-sidebar-border);
+        min-height: 300px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .gallery-document i {
+        color: var(--cf-primary);
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    .gallery-document p {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--cf-text-primary);
+        margin-bottom: 1rem;
+    }
+
+    .gallery-document .btn {
+        font-size: 1rem;
+        padding: 0.75rem 1.5rem;
+    }
+
+    .gallery-thumbnails {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 1rem;
+        background: var(--cf-sidebar-bg);
+        border-radius: 12px;
+        margin-top: 1rem;
+    }
+
+    .gallery-thumbnail {
+        width: 80px;
+        height: 80px;
+        border: 2px solid transparent;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: var(--bs-body-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .gallery-thumbnail:hover {
+        border-color: var(--cf-primary);
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .gallery-thumbnail.active {
+        border-color: var(--cf-primary);
+        box-shadow: 0 0 0 2px rgba(var(--cf-primary-rgb), 0.3);
+    }
+
+    .gallery-thumbnail img,
+    .gallery-thumbnail video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+
+    .gallery-doc-thumbnail {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--cf-sidebar-bg);
+        border: 2px dashed var(--cf-sidebar-border);
+        border-radius: 6px;
+        color: var(--cf-text-secondary);
+    }
+
+    .gallery-thumbnail.active .gallery-doc-thumbnail {
+        border-color: var(--cf-primary);
+        color: var(--cf-primary);
+        background: #f0f9ff;
+    }
+
+    .gallery-doc-thumbnail i {
+        font-size: 1.5rem;
+    }
+
+    .hidden-media {
+        display: none !important;
+    }
+
+    @media (max-width: 768px) {
+        .gallery-thumbnail {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .gallery-item img,
+        .gallery-item video {
+            max-height: 50vh;
+        }
+        
+        .gallery-main {
+            min-height: 300px;
+        }
+        
+        .gallery-document {
+            min-height: 250px;
+            padding: 1.5rem;
+        }
+        
+        .gallery-document i {
+            font-size: 3rem;
+        }
+    }
+    </style>
+    `;
+
+    // Add styles if not already present
+    if (!document.querySelector('#gallery-styles')) {
+        const styleElement = document.createElement('div');
+        styleElement.id = 'gallery-styles';
+        styleElement.innerHTML = galleryStyles;
+        document.head.appendChild(styleElement);
+    }
+
+    // Make openMediaGallery function globally available
+    window.openMediaGallery = openMediaGallery;
+    window.downloadDocument = downloadDocument;
 </script>
