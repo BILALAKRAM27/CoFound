@@ -430,9 +430,9 @@
         const post = document.querySelector(`[data-post-id="${postId}"]`);
         if (!post) return;
         
-        // Collect all media files from the post - get the actual media data, not just DOM elements
+        // Collect ALL media files from the hidden .all-media-files container
         const allMedia = [];
-        const mediaElements = post.querySelectorAll('.media-main img, .media-main video, .media-main .media-main-doc, .media-secondary img, .media-secondary video, .media-secondary .media-secondary-doc, .media-single img, .media-single video, .media-single .media-single-doc');
+        const mediaElements = post.querySelectorAll('.all-media-files img, .all-media-files video, .all-media-files .media-main-doc');
         mediaElements.forEach((element, index) => {
             let mediaObj = {
                 element: element,
@@ -453,7 +453,7 @@
                     mediaObj.src = source.src;
                     mediaObj.fileType = source.type;
                 }
-            } else if (element.classList.contains('media-main-doc') || element.classList.contains('media-secondary-doc') || element.classList.contains('media-single-doc')) {
+            } else if (element.classList.contains('media-main-doc')) {
                 const span = element.querySelector('span');
                 if (span) {
                     mediaObj.fileName = span.textContent;
@@ -538,7 +538,7 @@
             return `<video controls class="img-fluid">
                 <source src="${mediaObj.src}" type="${mediaObj.fileType}">
             </video>`;
-        } else if (mediaObj.element.classList.contains('media-main-doc') || mediaObj.element.classList.contains('media-secondary-doc') || mediaObj.element.classList.contains('media-single-doc')) {
+        } else if (mediaObj.element.classList.contains('media-main-doc')) {
             return `<div class="gallery-document">
                 <i class="bi bi-file-earmark fs-1"></i>
                 <p class="mt-3">${mediaObj.fileName}</p>
@@ -557,7 +557,7 @@
             return `<video muted class="img-fluid">
                 <source src="${mediaObj.src}" type="${mediaObj.fileType}">
             </video>`;
-        } else if (mediaObj.element.classList.contains('media-main-doc') || mediaObj.element.classList.contains('media-secondary-doc') || mediaObj.element.classList.contains('media-single-doc')) {
+        } else if (mediaObj.element.classList.contains('media-main-doc')) {
             return `<div class="gallery-doc-thumbnail">
                 <i class="bi bi-file-earmark"></i>
             </div>`;

@@ -364,11 +364,10 @@
     /* Right Sidebar */
     .right-sidebar {
         width: 300px;
-        position: fixed;
+        position: absolute;
         right: 0;
         top: 76px;
         height: calc(100vh - 76px);
-        overflow-y: auto;
         padding: 2rem 1rem;
     }
 
@@ -537,6 +536,33 @@
                             </div>
                         </div>
                     {% endif %}
+                    <!-- Hidden container for all media files for gallery -->
+                    <div class="all-media-files" style="display:none">
+                        {% for media in post.media_files.all %}
+                            {% if media.media_type == 'image' %}
+                                <img src="data:{{ media.file_type }};base64,{{ media.file_data|b64encode_blob }}" 
+                                     alt="{{ media.file_name }}"
+                                     data-file-type="{{ media.file_type }}"
+                                     data-file-name="{{ media.file_name }}"
+                                     data-file-data="{{ media.file_data|b64encode_blob }}">
+                            {% elif media.media_type == 'video' %}
+                                <video muted
+                                       data-file-type="{{ media.file_type }}"
+                                       data-file-name="{{ media.file_name }}"
+                                       data-file-data="{{ media.file_data|b64encode_blob }}">
+                                    <source src="data:{{ media.file_type }};base64,{{ media.file_data|b64encode_blob }}" type="{{ media.file_type }}">
+                                </video>
+                            {% elif media.media_type == 'document' %}
+                                <div class="media-main-doc"
+                                     data-file-type="{{ media.file_type }}"
+                                     data-file-name="{{ media.file_name }}"
+                                     data-file-data="{{ media.file_data|b64encode_blob }}">
+                                    <i class="bi bi-file-earmark"></i>
+                                    <span>{{ media.file_name }}</span>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
                 {% endwith %}
             {% endif %}
         </div>
