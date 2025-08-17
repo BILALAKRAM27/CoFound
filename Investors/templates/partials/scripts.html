@@ -194,26 +194,190 @@
         });
 
         // Post creation functionality
-        const postButton = document.querySelector('#newPostModal .btn-primary');
-        const postTextarea = document.querySelector('#newPostModal textarea');
+        const postForm = document.getElementById('postForm');
+        const submitPostBtn = document.getElementById('submitPost');
+        const filePreview = document.getElementById('filePreview');
 
-        postButton?.addEventListener('click', function() {
-            const content = postTextarea.value.trim();
-            if (content) {
-                console.log('Creating post:', content);
-                // Here you would send the post data to your Django backend
+        // File preview functionality
+        function handleFilePreview(input, previewContainer) {
+            const files = input.files;
+            previewContainer.innerHTML = '';
+            
+            for (let file of files) {
+                const preview = document.createElement('div');
+                preview.className = 'file-preview-item d-inline-block me-2 mb-2';
                 
-                // Close modal and reset form
-                const modal = bootstrap.Modal.getInstance(document.getElementById('newPostModal'));
-                if (modal) modal.hide();
-                postTextarea.value = '';
-                postTextarea.style.height = 'auto';
+                if (file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.className = 'img-thumbnail';
+                    img.style.width = '100px';
+                    img.style.height = '100px';
+                    img.style.objectFit = 'cover';
+                    preview.appendChild(img);
+                } else {
+                    const icon = document.createElement('i');
+                    icon.className = 'bi bi-file-earmark fs-1 text-muted';
+                    preview.appendChild(icon);
+                }
                 
-                // Show success feedback
-                showNotification('Post created successfully!', 'success');
-            } else {
-                showNotification('Please enter some content for your post.', 'warning');
+                const fileName = document.createElement('div');
+                fileName.className = 'small text-muted';
+                fileName.textContent = file.name;
+                preview.appendChild(fileName);
+                
+                previewContainer.appendChild(preview);
             }
+        }
+
+        // Add file preview listeners
+        ['images', 'videos', 'documents'].forEach(inputName => {
+            const input = document.getElementById(inputName);
+            if (input) {
+                input.addEventListener('change', function() {
+                    handleFilePreview(this, filePreview);
+                });
+            }
+        });
+
+        // Post submission
+        submitPostBtn?.addEventListener('click', function() {
+            // Log textarea value directly
+            const textarea = document.querySelector('#postForm textarea[name="content"]');
+            const textareaValue = textarea.value;
+            console.log('Textarea value:', textareaValue);
+
+            const formData = new FormData(postForm);
+            // Force update the content field in FormData
+            formData.set('content', textareaValue);
+
+            // Debug: Log form data
+            console.log('Form data contents:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key, value);
+            }
+            
+            // Client-side validation
+            const content = formData.get('content') || '';
+            const images = formData.getAll('images');
+            const videos = formData.getAll('videos');
+            const documents = formData.getAll('documents');
+            
+            console.log('Validation check:', {
+                content: content,
+                contentLength: content.length,
+                imagesCount: images.length,
+                videosCount: videos.length,
+                documentsCount: documents.length
+            });
+            
+            if (!content.trim() && images.length === 0 && videos.length === 0 && documents.length === 0) {
+                alert('Please provide some content or media for your post.');
+                return;
+            }
+            
+            // Determine the correct URL based on user role
+            const isEntrepreneur = document.body.dataset.userRole === 'entrepreneur';
+            const createPostUrl = isEntrepreneur ? '{% url "entrepreneurs:create_post" %}' : '{% url "investors:create_post" %}';
+            const likePostUrl = isEntrepreneur ? '{% url "entrepreneurs:like_post" 0 %}' : '{% url "investors:like_post" 0 %}';
+            
+            console.log('User role:', document.body.dataset.userRole);
+            console.log('Using URL:', createPostUrl);
+            
+            // Show loading state
+            submitPostBtn.disabled = true;
+            submitPostBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Creating Post...';
+            
+            fetch(createPostUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    // Close modal and reset form
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('newPostModal'));
+                    if (modal) modal.hide();
+                    postForm.reset();
+                    filePreview.innerHTML = '';
+                    
+                    // Show success message
+                    showNotification('Post created successfully!', 'success');
+                    
+                    // Reload page to show new post
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    console.error('Post creation failed:', data.errors);
+                    
+                    // Show specific error messages
+                    let errorMessage = 'Failed to create post:\n';
+                    if (data.errors) {
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            if (Array.isArray(errors)) {
+                                errorMessage += `• ${field}: ${errors.join(', ')}\n`;
+                            } else {
+                                errorMessage += `• ${field}: ${errors}\n`;
+                            }
+                        }
+                    }
+                    
+                    alert(errorMessage);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while creating the post. Please try again.');
+            })
+            .finally(() => {
+                // Reset button state
+                submitPostBtn.disabled = false;
+                submitPostBtn.innerHTML = '<i class="bi bi-send me-2"></i>Post';
+            });
+        });
+
+        // Like functionality
+        document.querySelectorAll('.like-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const postId = this.dataset.postId;
+                const isEntrepreneur = document.body.dataset.userRole === 'entrepreneur';
+                const likePostUrl = isEntrepreneur ? '{% url "entrepreneurs:like_post" 0 %}' : '{% url "investors:like_post" 0 %}';
+                
+                fetch(likePostUrl.replace('0', postId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const icon = this.querySelector('i');
+                        const countSpan = this.querySelector('.likes-count');
+                        
+                        if (data.liked) {
+                            icon.className = 'bi bi-heart-fill';
+                            this.classList.add('liked');
+                        } else {
+                            icon.className = 'bi bi-heart';
+                            this.classList.remove('liked');
+                        }
+                        
+                        countSpan.textContent = data.likes_count;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
         });
 
         // Notification system

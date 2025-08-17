@@ -2,9 +2,8 @@ from django import forms
 from .models import (
     User, EntrepreneurProfile, Startup, StartupDocument,
     Review, CollaborationRequest, Message, Notification,
-    Favorite, ActivityLog, Post, Comment
+    Favorite, ActivityLog, Post, Comment, PostMedia
 )
-
 
 # ---------------------------
 # Registration / Profiles
@@ -71,8 +70,7 @@ class EntrepreneurProfileForm(forms.ModelForm):
         fields = [
             'email', 'company_name', 'website', 'linkedin_url', 'bio', 'location',
             'industries', 'startup_description', 'company_stage', 'funding_need', 'pitch_deck_url',
-            'team_size', 'revenue', 'funding_raised', 'valuation',
-            'twitter_handle', 'github_profile'
+            'team_size', 'revenue', 'funding_raised', 'valuation'
         ]
         widgets = {
             'bio': forms.Textarea(attrs={
@@ -92,6 +90,10 @@ class EntrepreneurProfileForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Your startup or company name'
             }),
+            'industries': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g., Fintech, AI, Healthcare, SaaS'
+            }),
             'startup_description': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 4,
@@ -100,41 +102,28 @@ class EntrepreneurProfileForm(forms.ModelForm):
             'company_stage': forms.Select(attrs={
                 'class': 'form-select'
             }),
-            'funding_need': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Amount needed (e.g., 50000)'
+            'funding_need': forms.Select(attrs={
+                'class': 'form-select'
             }),
             'pitch_deck_url': forms.URLInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'https://example.com/pitch-deck.pdf'
             }),
-            'team_size': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': 1
+            'team_size': forms.Select(attrs={
+                'class': 'form-select'
             }),
-            'revenue': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Monthly/annual revenue'
+            'revenue': forms.Select(attrs={
+                'class': 'form-select'
             }),
-            'funding_raised': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Total funding raised so far'
+            'funding_raised': forms.Select(attrs={
+                'class': 'form-select'
             }),
-            'valuation': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Company valuation'
+            'valuation': forms.Select(attrs={
+                'class': 'form-select'
             }),
             'website': forms.URLInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'https://yourstartup.com'
-            }),
-            'twitter_handle': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '@yourhandle'
-            }),
-            'github_profile': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://github.com/yourusername'
             }),
         }
 
@@ -377,16 +366,46 @@ class ActivityLogForm(forms.ModelForm):
 
 
 class PostForm(forms.ModelForm):
+    content = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': '4',
+            'placeholder': "What's on your mind? Share your startup journey, insights, or collaboration opportunities..."
+        }),
+        required=False  # Make content optional since we can have media-only posts
+    )
+    
+    # Single file fields - multiple files will be handled in the view
+    images = forms.FileField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'accept': 'image/*',
+            'class': 'form-control'
+        }),
+        label="Images"
+    )
+    
+    videos = forms.FileField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'accept': 'video/*',
+            'class': 'form-control'
+        }),
+        label="Videos"
+    )
+    
+    documents = forms.FileField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'accept': '.pdf,.doc,.docx,.txt,.ppt,.pptx',
+            'class': 'form-control'
+        }),
+        label="Documents"
+    )
+
     class Meta:
         model = Post
-        fields = ['content', 'image']
-        widgets = {
-            'content': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Share your thoughts, updates, or achievements...'
-            }),
-        }
+        fields = ['content']
 
 
 class CommentForm(forms.ModelForm):

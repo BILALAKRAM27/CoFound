@@ -2,6 +2,59 @@ from django.db import models
 from django.db.models import Q
 from django.contrib.auth.models import AbstractUser, Group, Permission
 
+# Choice constants for EntrepreneurProfile
+COMPANY_STAGES = [
+    ('idea', 'Idea Stage'),
+    ('mvp', 'MVP'),
+    ('early', 'Early Stage'),
+    ('growth', 'Growth Stage'),
+    ('scale', 'Scale Up')
+]
+
+FUNDING_NEEDS = [
+    ('not_specified', 'Not Specified'),
+    ('seed', 'Seed Funding'),
+    ('series_a', 'Series A'),
+    ('series_b', 'Series B'),
+    ('series_c', 'Series C'),
+    ('other', 'Other')
+]
+
+TEAM_SIZES = [
+    ('1', '1 person'),
+    ('2-5', '2-5 people'),
+    ('6-10', '6-10 people'),
+    ('11-25', '11-25 people'),
+    ('26-50', '26-50 people'),
+    ('50+', '50+ people')
+]
+
+REVENUE_RANGES = [
+    ('no_revenue', 'No Revenue'),
+    ('0-10k', '$0 - $10K'),
+    ('10k-100k', '$10K - $100K'),
+    ('100k-1m', '$100K - $1M'),
+    ('1m-10m', '$1M - $10M'),
+    ('10m+', '$10M+')
+]
+
+FUNDING_RANGES = [
+    ('no_funding', 'No Funding'),
+    ('0-50k', '$0 - $50K'),
+    ('50k-500k', '$50K - $500K'),
+    ('500k-5m', '$500K - $5M'),
+    ('5m-50m', '$5M - $50M'),
+    ('50m+', '$50M+')
+]
+
+VALUATION_RANGES = [
+    ('not_specified', 'Not Specified'),
+    ('0-1m', '$0 - $1M'),
+    ('1m-10m', '$1M - $10M'),
+    ('10m-100m', '$10M - $100M'),
+    ('100m-1b', '$100M - $1B'),
+    ('1b+', '$1B+')
+]
 
 # -----------------------------
 # Core / Accounts / Shared
@@ -62,66 +115,27 @@ class Industry(models.Model):
 # Entrepreneurs domain
 # -----------------------------
 class EntrepreneurProfile(models.Model):
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        related_name="entrepreneur_profile",
-        limit_choices_to={'role': 'entrepreneur'}
-    )
-
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='entrepreneur_profile')
+    company_name = models.CharField(max_length=255, blank=True)
+    website = models.URLField(blank=True, null=True)
+    linkedin_url = models.URLField(blank=True, null=True)
     bio = models.TextField(blank=True)
     location = models.CharField(max_length=255, blank=True)
-    linkedin_url = models.URLField(blank=True, null=True, unique=True)
-
-    # Store profile picture as BLOB
-    image = models.BinaryField(editable=True,blank=True, null=True)
-
-    # Tags
-    industries = models.ManyToManyField(Industry, related_name='entrepreneurs', blank=True)
-
-    # Company/Startup Info
-    company_name = models.CharField(max_length=255, blank=True, unique=True)
-    startup_description = models.TextField(blank=True, null=True)
-    company_stage = models.CharField(
-        max_length=50,
-        choices=[
-            ('idea', 'Idea Stage'),
-            ('mvp', 'MVP'),
-            ('early', 'Early Stage'),
-            ('growth', 'Growth Stage'),
-            ('scale', 'Scale Up')
-        ],
-        default='idea'
-    )
-    funding_need = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    pitch_deck_url = models.URLField(blank=True, null=True)  # optional external link
-    team_size = models.PositiveIntegerField(default=1)
-
-    # Metrics
-    revenue = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    funding_raised = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    valuation = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-
-    # Social
-    website = models.URLField(blank=True, null=True, unique=True)
-    twitter_handle = models.CharField(max_length=50, blank=True)
-    github_profile = models.URLField(blank=True, null=True)
-
+    industries = models.CharField(max_length=500, blank=True)
+    startup_description = models.TextField(blank=True)
+    company_stage = models.CharField(max_length=50, choices=COMPANY_STAGES, default='idea')
+    funding_need = models.CharField(max_length=50, choices=FUNDING_NEEDS, default='not_specified')
+    pitch_deck_url = models.URLField(blank=True, null=True)
+    team_size = models.CharField(max_length=50, choices=TEAM_SIZES, default='1')
+    revenue = models.CharField(max_length=50, choices=REVENUE_RANGES, default='no_revenue')
+    funding_raised = models.CharField(max_length=50, choices=FUNDING_RANGES, default='no_funding')
+    valuation = models.CharField(max_length=50, choices=VALUATION_RANGES, default='not_specified')
+    image = models.BinaryField(editable=True, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def image_base64(self):
-        if self.image:
-            import base64
-            return base64.b64encode(self.image).decode('utf-8')
-        return None
-
-    @property
-    def image_data(self):
-        """Property to access image as base64 string for templates"""
-        return self.image_base64()
-
     def __str__(self):
-        return f"Entrepreneur Profile: {self.user.get_full_name() or self.user.email}"
+        return f"{self.user.get_full_name()}'s Entrepreneur Profile"
 
 
 class Startup(models.Model):
@@ -305,27 +319,44 @@ class ActivityLog(models.Model):
 
 class Post(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
-    content = models.TextField()
-
-    # Post image as BLOB
-    image = models.BinaryField(editable=True,null=True, blank=True)
-
+    content = models.TextField(blank=True)  # Make content optional for media-only posts
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
     likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)
 
     class Meta:
         ordering = ['-created_at']
 
-    def image_base64(self):
-        if self.image:
-            import base64
-            return base64.b64encode(self.image).decode('utf-8')
-        return None
-
     def __str__(self):
         return f"{self.author.get_full_name() or self.author.email}'s post @ {self.created_at:%Y-%m-%d}"
+
+class PostMedia(models.Model):
+    MEDIA_TYPES = [
+        ('image', 'Image'),
+        ('video', 'Video'),
+        ('document', 'Document'),
+    ]
+    
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media_files')
+    media_type = models.CharField(max_length=10, choices=MEDIA_TYPES)
+    file_name = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=100, blank=True)
+    file_data = models.BinaryField(editable=True, null=True, blank=True)
+    file_size = models.PositiveIntegerField(default=0)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def file_base64(self):
+        if self.file_data:
+            import base64
+            return base64.b64encode(self.file_data).decode('utf-8')
+        return None
+
+    @property
+    def file_data_display(self):
+        return self.file_base64()
+
+    def __str__(self):
+        return f"{self.media_type} - {self.file_name} for {self.post}"
 
 
 class Comment(models.Model):

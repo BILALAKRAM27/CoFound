@@ -22,10 +22,16 @@
                         </div>
                         <div class="card-body">
                             
-
                             <form method="post" enctype="multipart/form-data">
                                 {% csrf_token %}
                                 
+                                <!-- Email Field (Read-only) -->
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                                    {{ form.email }}
+                                    <div class="form-text">Email cannot be changed. Contact support if needed.</div>
+                                </div>
+
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="{{ form.bio.id_for_label }}" class="form-label">Bio</label>
@@ -58,6 +64,15 @@
                                             <div class="invalid-feedback d-block">{{ form.company_stage.errors.0 }}</div>
                                         {% endif %}
                                     </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.industries.id_for_label }}" class="form-label">Industries</label>
+                                    {{ form.industries }}
+                                    {% if form.industries.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.industries.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Enter industries separated by commas (e.g., Fintech, AI, Healthcare)</div>
                                 </div>
 
                                 <div class="mb-3">
@@ -94,6 +109,23 @@
 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
+                                        <label for="{{ form.revenue.id_for_label }}" class="form-label">Revenue</label>
+                                        {{ form.revenue }}
+                                        {% if form.revenue.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.revenue.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.valuation.id_for_label }}" class="form-label">Valuation</label>
+                                        {{ form.valuation }}
+                                        {% if form.valuation.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.valuation.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
                                         <label for="{{ form.website.id_for_label }}" class="form-label">Website</label>
                                         {{ form.website }}
                                         {% if form.website.errors %}
@@ -107,6 +139,15 @@
                                             <div class="invalid-feedback d-block">{{ form.linkedin_url.errors.0 }}</div>
                                         {% endif %}
                                     </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.pitch_deck_url.id_for_label }}" class="form-label">Pitch Deck URL</label>
+                                    {{ form.pitch_deck_url }}
+                                    {% if form.pitch_deck_url.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.pitch_deck_url.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Link to your pitch deck or presentation</div>
                                 </div>
 
                                 <div class="mb-3">
@@ -150,6 +191,11 @@
                             {% if profile.location %}
                                 <p class="text-muted small mb-0">
                                     <i class="bi bi-geo-alt me-1"></i>{{ profile.location }}
+                                </p>
+                            {% endif %}
+                            {% if profile.industries %}
+                                <p class="text-muted small mb-0">
+                                    <i class="bi bi-tags me-1"></i>{{ profile.industries }}
                                 </p>
                             {% endif %}
                         </div>

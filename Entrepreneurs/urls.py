@@ -10,4 +10,6 @@ urlpatterns = [
     path('dashboard/', views.entrepreneur_dashboard, name='dashboard'),
     path('profile/', views.entrepreneur_profile, name='profile'),
     path('upload-document/', views.upload_startup_document, name='upload_document'),
+    path('create-post/', views.create_post, name='create_post'),
+    path('like-post/<int:post_id>/', views.like_post, name='like_post'),
 ]

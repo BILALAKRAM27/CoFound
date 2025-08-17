@@ -12,3 +12,14 @@ def b64encode_blob(value):
     if value and isinstance(value, (bytes, bytearray)):
         return base64.b64encode(value).decode('utf-8')
     return ''
+
+@register.filter
+def get_profile_image(user):
+    try:
+        if hasattr(user, 'entrepreneur_profile') and user.entrepreneur_profile.image:
+            return user.entrepreneur_profile.image
+        elif hasattr(user, 'investor_profile') and user.investor_profile.image:
+            return user.investor_profile.image
+    except Exception:
+        pass
+    return None

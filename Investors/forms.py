@@ -67,8 +67,8 @@ class InvestorProfileForm(forms.ModelForm):
         model = InvestorProfile
         fields = [
             'email', 'firm_name', 'website', 'linkedin_url', 'bio', 'location',
-            'investment_interests', 'min_investment', 'max_investment',
-            'preferred_stages', 'position', 'years_of_experience', 'twitter_handle'
+            'investment_stage', 'investment_size', 'preferred_industries',
+            'portfolio_companies', 'notable_exits'
         ]
         widgets = {
             'bio': forms.Textarea(attrs={
@@ -84,38 +84,33 @@ class InvestorProfileForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'https://linkedin.com/in/yourprofile'
             }),
-            'min_investment': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Minimum investment amount'
+            'investment_stage': forms.Select(attrs={
+                'class': 'form-select'
             }),
-            'max_investment': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Maximum investment amount'
+            'investment_size': forms.Select(attrs={
+                'class': 'form-select'
             }),
-            'preferred_stages': forms.TextInput(attrs={
+            'preferred_industries': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'e.g., Seed, Series A, Growth Stage'
+                'placeholder': 'e.g., Fintech, AI, Healthcare, SaaS'
+            }),
+            'portfolio_companies': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'List your current portfolio companies...'
+            }),
+            'notable_exits': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'List your notable exits and successful investments...'
             }),
             'firm_name': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Your investment firm or company name'
             }),
-            'position': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Your role or position'
-            }),
-            'years_of_experience': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': 0,
-                'placeholder': 'Years of investment experience'
-            }),
             'website': forms.URLInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'https://yourfirm.com'
-            }),
-            'twitter_handle': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '@yourhandle'
             }),
         }
 
@@ -240,6 +235,7 @@ class PostForm(forms.Form):
     image = forms.ImageField(
         required=False,
         widget=forms.FileInput(attrs={
+           
             'class': 'd-none',
             'accept': 'image/*'
         })

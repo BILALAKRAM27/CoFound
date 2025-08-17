@@ -8,55 +8,80 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="d-flex mb-3">
-                    {% if user_profile_image_blob %}
-                        <img src="data:image/jpeg;base64,{{ user_profile_image_blob|b64encode_blob }}" 
-                             alt="{{ user.get_full_name }}" class="rounded-circle me-3" width="50" height="50">
-                    {% elif user.is_authenticated and user.role == 'entrepreneur' and user.entrepreneurprofile.image %}
-                        <img src="data:image/jpeg;base64,{{ user.entrepreneurprofile.image|b64encode_blob }}" 
-                             alt="{{ user.get_full_name }}" class="rounded-circle me-3" width="50" height="50">
-                    {% elif user.is_authenticated and user.role == 'investor' and user.investorprofile.image %}
-                        <img src="data:image/jpeg;base64,{{ user.investorprofile.image|b64encode_blob }}" 
-                             alt="{{ user.get_full_name }}" class="rounded-circle me-3" width="50" height="50">
-                    {% else %}
-                        <i class="bi bi-person-circle fs-1 me-3"></i>
-                    {% endif %}
-                    <div>
-                        <h6 class="mb-0">{{ user.get_full_name|default:user.email }}</h6>
-                        <small class="text-muted">
-                            Posting as 
-                            {% if user.role == 'entrepreneur' %}
-                                {% if user.entrepreneurprofile.company_name %}
-                                    {{ user.entrepreneurprofile.company_name }}
+                <form id="postForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="d-flex mb-3">
+                        {% if user_profile_image_blob %}
+                            <img src="data:image/jpeg;base64,{{ user_profile_image_blob|b64encode_blob }}" 
+                                 alt="{{ user.get_full_name }}" class="rounded-circle me-3" width="50" height="50">
+                        {% elif user.is_authenticated and user.role == 'entrepreneur' and user.entrepreneur_profile.image %}
+                            <img src="data:image/jpeg;base64,{{ user.entrepreneur_profile.image|b64encode_blob }}" 
+                                 alt="{{ user.get_full_name }}" class="rounded-circle me-3" width="50" height="50">
+                        {% elif user.is_authenticated and user.role == 'investor' and user.investor_profile.image %}
+                            <img src="data:image/jpeg;base64,{{ user.investor_profile.image|b64encode_blob }}" 
+                                 alt="{{ user.get_full_name }}" class="rounded-circle me-3" width="50" height="50">
+                        {% else %}
+                            <i class="bi bi-person-circle fs-1 me-3"></i>
+                        {% endif %}
+                        <div>
+                            <h6 class="mb-0">{{ user.get_full_name|default:user.email }}</h6>
+                            <small class="text-muted">
+                                Posting as 
+                                {% if user.role == 'entrepreneur' %}
+                                    {% if user.entrepreneur_profile.company_name %}
+                                        {{ user.entrepreneur_profile.company_name }}
+                                    {% else %}
+                                        Entrepreneur
+                                    {% endif %}
                                 {% else %}
-                                    Entrepreneur
+                                    {% if user.investor_profile.firm_name %}
+                                        {{ user.investor_profile.firm_name }}
+                                    {% else %}
+                                        Investor
+                                    {% endif %}
                                 {% endif %}
-                            {% else %}
-                                {% if user.investorprofile.firm_name %}
-                                    {{ user.investorprofile.firm_name }}
-                                {% else %}
-                                    Investor
-                                {% endif %}
-                            {% endif %}
-                        </small>
+                            </small>
+                        </div>
                     </div>
-                </div>
-                <textarea class="form-control border-0 fs-5" rows="4" placeholder="What's on your mind? Share your startup journey, insights, or collaboration opportunities..."></textarea>
-                <div class="mt-3 d-flex gap-3">
-                    <button class="btn btn-outline-secondary">
-                        <i class="bi bi-image me-1"></i>Photo
-                    </button>
-                    <button class="btn btn-outline-secondary">
-                        <i class="bi bi-play-circle me-1"></i>Video
-                    </button>
-                    <button class="btn btn-outline-secondary">
-                        <i class="bi bi-file-earmark me-1"></i>Document
-                    </button>
-                </div>
+                    
+                    <div class="mb-3">
+                        <textarea name="content" class="form-control border-0 fs-5" rows="4" 
+                                  placeholder="What's on your mind? Share your startup journey, insights, or collaboration opportunities..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="images" class="form-label">
+                            <i class="bi bi-image me-2"></i>Images
+                        </label>
+                        <input type="file" name="images" id="images" class="form-control" multiple accept="image/*">
+                        <div class="form-text">Select one or more images (JPG, PNG, GIF)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="videos" class="form-label">
+                            <i class="bi bi-play-circle me-2"></i>Videos
+                        </label>
+                        <input type="file" name="videos" id="videos" class="form-control" multiple accept="video/*">
+                        <div class="form-text">Select one or more videos (MP4, AVI, MOV)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="documents" class="form-label">
+                            <i class="bi bi-file-earmark me-2"></i>Documents
+                        </label>
+                        <input type="file" name="documents" id="documents" class="form-control" multiple 
+                               accept=".pdf,.doc,.docx,.txt,.ppt,.pptx">
+                        <div class="form-text">Select one or more documents (PDF, DOC, TXT, PPT)</div>
+                    </div>
+                    
+                    <div id="filePreview" class="mb-3"></div>
+                </form>
             </div>
             <div class="modal-footer border-0">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary">Post</button>
+                <button type="button" class="btn btn-primary" id="submitPost">
+                    <i class="bi bi-send me-2"></i>Post
+                </button>
             </div>
         </div>
     </div>

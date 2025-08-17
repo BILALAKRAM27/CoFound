@@ -7,6 +7,9 @@ from django.core.paginator import Paginator
 from Entrepreneurs.models import User
 from .models import InvestorProfile, InvestorPortfolio, InvestmentDocument
 from .forms import InvestorRegistrationForm, InvestorProfileForm
+from django.http import JsonResponse
+from Entrepreneurs.models import Post, PostMedia
+from Entrepreneurs.forms import PostForm
 
 
 def investor_register(request):
@@ -89,26 +92,20 @@ def home(request):
 
     # Get all users for the connections/network section
     users = User.objects.exclude(id=request.user.id).select_related(
-        'entrepreneurprofile', 'investorprofile'
+        'entrepreneur_profile', 'investor_profile'
     )
 
-    # Import Post model and get sample posts (you'll need to create this model)
+    # Get posts with media files
     try:
         from Entrepreneurs.models import Post
-        posts = Post.objects.all().order_by('-created_at')[:10]
+        posts = Post.objects.select_related('author').prefetch_related('media_files', 'likes', 'comments').order_by('-created_at')[:10]
     except:
-        # If Post model doesn't exist yet, create empty list
         posts = []
-
-    # Create a simple form for post creation
-    from .forms import PostForm
-    form = PostForm()
 
     context = {
         'profile': profile,
         'users': users,
         'posts': posts,
-        'form': form,
     }
     return render(request, 'home.html', context)
 
@@ -188,5 +185,98 @@ def upload_investment_document(request):
                     messages.error(request, f"{field}: {error}")
     
     return redirect('investors:profile')
+
+
+@login_required
+def create_post(request):
+    """Create post view for investors - uses same logic as entrepreneurs"""
+    if request.method == 'POST':
+        # Check if we have any content or media before form validation
+        content = request.POST.get('content', '').strip()
+        images = request.FILES.getlist('images')
+        videos = request.FILES.getlist('videos')
+        documents = request.FILES.getlist('documents')
+        
+        # Validate that we have at least one type of content
+        if not content and not images and not videos and not documents:
+            return JsonResponse({
+                'success': False, 
+                'errors': {'general': ['Please provide some content or media for your post.']}
+            })
+        
+        # Create form with data
+        form = PostForm(request.POST, request.FILES)
+        
+        if form.is_valid():
+            try:
+                post = form.save(commit=False)
+                post.author = request.user
+                post.save()
+                
+                # Only save each file once
+                for image in images:
+                    PostMedia.objects.create(
+                        post=post,
+                        media_type='image',
+                        file_name=image.name,
+                        file_type=image.content_type,
+                        file_data=image.read(),
+                        file_size=image.size
+                    )
+                
+                # Only save each file once
+                for video in videos:
+                    PostMedia.objects.create(
+                        post=post,
+                        media_type='video',
+                        file_name=video.name,
+                        file_type=video.content_type,
+                        file_data=video.read(),
+                        file_size=video.size
+                    )
+                
+                # Only save each file once
+                for document in documents:
+                    PostMedia.objects.create(
+                        post=post,
+                        media_type='document',
+                        file_name=document.name,
+                        file_type=document.content_type,
+                        file_data=document.read(),
+                        file_size=document.size
+                    )
+                
+                messages.success(request, 'Post created successfully!')
+                return JsonResponse({'success': True, 'post_id': post.id})
+            except Exception as e:
+                return JsonResponse({'success': False, 'errors': {'general': [f'Error creating post: {str(e)}']}})
+        else:
+            # Convert form errors to a more readable format
+            error_dict = {}
+            for field, errors in form.errors.items():
+                error_dict[field] = [str(error) for error in errors]
+            return JsonResponse({'success': False, 'errors': error_dict})
+    
+    return JsonResponse({'success': False, 'errors': {'general': ['Invalid request method']}})
+
+@login_required
+def like_post(request, post_id):
+    """Like post view for investors - uses same logic as entrepreneurs"""
+    try:
+        post = Post.objects.get(id=post_id)
+        if request.user in post.likes.all():
+            post.likes.remove(request.user)
+            liked = False
+        else:
+            post.likes.add(request.user)
+            liked = True
+        
+        return JsonResponse({
+            'success': True,
+            'liked': liked,
+            'likes_count': post.likes.count()
+        })
+    except Post.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Post not found'})
 
 

@@ -25,6 +25,13 @@
                             <form method="post" enctype="multipart/form-data">
                                 {% csrf_token %}
                                 
+                                <!-- Email Field (Read-only) -->
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                                    {{ form.email }}
+                                    <div class="form-text">Email cannot be changed. Contact support if needed.</div>
+                                </div>
+
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="{{ form.bio.id_for_label }}" class="form-label">Bio</label>
@@ -51,46 +58,59 @@
                                         {% endif %}
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="{{ form.position.id_for_label }}" class="form-label">Position</label>
-                                        {{ form.position }}
-                                        {% if form.position.errors %}
-                                            <div class="invalid-feedback d-block">{{ form.position.errors.0 }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-4 mb-3">
-                                        <label for="{{ form.years_of_experience.id_for_label }}" class="form-label">Years of Experience</label>
-                                        {{ form.years_of_experience }}
-                                        {% if form.years_of_experience.errors %}
-                                            <div class="invalid-feedback d-block">{{ form.years_of_experience.errors.0 }}</div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <label for="{{ form.min_investment.id_for_label }}" class="form-label">Min Investment</label>
-                                        {{ form.min_investment }}
-                                        {% if form.min_investment.errors %}
-                                            <div class="invalid-feedback d-block">{{ form.min_investment.errors.0 }}</div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <label for="{{ form.max_investment.id_for_label }}" class="form-label">Max Investment</label>
-                                        {{ form.max_investment }}
-                                        {% if form.max_investment.errors %}
-                                            <div class="invalid-feedback d-block">{{ form.max_investment.errors.0 }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
                                         <label for="{{ form.website.id_for_label }}" class="form-label">Website</label>
                                         {{ form.website }}
                                         {% if form.website.errors %}
                                             <div class="invalid-feedback d-block">{{ form.website.errors.0 }}</div>
                                         {% endif %}
                                     </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.investment_stage.id_for_label }}" class="form-label">Investment Stage</label>
+                                        {{ form.investment_stage }}
+                                        {% if form.investment_stage.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.investment_stage.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.investment_size.id_for_label }}" class="form-label">Investment Size</label>
+                                        {{ form.investment_size }}
+                                        {% if form.investment_size.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.investment_size.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.preferred_industries.id_for_label }}" class="form-label">Preferred Industries</label>
+                                    {{ form.preferred_industries }}
+                                    {% if form.preferred_industries.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.preferred_industries.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Enter industries separated by commas (e.g., Fintech, AI, Healthcare)</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.portfolio_companies.id_for_label }}" class="form-label">Portfolio Companies</label>
+                                    {{ form.portfolio_companies }}
+                                    {% if form.portfolio_companies.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.portfolio_companies.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">List your current portfolio companies and their descriptions</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.notable_exits.id_for_label }}" class="form-label">Notable Exits</label>
+                                    {{ form.notable_exits }}
+                                    {% if form.notable_exits.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.notable_exits.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">List your notable exits and successful investments</div>
+                                </div>
+
+                                <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="{{ form.linkedin_url.id_for_label }}" class="form-label">LinkedIn Profile</label>
                                         {{ form.linkedin_url }}
@@ -141,6 +161,11 @@
                             {% if profile.location %}
                                 <p class="text-muted small mb-0">
                                     <i class="bi bi-geo-alt me-1"></i>{{ profile.location }}
+                                </p>
+                            {% endif %}
+                            {% if profile.preferred_industries %}
+                                <p class="text-muted small mb-0">
+                                    <i class="bi bi-tags me-1"></i>{{ profile.preferred_industries }}
                                 </p>
                             {% endif %}
                         </div>

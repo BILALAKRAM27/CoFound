@@ -452,7 +452,7 @@
 
     {% block styles %}{% endblock %}
 </head>
-<body class="theme-transition">
+<body data-user-role="{{ user.role }}" class="theme-transition">
     <!-- Include Navbar -->
     {% include 'partials/navbar.html' %}
 

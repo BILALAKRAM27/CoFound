@@ -6,6 +6,9 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from .models import User, EntrepreneurProfile
 from .forms import EntrepreneurRegistrationForm, EntrepreneurProfileForm
+from django.http import JsonResponse
+from .forms import PostForm
+from .models import Post, PostMedia
 
 
 def entrepreneur_register(request):
@@ -149,4 +152,55 @@ def upload_startup_document(request):
                     messages.error(request, f"{field}: {error}")
     
     return redirect('entrepreneurs:profile')
+
+
+@login_required
+def create_post(request):
+    if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        images = request.FILES.getlist('images')
+        videos = request.FILES.getlist('videos')
+        documents = request.FILES.getlist('documents')
+        if not content and not images and not videos and not documents:
+            return JsonResponse({'success': False, 'errors': {'general': ['Please provide some content or media for your post.']}})
+        form = PostForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                post = form.save(commit=False)
+                post.author = request.user
+                post.save()
+                # Only save each file once
+                for image in images:
+                    PostMedia.objects.create(post=post, media_type='image', file_name=image.name, file_type=image.content_type, file_data=image.read(), file_size=image.size)
+                for video in videos:
+                    PostMedia.objects.create(post=post, media_type='video', file_name=video.name, file_type=video.content_type, file_data=video.read(), file_size=video.size)
+                for document in documents:
+                    PostMedia.objects.create(post=post, media_type='document', file_name=document.name, file_type=document.content_type, file_data=document.read(), file_size=document.size)
+                messages.success(request, 'Post created successfully!')
+                return JsonResponse({'success': True, 'post_id': post.id})
+            except Exception as e:
+                return JsonResponse({'success': False, 'errors': {'general': [f'Error creating post: {str(e)}']}})
+        else:
+            error_dict = {field: [str(error) for error in errors] for field, errors in form.errors.items()}
+            return JsonResponse({'success': False, 'errors': error_dict})
+    return JsonResponse({'success': False, 'errors': {'general': ['Invalid request method']}})
+
+@login_required
+def like_post(request, post_id):
+    try:
+        post = Post.objects.get(id=post_id)
+        if request.user in post.likes.all():
+            post.likes.remove(request.user)
+            liked = False
+        else:
+            post.likes.add(request.user)
+            liked = True
+        
+        return JsonResponse({
+            'success': True,
+            'liked': liked,
+            'likes_count': post.likes.count()
+        })
+    except Post.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Post not found'})
 
