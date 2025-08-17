@@ -18,14 +18,14 @@
         <h6 class="mb-1">{{ user.get_full_name|default:user.email }}</h6>
         <small class="opacity-75">
             {% if user.role == 'entrepreneur' %}
-                {% if user.entrepreneurprofile.company_name %}
-                    {{ user.entrepreneurprofile.company_name }}
+                {% if user.entrepreneur_profile.company_name %}
+                    {{ user.entrepreneur_profile.company_name }}
                 {% else %}
                     Entrepreneur
                 {% endif %}
             {% else %}
-                {% if user.investorprofile.firm_name %}
-                    {{ user.investorprofile.firm_name }}
+                {% if user.investor_profile.firm_name %}
+                    {{ user.investor_profile.firm_name }}
                 {% else %}
                     Investor
                 {% endif %}
@@ -52,43 +52,46 @@
         <ul class="nav flex-column">
             <li class="nav-item">
                 {% if user.is_authenticated and user.role == 'entrepreneur' %}
-                    <a class="nav-link active" href="{% url 'entrepreneurs:dashboard' %}">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.namespace == 'entrepreneurs' %}active{% endif %}" 
+                       href="{% url 'entrepreneurs:dashboard' %}">
                         <i class="bi bi-house-door"></i>Dashboard
                     </a>
                 {% else %}
-                    <a class="nav-link active" href="{% url 'investors:dashboard' %}">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.namespace == 'investors' %}active{% endif %}" 
+                       href="{% url 'investors:dashboard' %}">
                         <i class="bi bi-house-door"></i>Dashboard
                     </a>
                 {% endif %}
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile' %}{% else %}{% url 'investors:profile' %}{% endif %}">
+                <a class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" 
+                   href="{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile' %}{% else %}{% url 'investors:profile' %}{% endif %}">
                     <i class="bi bi-person"></i>My Profile
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">
+                <a class="nav-link {% if 'collaboration' in request.path %}active{% endif %}" href="#">
                     <i class="bi bi-handshake"></i>Collaboration Requests
                     <span class="badge bg-accent rounded-pill ms-auto">3</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">
+                <a class="nav-link {% if 'saved' in request.path %}active{% endif %}" href="#">
                     <i class="bi bi-bookmark"></i>Saved Posts
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">
+                <a class="nav-link {% if 'network' in request.path %}active{% endif %}" href="#">
                     <i class="bi bi-people"></i>My Network
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">
+                <a class="nav-link {% if 'analytics' in request.path %}active{% endif %}" href="#">
                     <i class="bi bi-graph-up"></i>Analytics
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">
+                <a class="nav-link {% if 'events' in request.path %}active{% endif %}" href="#">
                     <i class="bi bi-calendar-event"></i>Events
                 </a>
             </li>
