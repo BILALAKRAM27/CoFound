@@ -1,0 +1,97 @@
+{% load profile_filters %}
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+    <!-- Profile Card -->
+    <div class="profile-card text-center">
+        {% if user_profile_image_blob %}
+            <img src="data:image/jpeg;base64,{{ user_profile_image_blob|b64encode_blob }}" 
+                 alt="{{ user.get_full_name }}" class="profile-avatar mb-3">
+        {% elif user.is_authenticated and user.role == 'entrepreneur' and user.entrepreneur_profile.image %}
+            <img src="data:image/jpeg;base64,{{ user.entrepreneur_profile.image|b64encode_blob }}" 
+                 alt="{{ user.get_full_name }}" class="profile-avatar mb-3">
+        {% elif user.is_authenticated and user.role == 'investor' and user.investor_profile.image %}
+            <img src="data:image/jpeg;base64,{{ user.investor_profile.image|b64encode_blob }}" 
+                 alt="{{ user.get_full_name }}" class="profile-avatar mb-3">
+        {% else %}
+            <i class="bi bi-person-circle fs-1 text-white mb-3 d-block"></i>
+        {% endif %}
+        <h6 class="mb-1">{{ user.get_full_name|default:user.email }}</h6>
+        <small class="opacity-75">
+            {% if user.role == 'entrepreneur' %}
+                {% if user.entrepreneurprofile.company_name %}
+                    {{ user.entrepreneurprofile.company_name }}
+                {% else %}
+                    Entrepreneur
+                {% endif %}
+            {% else %}
+                {% if user.investorprofile.firm_name %}
+                    {{ user.investorprofile.firm_name }}
+                {% else %}
+                    Investor
+                {% endif %}
+            {% endif %}
+        </small>
+        <div class="d-flex justify-content-around mt-3 pt-3 border-top border-light border-opacity-25">
+            <div>
+                <strong class="d-block">247</strong>
+                <small class="opacity-75">Connections</small>
+            </div>
+            <div>
+                <strong class="d-block">18</strong>
+                <small class="opacity-75">Posts</small>
+            </div>
+            <div>
+                <strong class="d-block">92</strong>
+                <small class="opacity-75">Views</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Links -->
+    <nav class="sidebar-nav">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                {% if user.is_authenticated and user.role == 'entrepreneur' %}
+                    <a class="nav-link active" href="{% url 'entrepreneurs:dashboard' %}">
+                        <i class="bi bi-house-door"></i>Dashboard
+                    </a>
+                {% else %}
+                    <a class="nav-link active" href="{% url 'investors:dashboard' %}">
+                        <i class="bi bi-house-door"></i>Dashboard
+                    </a>
+                {% endif %}
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile' %}{% else %}{% url 'investors:profile' %}{% endif %}">
+                    <i class="bi bi-person"></i>My Profile
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="bi bi-handshake"></i>Collaboration Requests
+                    <span class="badge bg-accent rounded-pill ms-auto">3</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="bi bi-bookmark"></i>Saved Posts
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="bi bi-people"></i>My Network
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="bi bi-graph-up"></i>Analytics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="bi bi-calendar-event"></i>Events
+                </a>
+            </li>
+        </ul>
+    </nav>
+</aside>

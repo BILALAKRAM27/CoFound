@@ -1,0 +1,350 @@
+{% extends 'base.html' %}
+
+{% load profile_filters %}
+
+{% block title %}Home - CoFound{% endblock %}
+
+{% block styles %}
+<style>
+    /* Home page specific styles */
+    .feed-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .post-form-card {
+        background: white;
+        border: none;
+        border-radius: 16px;
+        box-shadow: var(--cf-card-shadow);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+
+    .post-form-header {
+        background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+    }
+
+    .post-form-body {
+        padding: 1.5rem;
+    }
+
+    .post-image-preview {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 8px;
+        display: none;
+    }
+
+    .post-card {
+        background: white;
+        border: none;
+        border-radius: 16px;
+        box-shadow: var(--cf-card-shadow);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .post-card:hover {
+        box-shadow: var(--cf-card-shadow-hover);
+        transform: translateY(-2px);
+    }
+
+    .post-header {
+        padding: 1.25rem 1.5rem 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .post-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        margin-right: 1rem;
+    }
+
+    .post-meta h6 {
+        margin: 0;
+        font-weight: 600;
+        color: var(--cf-text-primary);
+    }
+
+    .post-meta small {
+        color: var(--cf-text-secondary);
+    }
+
+    .post-body {
+        padding: 1rem 1.5rem;
+    }
+
+    .post-footer {
+        padding: 0.75rem 1.5rem 1.25rem;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        gap: 1rem;
+    }
+
+    .post-action {
+        background: none;
+        border: none;
+        color: var(--cf-text-secondary);
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .post-action:hover {
+        background-color: rgba(30, 58, 138, 0.1);
+        color: var(--cf-primary);
+        transform: translateY(-1px);
+    }
+
+    .post-action.liked {
+        color: #dc2626;
+    }
+
+    .comment-section {
+        background-color: #f8fafc;
+        padding: 1rem 1.5rem;
+    }
+
+    .comment {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        border: 1px solid #e2e8f0;
+    }
+
+    .comment-form {
+        margin-top: 1rem;
+    }
+
+    /* Right Sidebar */
+    .right-sidebar {
+        width: 300px;
+        position: fixed;
+        right: 0;
+        top: 76px;
+        height: calc(100vh - 76px);
+        overflow-y: auto;
+        padding: 2rem 1rem;
+    }
+
+    .widget-card {
+        background: white;
+        border: none;
+        border-radius: 16px;
+        box-shadow: var(--cf-card-shadow);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+
+    .widget-header {
+        background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+        color: white;
+        padding: 1rem 1.25rem;
+        font-weight: 600;
+    }
+
+    .widget-body {
+        padding: 1.25rem;
+    }
+
+    /* Dark mode adjustments for home page */
+    [data-bs-theme="dark"] .post-form-card,
+    [data-bs-theme="dark"] .post-card,
+    [data-bs-theme="dark"] .widget-card {
+        background-color: #374151;
+        color: var(--cf-text-primary);
+    }
+
+    [data-bs-theme="dark"] .post-footer {
+        border-top-color: #4b5563;
+    }
+
+    [data-bs-theme="dark"] .comment-section {
+        background-color: #1f2937;
+    }
+
+    [data-bs-theme="dark"] .comment {
+        background-color: #374151;
+        border-color: #4b5563;
+    }
+
+    [data-bs-theme="dark"] .post-form-body {
+        background-color: #374151;
+    }
+
+    [data-bs-theme="dark"] .widget-body {
+        background-color: #374151;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1199.98px) {
+        .right-sidebar {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Post Creation Form -->
+<div class="feed-container">
+    <div class="post-form-card">
+        <div class="post-form-header">
+            <h5 class="mb-0">Create Post</h5>
+        </div>
+        <form method="post" enctype="multipart/form-data" id="postForm" action="{% url 'home' %}">
+            {% csrf_token %}
+            <div class="post-form-body">
+                {{ form.content }}
+                <img id="imagePreview" class="post-image-preview mt-3">
+                <div class="mt-3">
+                    <label class="btn btn-outline-primary me-2">
+                        <i class="bi bi-image me-2"></i>Add Image
+                        {{ form.image }}
+                    </label>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send me-2"></i>Post
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Posts Feed -->
+    {% for post in posts %}
+    <div class="post-card">
+        <div class="post-header">
+            {% if post.author.image %}
+                <img src="data:image/jpeg;base64,{{ post.author.image|b64encode_blob }}" 
+                     alt="{{ post.author.get_full_name }}" class="post-avatar">
+            {% else %}
+                <i class="bi bi-person-circle fs-1"></i>
+            {% endif %}
+            <div class="post-meta">
+                <h6>{{ post.author.get_full_name }}
+                    <span class="badge {% if post.author.role == 'entrepreneur' %}bg-success{% else %}bg-primary{% endif %} rounded-pill ms-2">
+                        {{ post.author.get_role_display }}
+                    </span>
+                </h6>
+                <small class="text-muted">{{ post.created_at|timesince }} ago</small>
+            </div>
+        </div>
+        <div class="post-body">
+            <p>{{ post.content }}</p>
+            {% if post.image_data %}
+                <img src="data:image/jpeg;base64,{{ post.image_data }}" alt="Post image" class="img-fluid rounded">
+            {% endif %}
+        </div>
+        <div class="post-footer">
+            <button class="post-action {% if user in post.likes.all %}liked{% endif %}" data-post-id="{{ post.id }}">
+                <i class="bi {% if user in post.likes.all %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                <span class="likes-count">{{ post.likes.count }}</span>
+            </button>
+            <button class="post-action" data-bs-toggle="collapse" data-bs-target="#comments-{{ post.id }}">
+                <i class="bi bi-chat"></i>
+                <span>{{ post.comments.count }}</span>
+            </button>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="collapse comment-section" id="comments-{{ post.id }}">
+            <div class="comments-container mb-3">
+                {% for comment in post.comments.all %}
+                    <div class="comment">
+                        <div class="d-flex align-items-center mb-2">
+                            {% if comment.author.image %}
+                                <img src="data:image/jpeg;base64,{{ comment.author.image|b64encode_blob }}" 
+                                     alt="{{ comment.author.get_full_name }}" class="rounded-circle me-2" width="32" height="32">
+                            {% else %}
+                                <i class="bi bi-person-circle me-2"></i>
+                            {% endif %}
+                            <strong>{{ comment.author.get_full_name }}</strong>
+                            <small class="text-muted ms-2">{{ comment.created_at|timesince }} ago</small>
+                        </div>
+                        <p class="mb-0">{{ comment.content }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+            <form class="comment-form">
+                {% csrf_token %}
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Write a comment..." required>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center my-5">
+        <i class="bi bi-newspaper fs-1 text-muted"></i>
+        <h5 class="mt-3">No posts yet</h5>
+        <p class="text-muted">Be the first to share something with the community!</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Right Sidebar (Desktop only) -->
+<aside class="right-sidebar d-none d-xl-block">
+    <!-- Suggestions Widget -->
+    <div class="widget-card">
+        <div class="widget-header">
+            <i class="bi bi-people me-2"></i>People You May Know
+        </div>
+        <div class="widget-body">
+            <div class="d-flex align-items-center mb-3">
+                <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face&auto=format&q=80" 
+                     alt="Emma" class="rounded-circle me-3" width="40" height="40">
+                <div class="flex-grow-1">
+                    <h6 class="mb-0">Emma Davis</h6>
+                    <small class="text-muted">FinTech Founder</small>
+                </div>
+                <button class="btn btn-sm btn-outline-primary">Connect</button>
+            </div>
+            <div class="d-flex align-items-center mb-3">
+                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=40&h=40&fit=crop&crop=face&auto=format&q=80" 
+                     alt="David" class="rounded-circle me-3" width="40" height="40">
+                <div class="flex-grow-1">
+                    <h6 class="mb-0">David Kim</h6>
+                    <small class="text-muted">Angel Investor</small>
+                </div>
+                <button class="btn btn-sm btn-outline-primary">Connect</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trending News Widget -->
+    <div class="widget-card">
+        <div class="widget-header">
+            <i class="bi bi-graph-up me-2"></i>Trending in Startups
+        </div>
+        <div class="widget-body">
+            <div class="mb-3">
+                <h6 class="mb-1">AI Startup Funding Hits Record High</h6>
+                <small class="text-muted">2,847 entrepreneurs talking about this</small>
+            </div>
+            <div class="mb-3">
+                <h6 class="mb-1">Green Tech Investment Surge</h6>
+                <small class="text-muted">1,523 entrepreneurs talking about this</small>
+            </div>
+            <div>
+                <h6 class="mb-1">Remote Work Platform Boom</h6>
+                <small class="text-muted">942 entrepreneurs talking about this</small>
+            </div>
+        </div>
+    </div>
+</aside>
+{% endblock %}

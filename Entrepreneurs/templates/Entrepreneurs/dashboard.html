@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}Entrepreneur Dashboard - CoFound{% endblock %}
+
+{% block content %}
+        <div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">Welcome, {{ user.get_full_name|default:user.email }}!</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newPostModal">
+                    <i class="bi bi-plus me-2"></i>Create New Post
+                </button>
+                </div>
+
+            <!-- Entrepreneur Stats -->
+                <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-people fs-1 text-primary mb-2"></i>
+                            <h4 class="mb-1">247</h4>
+                            <p class="text-muted mb-0">Investor Connections</p>
+                    </div>
+                </div>
+                        </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-eye fs-1 text-success mb-2"></i>
+                            <h4 class="mb-1">1,234</h4>
+                            <p class="text-muted mb-0">Profile Views</p>
+                    </div>
+                        </div>
+                    </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-handshake fs-1 text-warning mb-2"></i>
+                            <h4 class="mb-1">18</h4>
+                            <p class="text-muted mb-0">Investment Offers</p>
+                        </div>
+                    </div>
+                        </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-graph-up fs-1 text-info mb-2"></i>
+                            <h4 class="mb-1">$50K</h4>
+                            <p class="text-muted mb-0">Funding Raised</p>
+                    </div>
+                </div>
+                        </div>
+                    </div>
+
+            <!-- Startup Information -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-transparent border-0">
+                            <h5 class="mb-0">Startup Overview</h5>
+                            </div>
+                            <div class="card-body">
+                            {% if profile.company_name %}
+                                <h6 class="text-primary">{{ profile.company_name }}</h6>
+                                <p class="text-muted">{{ profile.startup_description|default:"No description available." }}</p>
+                                
+                <div class="row">
+                                        <div class="col-md-6">
+                                        <p><strong>Stage:</strong> {{ profile.get_company_stage_display|default:"Not specified" }}</p>
+                                        <p><strong>Team Size:</strong> {{ profile.team_size|default:"Not specified" }} people</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                        <p><strong>Funding Need:</strong> ${{ profile.funding_need|default:"Not specified" }}</p>
+                                        <p><strong>Funding Raised:</strong> ${{ profile.funding_raised|default:"0" }}</p>
+                                        </div>
+                                    </div>
+                            {% else %}
+                                <p class="text-muted">Complete your startup profile to showcase your business to potential investors.</p>
+                                <a href="{% url 'entrepreneurs:profile' %}" class="btn btn-primary">Complete Profile</a>
+                            {% endif %}
+                                    </div>
+                                    </div>
+                                    </div>
+                    <div class="col-md-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-transparent border-0">
+                            <h5 class="mb-0">Quick Actions</h5>
+                        </div>
+                            <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'entrepreneurs:profile' %}" class="btn btn-outline-primary">
+                                    <i class="bi bi-pencil me-2"></i>Edit Profile
+                                </a>
+                                <button class="btn btn-outline-success">
+                                    <i class="bi bi-upload me-2"></i>Upload Pitch Deck
+                                </button>
+                                <button class="btn btn-outline-info">
+                                    <i class="bi bi-search me-2"></i>Find Investors
+                                </button>
+                                <button class="btn btn-outline-warning">
+                                    <i class="bi bi-calendar me-2"></i>Schedule Meetings
+                                </button>
+                                    </div>
+                                </div>
+                                </div>
+                                </div>
+                            </div>
+
+            <!-- Recent Activity -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">Recent Activity</h5>
+                            </div>
+                <div class="card-body">
+                                <div class="list-group list-group-flush">
+                        <div class="list-group-item border-0 px-0">
+                                        <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-person-plus text-success fs-4"></i>
+                                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">New Investor Connection</h6>
+                                    <p class="text-muted mb-0">Angel Investor David Kim connected with you</p>
+                                    <small class="text-muted">2 hours ago</small>
+                                            </div>
+                                <div class="flex-shrink-0">
+                                    <button class="btn btn-sm btn-primary">View Profile</button>
+                                        </div>
+                                                </div>
+                                            </div>
+                        <div class="list-group-item border-0 px-0">
+                                        <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-chat-dots text-primary fs-4"></i>
+                                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Investment Interest</h6>
+                                    <p class="text-muted mb-0">VC Firm TechVentures showed interest in your startup</p>
+                                    <small class="text-muted">1 day ago</small>
+                                            </div>
+                                <div class="flex-shrink-0">
+                                    <button class="btn btn-sm btn-outline-primary">Respond</button>
+                                        </div>
+                                </div>
+                            </div>
+                        <div class="list-group-item border-0 px-0">
+                                <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-heart text-danger fs-4"></i>
+                                    </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Profile Liked</h6>
+                                    <p class="text-muted mb-0">Emma Davis liked your startup profile</p>
+                                    <small class="text-muted">2 days ago</small>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <button class="btn btn-sm btn-outline-primary">Connect</button>
+                            </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+    {% endblock %}

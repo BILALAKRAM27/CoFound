@@ -1,0 +1,83 @@
+{% load profile_filters %}
+<!-- Fixed Top Navbar -->
+<nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container-fluid px-3">
+        <!-- Logo -->
+        <a class="navbar-brand" href="{% url 'home' %}">
+            <i class="bi bi-rocket-takeoff me-2"></i>CoFound
+        </a>
+
+        <!-- Mobile Menu Toggle -->
+        <button class="navbar-toggler border-0 text-white d-lg-none" type="button" id="sidebarToggle">
+            <i class="bi bi-list fs-4"></i>
+        </button>
+
+        <!-- Search Bar (Desktop) -->
+        <div class="search-container mx-auto d-none d-md-block">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" class="form-control search-input" placeholder="Search entrepreneurs, investors, or posts...">
+        </div>
+
+        <!-- Navigation Icons -->
+        <ul class="navbar-nav d-flex flex-row align-items-center">
+            <!-- Mobile Search -->
+            <li class="nav-item d-md-none mobile-search" style="display: none;">
+                <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#searchModal">
+                    <i class="bi bi-search fs-5"></i>
+                </a>
+            </li>
+
+            <!-- Home -->
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'home' %}" title="Home">
+                    <i class="bi bi-house-door fs-5"></i>
+                </a>
+            </li>
+
+            <!-- Messages -->
+            <li class="nav-item">
+                <a class="nav-link position-relative" href="#" title="Messages">
+                    <i class="bi bi-chat-dots fs-5"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">3</span>
+                </a>
+            </li>
+
+            <!-- Notifications -->
+            <li class="nav-item">
+                <a class="nav-link position-relative" href="#" title="Notifications">
+                    <i class="bi bi-bell fs-5"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-accent" style="font-size: 0.6rem;">7</span>
+                </a>
+            </li>
+
+            <!-- Theme Toggle -->
+            <li class="nav-item">
+                <button class="theme-toggle me-2" id="themeToggle" title="Toggle Theme">
+                    <i class="bi bi-sun"></i>
+                </button>
+            </li>
+
+            <!-- Profile Dropdown -->
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                    {% if user_profile_image_blob %}
+                        <img src="data:image/jpeg;base64,{{ user_profile_image_blob|b64encode_blob }}" 
+                             alt="{{ user.get_full_name }}" class="rounded-circle" width="32" height="32">
+                    {% else %}
+                        <i class="bi bi-person-circle fs-4 text-white"></i>
+                    {% endif %}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile' %}{% else %}{% url 'investors:profile' %}{% endif %}">
+                        <i class="bi bi-person me-2"></i>My Profile
+                    </a></li>
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:logout' %}{% else %}{% url 'investors:logout' %}{% endif %}">
+                        <i class="bi bi-box-arrow-right me-2"></i>Logout
+                    </a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</nav>

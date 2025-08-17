@@ -1,0 +1,92 @@
+{% load profile_filters %}
+<!-- New Post Modal -->
+<div class="modal fade" id="newPostModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">Create New Post</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex mb-3">
+                    {% if user_profile_image_blob %}
+                        <img src="data:image/jpeg;base64,{{ user_profile_image_blob|b64encode_blob }}" 
+                             alt="{{ user.get_full_name }}" class="rounded-circle me-3" width="50" height="50">
+                    {% elif user.is_authenticated and user.role == 'entrepreneur' and user.entrepreneurprofile.image %}
+                        <img src="data:image/jpeg;base64,{{ user.entrepreneurprofile.image|b64encode_blob }}" 
+                             alt="{{ user.get_full_name }}" class="rounded-circle me-3" width="50" height="50">
+                    {% elif user.is_authenticated and user.role == 'investor' and user.investorprofile.image %}
+                        <img src="data:image/jpeg;base64,{{ user.investorprofile.image|b64encode_blob }}" 
+                             alt="{{ user.get_full_name }}" class="rounded-circle me-3" width="50" height="50">
+                    {% else %}
+                        <i class="bi bi-person-circle fs-1 me-3"></i>
+                    {% endif %}
+                    <div>
+                        <h6 class="mb-0">{{ user.get_full_name|default:user.email }}</h6>
+                        <small class="text-muted">
+                            Posting as 
+                            {% if user.role == 'entrepreneur' %}
+                                {% if user.entrepreneurprofile.company_name %}
+                                    {{ user.entrepreneurprofile.company_name }}
+                                {% else %}
+                                    Entrepreneur
+                                {% endif %}
+                            {% else %}
+                                {% if user.investorprofile.firm_name %}
+                                    {{ user.investorprofile.firm_name }}
+                                {% else %}
+                                    Investor
+                                {% endif %}
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                <textarea class="form-control border-0 fs-5" rows="4" placeholder="What's on your mind? Share your startup journey, insights, or collaboration opportunities..."></textarea>
+                <div class="mt-3 d-flex gap-3">
+                    <button class="btn btn-outline-secondary">
+                        <i class="bi bi-image me-1"></i>Photo
+                    </button>
+                    <button class="btn btn-outline-secondary">
+                        <i class="bi bi-play-circle me-1"></i>Video
+                    </button>
+                    <button class="btn btn-outline-secondary">
+                        <i class="bi bi-file-earmark me-1"></i>Document
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Post</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Search Modal -->
+<div class="modal fade" id="searchModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Search CoFound</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="position-relative mb-3">
+                    <i class="bi bi-search position-absolute top-50 translate-middle-y ms-3"></i>
+                    <input type="text" class="form-control ps-5" placeholder="Search entrepreneurs, investors, or posts...">
+                </div>
+                <div class="list-group">
+                    <div class="list-group-item">
+                        <i class="bi bi-person me-2"></i>Recent: Sarah Johnson
+                    </div>
+                    <div class="list-group-item">
+                        <i class="bi bi-building me-2"></i>Recent: AI Startups
+                    </div>
+                    <div class="list-group-item">
+                        <i class="bi bi-hash me-2"></i>Trending: #fintech
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

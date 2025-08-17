@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investor Dashboard - CoFound</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Design System CSS Variables */
+        :root {
+            --cf-primary: #1e3a8a;
+            --cf-secondary: #0ea5e9;
+            --cf-accent: #f59e0b;
+            --cf-success: #10b981;
+            --cf-sidebar-bg: #f8fafc;
+            --cf-sidebar-border: #e2e8f0;
+            --cf-text-primary: #1f2937;
+            --cf-text-secondary: #6b7280;
+            --cf-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --cf-card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-bs-theme="dark"] {
+            --cf-sidebar-bg: #1e293b;
+            --cf-sidebar-border: #334155;
+            --cf-text-primary: #f1f5f9;
+            --cf-text-secondary: #cbd5e1;
+        }
+
+        /* Base Styles */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            padding-top: 76px;
+            background-color: var(--bs-body-bg);
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, #2563eb 100%);
+            box-shadow: var(--cf-card-shadow);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white !important;
+        }
+
+        .navbar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin: 0 2px;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 50px;
+            padding: 0.5rem 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background-color: var(--cf-sidebar-bg);
+            border-right: 2px solid var(--cf-sidebar-border);
+            width: 260px;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            height: calc(100vh - 76px);
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 4px 0 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background-color: var(--cf-sidebar-border);
+            border-radius: 3px;
+        }
+
+        .sidebar-nav .nav-link {
+            color: var(--cf-text-secondary);
+            padding: 0.875rem 1.5rem;
+            font-weight: 500;
+            border-radius: 0 25px 25px 0;
+            margin-right: 1rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar-nav .nav-link i {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        .sidebar-nav .nav-link:hover {
+            color: var(--cf-primary);
+            background-color: rgba(30, 58, 138, 0.1);
+            transform: translateX(4px);
+        }
+
+        .sidebar-nav .nav-link.active {
+            color: white;
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+            box-shadow: var(--cf-card-shadow);
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        /* Card Styles */
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: var(--cf-card-shadow);
+            transition: all 0.3s ease;
+            background-color: var(--bs-body-bg);
+        }
+
+        .card:hover {
+            box-shadow: var(--cf-card-shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+            color: white;
+            border-radius: 16px 16px 0 0;
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .overview-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--cf-card-shadow);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .overview-card:hover {
+            box-shadow: var(--cf-card-shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .overview-card .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .overview-card.entrepreneurs .card-icon {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+        }
+
+        .overview-card.requests .card-icon {
+            background: linear-gradient(135deg, var(--cf-accent) 0%, #f97316 100%);
+        }
+
+        .overview-card.collaborations .card-icon {
+            background: linear-gradient(135deg, var(--cf-success) 0%, #059669 100%);
+        }
+
+        .overview-card.messages .card-icon {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .overview-card .card-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--cf-text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .overview-card .card-label {
+            color: var(--cf-text-secondary);
+            font-weight: 500;
+        }
+
+        /* Entrepreneur Card Styles */
+        .entrepreneur-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--cf-card-shadow);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .entrepreneur-card:hover {
+            box-shadow: var(--cf-card-shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .entrepreneur-card .card-body {
+            padding: 1.5rem;
+        }
+
+        .entrepreneur-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .entrepreneur-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--cf-text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .startup-name {
+            font-weight: 500;
+            color: var(--cf-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .funding-need {
+            background: linear-gradient(135deg, var(--cf-accent) 0%, #f97316 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .industry-tag {
+            background-color: rgba(30, 58, 138, 0.1);
+            color: var(--cf-primary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: inline-block;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Button Styles */
+        .btn {
+            font-weight: 500;
+            border-radius: 10px;
+            padding: 0.625rem 1.25rem;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+        }
+
+        .btn-outline-primary {
+            border: 2px solid var(--cf-primary);
+            color: var(--cf-primary);
+            background: transparent;
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--cf-primary);
+            color: white;
+        }
+
+        .btn-accent {
+            background: linear-gradient(135deg, var(--cf-accent) 0%, #f97316 100%);
+            color: white;
+        }
+
+        /* Filter Section */
+        .filter-section {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--cf-card-shadow);
+        }
+
+        .filter-section .form-control {
+            border-radius: 10px;
+            border: 2px solid var(--cf-sidebar-border);
+            transition: all 0.3s ease;
+        }
+
+        .filter-section .form-control:focus {
+            border-color: var(--cf-primary);
+            box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.1);
+        }
+
+        /* Activity Feed */
+        .activity-feed {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--cf-card-shadow);
+            height: fit-content;
+        }
+
+        .activity-item {
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--cf-primary);
+            background-color: rgba(30, 58, 138, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .activity-item:hover {
+            background-color: rgba(30, 58, 138, 0.1);
+            transform: translateX(4px);
+        }
+
+        .activity-time {
+            font-size: 0.875rem;
+            color: var(--cf-text-secondary);
+        }
+
+        /* Dropdown Styles */
+        .dropdown-menu {
+            border: none;
+            box-shadow: var(--cf-card-shadow-hover);
+            border-radius: 12px;
+            padding: 0.5rem 0;
+            margin-top: 0.5rem;
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1.25rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--cf-primary);
+            color: white;
+            transform: translateX(4px);
+        }
+
+        /* Badge Styles */
+        .badge {
+            font-weight: 500;
+            padding: 0.5em 0.75em;
+        }
+
+        .bg-accent {
+            background-color: var(--cf-accent) !important;
+        }
+
+        /* Search Bar */
+        .search-container {
+            position: relative;
+        }
+
+        .search-input {
+            border-radius: 25px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .search-input:focus {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                margin-left: -260px;
+            }
+            
+            .sidebar.show {
+                margin-left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .overview-cards {
+                margin-bottom: 2rem;
+            }
+            
+            .activity-feed {
+                margin-top: 2rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 0.5rem;
+            }
+            
+            .navbar-brand {
+                font-size: 1.25rem;
+            }
+            
+            .overview-card .card-number {
+                font-size: 1.5rem;
+            }
+            
+            .filter-section {
+                padding: 1rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Footer */
+        .footer {
+            background-color: var(--cf-sidebar-bg);
+            border-top: 2px solid var(--cf-sidebar-border);
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container-fluid">
+            <!-- Mobile sidebar toggle -->
+            <button class="navbar-toggler d-lg-none me-2" type="button" onclick="toggleSidebar()" style="border: none; color: white;">
+                <i class="bi bi-list"></i>
+            </button>
+            
+            <!-- Brand -->
+            <a class="navbar-brand" href="#">CoFound</a>
+            
+            <!-- Page Title -->
+            <div class="d-none d-md-block text-white fw-semibold">
+                Investor Dashboard
+            </div>
+            
+            <!-- Right side items -->
+            <div class="d-flex align-items-center gap-3">
+                <!-- Search Bar -->
+                <div class="search-container d-none d-md-block">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" class="form-control search-input" placeholder="Search entrepreneurs...">
+                </div>
+                
+                <!-- Notifications -->
+                <div class="dropdown">
+                    <button class="btn nav-link position-relative" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-bell"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-accent">
+                            3
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><h6 class="dropdown-header">Notifications</h6></li>
+                        <li><a class="dropdown-item" href="#">New collaboration request from TechStart</a></li>
+                        <li><a class="dropdown-item" href="#">Message from Sarah Chen</a></li>
+                        <li><a class="dropdown-item" href="#">Profile view from GreenTech Solutions</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">View all notifications</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Theme Toggle -->
+                <button class="btn theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                    <i class="bi bi-moon-stars" id="theme-icon"></i>
+                </button>
+                
+                <!-- User Menu -->
+                <div class="dropdown">
+                    <button class="btn nav-link" type="button" data-bs-toggle="dropdown">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-light text-primary fw-bold" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                                JD
+                            </div>
+                        </div>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><h6 class="dropdown-header">John Doe</h6></li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="p-3">
+            <ul class="nav nav-pills flex-column sidebar-nav">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#dashboard">
+                        <i class="bi bi-grid-1x2"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#entrepreneurs">
+                        <i class="bi bi-people"></i>
+                        Entrepreneurs Directory
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#requests">
+                        <i class="bi bi-send"></i>
+                        Collaboration Requests
+                        <span class="badge bg-accent rounded-pill ms-auto">2</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#messages">
+                        <i class="bi bi-chat-dots"></i>
+                        Messages
+                        <span class="badge bg-success rounded-pill ms-auto">5</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#portfolio">
+                        <i class="bi bi-briefcase"></i>
+                        Portfolio
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#analytics">
+                        <i class="bi bi-graph-up"></i>
+                        Analytics & Reports
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Overview Cards -->
+        <div class="row overview-cards mb-4">
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="overview-card entrepreneurs">
+                    <div class="card-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="card-number">24</div>
+                    <div class="card-label">Entrepreneurs Viewed</div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="overview-card requests">
+                    <div class="card-icon">
+                        <i class="bi bi-send"></i>
+                    </div>
+                    <div class="card-number">8</div>
+                    <div class="card-label">Requests Sent</div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="overview-card collaborations">
+                    <div class="card-icon">
+                        <i class="bi bi-handshake"></i>
+                    </div>
+                    <div class="card-number">3</div>
+                    <div class="card-label">Active Collaborations</div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="overview-card messages">
+                    <div class="card-icon">
+                        <i class="bi bi-chat-dots"></i>
+                    </div>
+                    <div class="card-number">12</div>
+                    <div class="card-label">Unread Messages</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Main Content Area -->
+            <div class="col-xl-8 col-lg-7">
+                <!-- Filter Section -->
+                <div class="filter-section">
+                    <h5 class="mb-3"><i class="bi bi-funnel me-2"></i>Filter & Search</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <select class="form-control">
+                                <option>All Industries</option>
+                                <option>Technology</option>
+                                <option>Healthcare</option>
+                                <option>Finance</option>
+                                <option>E-commerce</option>
+                                <option>Green Energy</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <select class="form-control">
+                                <option>All Funding Ranges</option>
+                                <option>$10K - $50K</option>
+                                <option>$50K - $100K</option>
+                                <option>$100K - $500K</option>
+                                <option>$500K+</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <select class="form-control">
+                                <option>All Locations</option>
+                                <option>New York</option>
+                                <option>California</option>
+                                <option>London</option>
+                                <option>Berlin</option>
+                                <option>Remote</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Entrepreneurs Directory -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-people me-2"></i>Entrepreneurs Directory</h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-light">
+                                <i class="bi bi-grid"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-light">
+                                <i class="bi bi-list"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="row g-3 p-3">
+                            <!-- Entrepreneur Card 1 -->
+                            <div class="col-lg-6">
+                                <div class="entrepreneur-card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-start mb-3">
+                                            <div class="entrepreneur-avatar me-3">
+                                                SC
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="entrepreneur-name">Sarah Chen</div>
+                                                <div class="startup-name">TechFlow AI</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="funding-need mb-2">
+                                            Seeking $250K
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <span class="industry-tag">AI/ML</span>
+                                            <span class="industry-tag">B2B SaaS</span>
+                                        </div>
+                                        
+                                        <p class="text-muted small mb-3">
+                                            Revolutionary AI platform for automated workflow optimization in enterprise environments.
+                                        </p>
+                                        
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-primary btn-sm flex-grow-1">
+                                                <i class="bi bi-eye me-1"></i>
+                                                View Profile
+                                            </button>
+                                            <button class="btn btn-accent btn-sm">
+                                                <i class="bi bi-send"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Entrepreneur Card 2 -->
+                            <div class="col-lg-6">
+                                <div class="entrepreneur-card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-start mb-3">
+                                            <div class="entrepreneur-avatar me-3">
+                                                MJ
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="entrepreneur-name">Marcus Johnson</div>
+                                                <div class="startup-name">GreenTech Solutions</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="funding-need mb-2">
+                                            Seeking $500K
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <span class="industry-tag">Clean Energy</span>
+                                            <span class="industry-tag">Hardware</span>
+                                        </div>
+                                        
+                                        <p class="text-muted small mb-3">
+                                            Innovative solar panel technology with 40% higher efficiency than traditional systems.
+                                        </p>
+                                        
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-primary btn-sm flex-grow-1">
+                                                <i class="bi bi-eye me-1"></i>
+                                                View Profile
+                                            </button>
+                                            <button class="btn btn-accent btn-sm">
+                                                <i class="bi bi-send"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Entrepreneur Card 3 -->
+                            <div class="col-lg-6">
+                                <div class="entrepreneur-card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-start mb-3">
+                                            <div class="entrepreneur-avatar me-3">
+                                                AR
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="entrepreneur-name">Aria Rodriguez</div>
+                                                <div class="startup-name">HealthLink Pro</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="funding-need mb-2">
+                                            Seeking $150K
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <span class="industry-tag">Healthcare</span>
+                                            <span class="industry-tag">Mobile App</span>
+                                        </div>
+                                        
+                                        <p class="text-muted small mb-3">
+                                            Telemedicine platform connecting patients with specialists for remote consultations.
+                                        </p>
+                                        
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-primary btn-sm flex-grow-1">
+                                                <i class="bi bi-eye me-1"></i>
+                                                View Profile
+                                            </button>
+                                            <button class="btn btn-accent btn-sm">
+                                                <i class="bi bi-send"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Entrepreneur Card 4 -->
+                            <div class="col-lg-6">
+                                <div class="entrepreneur-card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-start mb-3">
+                                            <div class="entrepreneur-avatar me-3">
+                                                DK
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="entrepreneur-name">David Kim</div>
+                                                <div class="startup-name">EcoCommerce</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="funding-need mb-2">
+                                            Seeking $75K
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <span class="industry-tag">E-commerce</span>
+                                            <span class="industry-tag">Sustainability</span>
+                                        </div>
+                                        
+                                        <p class="text-muted small mb-3">
+                                            Sustainable e-commerce marketplace featuring eco-friendly products from verified vendors.
+                                        </p>
+                                        
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-primary btn-sm flex-grow-1">
+                                                <i class="bi bi-eye me-1"></i>
+                                                View Profile
+                                            </button>
+                                            <button class="btn btn-accent btn-sm">
+                                                <i class="bi bi-send"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Entrepreneur Card 5 -->
+                            <div class="col-lg-6">
+                                <div class="entrepreneur-card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-start mb-3">
+                                            <div class="entrepreneur-avatar me-3">
+                                                LM
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="entrepreneur-name">Lisa Martinez</div>
+                                                <div class="startup-name">FinSecure</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="funding-need mb-2">
+                                            Seeking $1M
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <span class="industry-tag">FinTech</span>
+                                            <span class="industry-tag">Cybersecurity</span>
+                                        </div>
+                                        
+                                        <p class="text-muted small mb-3">
+                                            Advanced cybersecurity solutions for financial institutions and payment processors.
+                                        </p>
+                                        
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-primary btn-sm flex-grow-1">
+                                                <i class="bi bi-eye me-1"></i>
+                                                View Profile
+                                            </button>
+                                            <button class="btn btn-accent btn-sm">
+                                                <i class="bi bi-send"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Entrepreneur Card 6 -->
+                            <div class="col-lg-6">
+                                <div class="entrepreneur-card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-start mb-3">
+                                            <div class="entrepreneur-avatar me-3">
+                                                RW
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="entrepreneur-name">Robert Wilson</div>
+                                                <div class="startup-name">EdTech Innovations</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="funding-need mb-2">
+                                            Seeking $300K
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <span class="industry-tag">Education</span>
+                                            <span class="industry-tag">VR/AR</span>
+                                        </div>
+                                        
+                                        <p class="text-muted small mb-3">
+                                            Virtual reality educational platform for immersive learning experiences in STEM subjects.
+                                        </p>
+                                        
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-primary btn-sm flex-grow-1">
+                                                <i class="bi bi-eye me-1"></i>
+                                                View Profile
+                                            </button>
+                                            <button class="btn btn-accent btn-sm">
+                                                <i class="bi bi-send"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Load More Button -->
+                        <div class="text-center p-3 border-top">
+                            <button class="btn btn-outline-primary">
+                                <i class="bi bi-arrow-down-circle me-2"></i>
+                                Load More Entrepreneurs
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Feed Sidebar -->
+            <div class="col-xl-4 col-lg-5">
+                <div class="activity-feed">
+                    <h5 class="mb-4"><i class="bi bi-activity me-2"></i>Recent Activity</h5>
+                    
+                    <div class="activity-item">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>New Request Sent</strong>
+                            <small class="activity-time">2 hours ago</small>
+                        </div>
+                        <p class="mb-1">Collaboration request sent to <strong>TechFlow AI</strong></p>
+                        <small class="text-muted">Status: Pending</small>
+                    </div>
+                    
+                    <div class="activity-item">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>Message Received</strong>
+                            <small class="activity-time">4 hours ago</small>
+                        </div>
+                        <p class="mb-1">New message from <strong>Sarah Chen</strong></p>
+                        <small class="text-muted">"Thank you for your interest in our AI platform..."</small>
+                    </div>
+                    
+                    <div class="activity-item">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>Request Accepted</strong>
+                            <small class="activity-time">1 day ago</small>
+                        </div>
+                        <p class="mb-1"><strong>GreenTech Solutions</strong> accepted your collaboration request</p>
+                        <small class="text-muted">You can now start collaborating</small>
+                    </div>
+                    
+                    <div class="activity-item">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>Profile View</strong>
+                            <small class="activity-time">2 days ago</small>
+                        </div>
+                        <p class="mb-1">Your profile was viewed by <strong>HealthLink Pro</strong></p>
+                        <small class="text-muted">Consider reaching out to them</small>
+                    </div>
+                    
+                    <div class="activity-item">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>New Entrepreneur</strong>
+                            <small class="activity-time">3 days ago</small>
+                        </div>
+                        <p class="mb-1">New entrepreneur <strong>FinSecure</strong> joined your interests</p>
+                        <small class="text-muted">FinTech • Cybersecurity</small>
+                    </div>
+                    
+                    <!-- View All Activity Button -->
+                    <div class="text-center mt-3">
+                        <button class="btn btn-outline-primary btn-sm">
+                            View All Activity
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Stats Card -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Quick Stats</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="border-end">
+                                    <h4 class="text-primary mb-1">68%</h4>
+                                    <small class="text-muted">Response Rate</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <h4 class="text-success mb-1">12</h4>
+                                <small class="text-muted">This Month</small>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="border-end">
+                                    <h4 class="text-warning mb-1">4.8</h4>
+                                    <small class="text-muted">Avg Rating</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <h4 class="text-info mb-1">24</h4>
+                                <small class="text-muted">Connections</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="fw-bold mb-3">CoFound</h6>
+                    <p class="text-muted small">Connecting investors with innovative entrepreneurs for meaningful collaborations.</p>
+                </div>
+                <div class="col-md-6">
+                    <div class="row">
+                        <div class="col-6">
+                            <h6 class="fw-semibold mb-3">Company</h6>
+                            <ul class="list-unstyled">
+                                <li><a href="#" class="text-muted text-decoration-none small">About Us</a></li>
+                                <li><a href="#" class="text-muted text-decoration-none small">Contact</a></li>
+                                <li><a href="#" class="text-muted text-decoration-none small">Careers</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="fw-semibold mb-3">Legal</h6>
+                            <ul class="list-unstyled">
+                                <li><a href="#" class="text-muted text-decoration-none small">Privacy Policy</a></li>
+                                <li><a href="#" class="text-muted text-decoration-none small">Terms of Service</a></li>
+                                <li><a href="#" class="text-muted text-decoration-none small">Cookie Policy</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr class="mt-4">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <small class="text-muted">© 2024 CoFound. All rights reserved.</small>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <small class="text-muted">Made with ❤️ for entrepreneurs and investors</small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Django Template Extensions -->
+    {% block content %}
+    {% endblock %}
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Theme Toggle Functionality
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('theme-icon');
+            const currentTheme = html.getAttribute('data-bs-theme');
+            
+            if (currentTheme === 'dark') {
+                html.setAttribute('data-bs-theme', 'light');
+                themeIcon.className = 'bi bi-moon-stars';
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.setAttribute('data-bs-theme', 'dark');
+                themeIcon.className = 'bi bi-sun';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const themeIcon = document.getElementById('theme-icon');
+            
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            themeIcon.className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        });
+
+        // Sidebar Toggle Functionality
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        }
+
+        // Close sidebar on outside click (mobile)
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.querySelector('.navbar-toggler');
+            
+            if (window.innerWidth <= 991.98) {
+                if (!sidebar.contains(event.target) && !toggleButton.contains(event.target)) {
+                    sidebar.classList.remove('show');
+                }
+            }
+        });
+
+        // Sidebar Navigation Active State
+        document.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all links
+                document.querySelectorAll('.sidebar-nav .nav-link').forEach(l => l.classList.remove('active'));
+                
+                // Add active class to clicked link
+                this.classList.add('active');
+                
+                // Close sidebar on mobile after selection
+                if (window.innerWidth <= 991.98) {
+                    document.getElementById('sidebar').classList.remove('show');
+                }
+            });
+        });
+
+        // Search functionality
+        document.querySelector('.search-input').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            // Add search logic here
+            console.log('Searching for:', searchTerm);
+        });
+
+        // Filter functionality
+        document.querySelectorAll('.filter-section select').forEach(select => {
+            select.addEventListener('change', function() {
+                // Add filter logic here
+                console.log('Filter changed:', this.value);
+            });
+        });
+
+        // Entrepreneur card interactions
+        document.querySelectorAll('.entrepreneur-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                // Don't trigger if clicking on buttons
+                if (e.target.closest('button')) return;
+                
+                // Add card click logic here
+                console.log('Card clicked');
+            });
+        });
+
+        // Send request functionality
+        document.querySelectorAll('.btn-accent').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                // Add loading state
+                const originalContent = this.innerHTML;
+                this.innerHTML = '<div class="loading"></div>';
+                this.disabled = true;
+                
+                // Simulate API call
+                setTimeout(() => {
+                    this.innerHTML = '<i class="bi bi-check"></i>';
+                    this.classList.remove('btn-accent');
+                    this.classList.add('btn-success');
+                    
+                    setTimeout(() => {
+                        this.innerHTML = originalContent;
+                        this.classList.remove('btn-success');
+                        this.classList.add('btn-accent');
+                        this.disabled = false;
+                    }, 2000);
+                }, 1000);
+            });
+        });
+
+        // Responsive handling
+        window.addEventListener('resize', function() {
+            const sidebar = document.getElementById('sidebar');
+            if (window.innerWidth > 991.98) {
+                sidebar.classList.remove('show');
+            }
+        });
+    </script>
+
+    {% block scripts %}
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load profile_filters %}
+
+{% block title %}Edit Profile - CoFound{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">Edit Your Profile</h2>
+                <a href="{% url 'investors:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-transparent border-0">
+                            <h5 class="mb-0">Profile Information</h5>
+                        </div>
+                        <div class="card-body">
+                            
+                            <form method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.bio.id_for_label }}" class="form-label">Bio</label>
+                                        {{ form.bio }}
+                                        {% if form.bio.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.bio.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.location.id_for_label }}" class="form-label">Location</label>
+                                        {{ form.location }}
+                                        {% if form.location.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.location.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.firm_name.id_for_label }}" class="form-label">Firm Name</label>
+                                        {{ form.firm_name }}
+                                        {% if form.firm_name.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.firm_name.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.position.id_for_label }}" class="form-label">Position</label>
+                                        {{ form.position }}
+                                        {% if form.position.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.position.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.years_of_experience.id_for_label }}" class="form-label">Years of Experience</label>
+                                        {{ form.years_of_experience }}
+                                        {% if form.years_of_experience.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.years_of_experience.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.min_investment.id_for_label }}" class="form-label">Min Investment</label>
+                                        {{ form.min_investment }}
+                                        {% if form.min_investment.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.min_investment.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.max_investment.id_for_label }}" class="form-label">Max Investment</label>
+                                        {{ form.max_investment }}
+                                        {% if form.max_investment.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.max_investment.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.website.id_for_label }}" class="form-label">Website</label>
+                                        {{ form.website }}
+                                        {% if form.website.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.website.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.linkedin_url.id_for_label }}" class="form-label">LinkedIn Profile</label>
+                                        {{ form.linkedin_url }}
+                                        {% if form.linkedin_url.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.linkedin_url.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.image_upload.id_for_label }}" class="form-label">Profile Image</label>
+                                    {{ form.image_upload }}
+                                    {% if form.image_upload.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.image_upload.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Upload a professional photo to make your profile stand out.</div>
+                                </div>
+
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-2"></i>Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-transparent border-0">
+                            <h5 class="mb-0">Profile Preview</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            {% if profile.image %}
+                                <img src="data:image/jpeg;base64,{{ profile.image|b64encode_blob }}" alt="Profile Image" class="profile-avatar mb-3">
+                            {% else %}
+                                <i class="bi bi-person-circle fs-1 text-white mb-3 d-block"></i>
+                            {% endif %}
+                            <h6>{{ user.get_full_name|default:user.email }}</h6>
+                            <p class="text-muted small">
+                                {% if profile.firm_name %}
+                                    {{ profile.firm_name }}
+                                {% else %}
+                                    Investor
+                                {% endif %}
+                            </p>
+                            {% if profile.location %}
+                                <p class="text-muted small mb-0">
+                                    <i class="bi bi-geo-alt me-1"></i>{{ profile.location }}
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
