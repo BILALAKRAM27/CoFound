@@ -432,11 +432,7 @@
         
         // Collect all media files from the post - get the actual media data, not just DOM elements
         const allMedia = [];
-        
-        // Get all media files from the post data attributes or collect from DOM
         const mediaElements = post.querySelectorAll('.media-main img, .media-main video, .media-main .media-main-doc, .media-secondary img, .media-secondary video, .media-secondary .media-secondary-doc, .media-single img, .media-single video, .media-single .media-single-doc');
-        
-        // Convert DOM elements to media objects with proper data
         mediaElements.forEach((element, index) => {
             let mediaObj = {
                 element: element,
@@ -448,8 +444,6 @@
                 fileName: element.dataset.fileName || 'Media',
                 fileData: element.dataset.fileData || null
             };
-            
-            // Handle different media types
             if (element.tagName === 'IMG') {
                 mediaObj.src = element.src;
                 mediaObj.alt = element.alt;
@@ -465,10 +459,8 @@
                     mediaObj.fileName = span.textContent;
                 }
             }
-            
             allMedia.push(mediaObj);
         });
-        
         if (allMedia.length === 0) return;
         
         // Create modal for gallery
@@ -520,22 +512,16 @@
         
         // Handle thumbnail clicks
         const thumbnails = modal.querySelectorAll('.gallery-thumbnail');
-        const mainItems = modal.querySelectorAll('.gallery-item');
+        const mainItem = modal.querySelector('.gallery-item');
         
         thumbnails.forEach(thumbnail => {
             thumbnail.addEventListener('click', function() {
                 const index = parseInt(this.dataset.index);
-                
                 // Update active states
                 thumbnails.forEach(t => t.classList.remove('active'));
-                mainItems.forEach(item => item.classList.remove('active'));
-                
                 this.classList.add('active');
-                mainItems[index].classList.add('active');
-                
-                // Update main content with the selected media
-                const mainContent = modal.querySelector('.gallery-main .gallery-item.active');
-                mainContent.innerHTML = getMediaHTML(allMedia[index]);
+                // Replace main preview content
+                mainItem.innerHTML = getMediaHTML(allMedia[index]);
             });
         });
         
