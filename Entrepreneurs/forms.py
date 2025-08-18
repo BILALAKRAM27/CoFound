@@ -409,16 +409,15 @@ class PostForm(forms.ModelForm):
 
 
 class CommentForm(forms.ModelForm):
+    content = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Write a comment...',
+            'maxlength': 500,
+        }),
+        label='',
+        required=True
+    )
     class Meta:
         model = Comment
-        fields = ['post', 'content']
-        widgets = {
-            'post': forms.Select(attrs={
-                'class': 'form-select'
-            }),
-            'content': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 2,
-                'placeholder': 'Add a comment...'
-            }),
-        }
+        fields = ['content']

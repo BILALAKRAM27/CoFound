@@ -10,6 +10,12 @@ from .forms import InvestorRegistrationForm, InvestorProfileForm
 from django.http import JsonResponse
 from Entrepreneurs.models import Post, PostMedia
 from Entrepreneurs.forms import PostForm
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from Entrepreneurs.models import Post, Comment
+from Entrepreneurs.forms import CommentForm
+from django.shortcuts import get_object_or_404
+import base64
 
 
 def investor_register(request):
@@ -290,5 +296,40 @@ def like_post(request, post_id):
         })
     except Post.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Post not found'})
+
+
+@login_required
+@require_POST
+def add_comment(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    form = CommentForm(request.POST)
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.author = request.user
+        comment.post = post
+        comment.save()
+
+        # Safely resolve and encode profile image
+        image_bytes = None
+        try:
+            if hasattr(comment.author, 'investor_profile') and comment.author.investor_profile.image:
+                image_bytes = comment.author.investor_profile.image
+            elif hasattr(comment.author, 'entrepreneur_profile') and comment.author.entrepreneur_profile.image:
+                image_bytes = comment.author.entrepreneur_profile.image
+        except Exception:
+            image_bytes = None
+        author_image_b64 = base64.b64encode(image_bytes).decode('utf-8') if image_bytes else ''
+
+        return JsonResponse({
+            'success': True,
+            'comment': {
+                'id': comment.id,
+                'author_name': comment.author.get_full_name() or comment.author.email,
+                'author_image': author_image_b64,
+                'content': comment.content,
+                'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M'),
+            }
+        })
+    return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
 

@@ -13,3 +13,7 @@ urlpatterns = [
     path('create-post/', views.create_post, name='create_post'),
     path('like-post/<int:post_id>/', views.like_post, name='like_post'),
 ]
+
+urlpatterns += [
+    path('add-comment/<int:post_id>/', views.add_comment, name='add_comment'),
+]

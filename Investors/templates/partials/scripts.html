@@ -425,6 +425,60 @@
         }
     });
 
+    // AJAX comment submission
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.comment-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const postId = this.dataset.postId;
+                const input = this.querySelector('input[name="content"]');
+                const content = input.value.trim();
+                if (!content) return;
+                const csrfToken = this.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                // Detect user role from body data attribute
+                const userRole = document.body.dataset.userRole;
+                let commentUrl = '';
+                if (userRole === 'entrepreneur') {
+                    commentUrl = `/entrepreneur/add-comment/${postId}/`;
+                } else {
+                    commentUrl = `/investor/add-comment/${postId}/`;
+                }
+
+                fetch(commentUrl, {
+                    method: 'POST',
+                    headers: {'X-CSRFToken': csrfToken},
+                    body: new URLSearchParams({content})
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Prepend or append the new comment to the comments container
+                        const container = this.closest('.comment-section').querySelector('.comments-container');
+                        let authorImg = data.comment.author_image ?
+                            `<img src="data:image/jpeg;base64,${data.comment.author_image}" class="rounded-circle me-2" width="32" height="32">` :
+                            `<div class="rounded-circle me-2 bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;"><i class="bi bi-person-fill" style="font-size: 0.875rem;"></i></div>`;
+                        const commentHtml = `
+                            <div class="comment" id="comment-${data.comment.id}">
+                                <div class="d-flex align-items-center mb-2">
+                                    ${authorImg}
+                                    <strong>${data.comment.author_name}</strong>
+                                    <small class="text-muted ms-2">just now</small>
+                                    <button class="btn btn-sm btn-link text-danger ms-auto delete-comment-btn" data-comment-id="${data.comment.id}">Delete</button>
+                                </div>
+                                <p class="mb-0">${data.comment.content}</p>
+                            </div>
+                        `;
+                        container.insertAdjacentHTML('beforeend', commentHtml);
+                        input.value = '';
+                    } else {
+                        alert('Failed to add comment.');
+                    }
+                });
+            });
+        });
+    });
+
     // Media Gallery Functionality
     function openMediaGallery(postId) {
         const post = document.querySelector(`[data-post-id="${postId}"]`);
