@@ -28,10 +28,7 @@ def investor_register(request):
             user.save()
             
             # Create a basic profile with default values
-            profile = InvestorProfile.objects.create(
-                user=user,
-                years_of_experience=0
-            )
+            profile = InvestorProfile.objects.create(user=user)
             
             login(request, user)
             messages.success(request, 'Registration successful! Welcome to CoFound!')
