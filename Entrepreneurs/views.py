@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from .forms import PostForm
 from .models import Post, PostMedia
 from django.views.decorators.http import require_POST
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from .models import Post, Comment
 from .forms import CommentForm
 from django.shortcuts import get_object_or_404
@@ -244,4 +244,27 @@ def add_comment(request, post_id):
             }
         })
     return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+
+
+@login_required
+@require_POST
+def edit_comment(request, comment_id):
+	comment = get_object_or_404(Comment, id=comment_id)
+	if comment.author != request.user:
+		return HttpResponseForbidden('Not allowed')
+	content = request.POST.get('content', '').strip()
+	if not content:
+		return JsonResponse({'success': False, 'errors': {'content': ['Content cannot be empty.']}}, status=400)
+	comment.content = content
+	comment.save(update_fields=['content', 'updated_at'])
+	return JsonResponse({'success': True, 'comment': {'id': comment.id, 'content': comment.content}})
+
+@login_required
+@require_POST
+def delete_comment(request, comment_id):
+	comment = get_object_or_404(Comment, id=comment_id)
+	if comment.author != request.user:
+		return HttpResponseForbidden('Not allowed')
+	comment.delete()
+	return JsonResponse({'success': True})
 

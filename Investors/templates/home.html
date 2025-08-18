@@ -595,8 +595,14 @@
                             <strong>{{ comment.author.get_full_name|default:comment.author.email }}</strong>
                             <small class="text-muted ms-2">{{ comment.created_at|timesince }} ago</small>
                             {% if comment.author == user %}
-                                <!-- Edit/Delete buttons (optional) -->
-                                <button class="btn btn-sm btn-link text-danger ms-auto delete-comment-btn" data-comment-id="{{ comment.id }}">Delete</button>
+                                <div class="ms-auto d-flex align-items-center gap-1">
+                                    <button class="comment-action-btn edit edit-comment-btn" title="Edit" data-comment-id="{{ comment.id }}">
+                                        <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+                                    </button>
+                                    <button class="comment-action-btn delete delete-comment-btn" title="Delete" data-comment-id="{{ comment.id }}">
+                                        <i class="fa fa-trash" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                             {% endif %}
                         </div>
                         <p class="mb-0">{{ comment.content }}</p>

@@ -479,6 +479,115 @@
         });
     });
 
+    // Comment edit/delete handlers
+    document.addEventListener('DOMContentLoaded', function() {
+        // Delegated handler for delete
+        document.body.addEventListener('click', function(e) {
+            const delBtn = e.target.closest('.delete-comment-btn');
+            if (delBtn) {
+                const commentId = delBtn.dataset.commentId;
+                const userRole = document.body.dataset.userRole;
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                const url = userRole === 'entrepreneur' ? `/entrepreneur/delete-comment/${commentId}/` : `/investor/delete-comment/${commentId}/`;
+                fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrfToken } })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const node = document.getElementById(`comment-${commentId}`);
+                        if (node) node.remove();
+                    } else {
+                        alert('Failed to delete comment');
+                    }
+                })
+                .catch(() => alert('Failed to delete comment'));
+            }
+        });
+
+        // Delegated handler for edit/save/cancel
+        document.body.addEventListener('click', function(e) {
+            // Start edit
+            const editBtn = e.target.closest('.edit-comment-btn');
+            if (editBtn) {
+                const commentId = editBtn.dataset.commentId;
+                const commentNode = document.getElementById(`comment-${commentId}`);
+                if (!commentNode) return;
+                const contentP = commentNode.querySelector('p');
+                if (!contentP) return;
+                // Prevent multiple editors
+                if (commentNode.querySelector('.comment-edit-inline')) return;
+
+                // Hide content and action buttons
+                contentP.style.display = 'none';
+                editBtn.style.display = 'none';
+                const deleteBtn = commentNode.querySelector('.delete-comment-btn');
+                if (deleteBtn) deleteBtn.style.display = 'none';
+
+                // Build inline editor
+                const wrapper = document.createElement('div');
+                wrapper.className = 'comment-edit-inline d-flex gap-2 align-items-start mt-1';
+                wrapper.innerHTML = `
+                    <input type="text" class="form-control form-control-sm flex-grow-1" value="${contentP.textContent.replace(/"/g, '&quot;').trim()}" maxlength="500">
+                    <button class="btn btn-sm btn-primary save-comment-edit" data-comment-id="${commentId}">Save</button>
+                    <button class="btn btn-sm btn-outline-secondary cancel-comment-edit" data-comment-id="${commentId}">Cancel</button>
+                `;
+                contentP.after(wrapper);
+                return;
+            }
+
+            // Save edit
+            const saveBtn = e.target.closest('.save-comment-edit');
+            if (saveBtn) {
+                const commentId = saveBtn.dataset.commentId;
+                const commentNode = document.getElementById(`comment-${commentId}`);
+                if (!commentNode) return;
+                const editor = commentNode.querySelector('.comment-edit-inline');
+                const input = editor?.querySelector('input');
+                const newText = (input?.value || '').trim();
+                if (!newText) { showNotification('Comment cannot be empty.', 'warning'); return; }
+                const userRole = document.body.dataset.userRole;
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                const url = userRole === 'entrepreneur' ? `/entrepreneur/edit-comment/${commentId}/` : `/investor/edit-comment/${commentId}/`;
+                fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: new URLSearchParams({ content: newText }) })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const contentP = commentNode.querySelector('p');
+                        if (contentP) contentP.textContent = data.comment.content;
+                        // Restore UI
+                        if (editor) editor.remove();
+                        if (contentP) contentP.style.display = '';
+                        const editBtnBack = commentNode.querySelector('.edit-comment-btn');
+                        if (editBtnBack) editBtnBack.style.display = '';
+                        const deleteBtnBack = commentNode.querySelector('.delete-comment-btn');
+                        if (deleteBtnBack) deleteBtnBack.style.display = '';
+                        showNotification('Comment updated.', 'success');
+                    } else {
+                        showNotification('Failed to edit comment.', 'danger');
+                    }
+                })
+                .catch(() => showNotification('Failed to edit comment.', 'danger'));
+                return;
+            }
+
+            // Cancel edit
+            const cancelBtn = e.target.closest('.cancel-comment-edit');
+            if (cancelBtn) {
+                const commentId = cancelBtn.dataset.commentId;
+                const commentNode = document.getElementById(`comment-${commentId}`);
+                if (!commentNode) return;
+                const editor = commentNode.querySelector('.comment-edit-inline');
+                const contentP = commentNode.querySelector('p');
+                if (editor) editor.remove();
+                if (contentP) contentP.style.display = '';
+                const editBtnBack = commentNode.querySelector('.edit-comment-btn');
+                if (editBtnBack) editBtnBack.style.display = '';
+                const deleteBtnBack = commentNode.querySelector('.delete-comment-btn');
+                if (deleteBtnBack) deleteBtnBack.style.display = '';
+                return;
+            }
+        });
+    });
+
     // Media Gallery Functionality
     function openMediaGallery(postId) {
         const post = document.querySelector(`[data-post-id="${postId}"]`);

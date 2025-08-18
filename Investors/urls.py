@@ -4,15 +4,18 @@ from . import views
 app_name = 'investors'
 
 urlpatterns = [
-    path('register/', views.investor_register, name='register'),
-    path('login/', views.investor_login, name='login'),
-    path('logout/', views.investor_logout, name='logout'),
-    path('dashboard/', views.investor_dashboard, name='dashboard'),
-    path('profile/', views.investor_profile, name='profile'),
-    path('create-post/', views.create_post, name='create_post'),
-    path('like-post/<int:post_id>/', views.like_post, name='like_post'),
+	path('register/', views.investor_register, name='register'),
+	path('login/', views.investor_login, name='login'),
+	path('logout/', views.investor_logout, name='logout'),
+	path('dashboard/', views.investor_dashboard, name='dashboard'),
+	path('profile/', views.investor_profile, name='profile'),
+	path('create-post/', views.create_post, name='create_post'),
+	path('like-post/<int:post_id>/', views.like_post, name='like_post'),
 ]
 
+# Comment endpoints
 urlpatterns += [
-    path('add-comment/<int:post_id>/', views.add_comment, name='add_comment'),
+	path('add-comment/<int:post_id>/', views.add_comment, name='add_comment'),
+	path('edit-comment/<int:comment_id>/', views.edit_comment, name='edit_comment'),
+	path('delete-comment/<int:comment_id>/', views.delete_comment, name='delete_comment'),
 ]
