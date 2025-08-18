@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% load profile_filters %}
+
+{% block title %}Saved Posts - CoFound{% endblock %}
+
+{% block styles %}
+<style>
+    /* Mirror home.html styles */
+    .feed-container { max-width: 100%; margin: 0 auto; padding: 0; }
+    .post-card { background: var(--bs-body-bg); border: none; border-radius: 16px; box-shadow: var(--cf-card-shadow); margin-bottom: 2rem; overflow: hidden; transition: all 0.3s ease; }
+    .post-card:hover { box-shadow: var(--cf-card-shadow-hover); transform: translateY(-2px); }
+    .post-header { padding: 1.25rem 1.5rem 0; display: flex; align-items: center; gap: 1rem; }
+    .post-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--cf-sidebar-border); }
+    .post-meta h6 { margin: 0; font-weight: 600; color: var(--cf-text-primary); display: flex; align-items: center; gap: 0.5rem; }
+    .post-meta small { color: var(--cf-text-secondary); font-size: 0.875rem; }
+    .post-body { padding: 1rem 1.5rem; }
+    .post-content { color: var(--cf-text-primary); line-height: 1.6; margin-bottom: 1rem; }
+    .post-footer { padding: 0.75rem 1.5rem 1.25rem; border-top: 1px solid var(--cf-sidebar-border); display: flex; gap: 1rem; }
+    .post-action { background: none; border: none; color: var(--cf-text-secondary); padding: 0.5rem 1rem; border-radius: 25px; font-weight: 500; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem; }
+    .post-action:hover { background-color: rgba(30, 58, 138, 0.1); color: var(--cf-primary); transform: translateY(-1px); }
+    .post-action.liked { color: #dc2626; }
+
+    /* Comment section (same as home.html) */
+    .comment-section { background-color: var(--cf-sidebar-bg); padding: 1rem 1.5rem; border-top: 1px solid var(--cf-sidebar-border); }
+    .comment { background: var(--bs-body-bg); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--cf-sidebar-border); }
+    .comment-form { margin-top: 1rem; }
+
+    /* Media gallery */
+    .media-gallery { margin: 1rem 0; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s ease; }
+    .media-gallery:hover { transform: scale(1.02); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+    .media-gallery-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; height: 300px; }
+    .media-main { position: relative; overflow: hidden; border-radius: 12px; background: var(--cf-sidebar-bg); }
+    .media-main img, .media-main video { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+    .media-main-doc { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: var(--cf-sidebar-bg); border: 2px dashed var(--cf-sidebar-border); border-radius: 12px; color: var(--cf-text-secondary); }
+    .media-main-doc i { font-size: 3rem; margin-bottom: .5rem; color: var(--cf-primary); }
+    .media-main-doc span { font-size: .875rem; text-align: center; max-width: 80%; word-break: break-word; }
+    .media-secondary { display: flex; flex-direction: column; gap: 8px; }
+    .media-secondary-item { flex: 1; position: relative; overflow: hidden; border-radius: 8px; background: var(--cf-sidebar-bg); }
+    .media-secondary-item img, .media-secondary-item video { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+    .media-secondary-doc { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: var(--cf-sidebar-bg); border: 2px dashed var(--cf-sidebar-border); border-radius: 8px; color: var(--cf-text-secondary); }
+    .media-secondary-doc i { font-size: 1.5rem; color: var(--cf-primary); }
+    .media-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.6); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 600; backdrop-filter: blur(4px); border-radius: 12px; }
+    .media-count { background: rgba(0,0,0,.8); color: #fff; padding: .5rem 1rem; border-radius: 20px; font-size: 1rem; font-weight: 600; }
+    .media-single { margin: 1rem 0; border-radius: 12px; overflow: hidden; max-height: 400px; }
+    .media-single img, .media-single video { width: 100%; height: auto; max-height: 400px; object-fit: cover; border-radius: 12px; }
+    .media-single-doc { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--cf-sidebar-bg); border: 2px dashed var(--cf-sidebar-border); border-radius: 12px; color: var(--cf-text-secondary); }
+    .media-single-doc i { font-size: 2rem; color: var(--cf-primary); }
+
+    /* Dark mode */
+    [data-bs-theme="dark"] .post-card { background-color: #374151; color: var(--cf-text-primary); }
+    [data-bs-theme="dark"] .post-footer { border-top-color: #4b5563; }
+    [data-bs-theme="dark"] .comment-section { background-color: #1f2937; }
+    [data-bs-theme="dark"] .comment { background-color: #374151; border-color: #4b5563; }
+    [data-bs-theme="dark"] .media-main-doc, [data-bs-theme="dark"] .media-secondary-doc { background-color: #1f2937; border-color: #4b5563; }
+
+    @media (max-width: 768px) {
+        .feed-container { max-width: 100%; padding: 0 .5rem; }
+        .media-gallery-grid { grid-template-columns: 1fr; height: auto; }
+        .media-main { height: 250px; }
+        .media-secondary { flex-direction: row; }
+        .media-secondary-item { height: 120px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="feed-container">
+    <h4 class="mb-4">Saved Posts</h4>
+    {% for post in posts %}
+        <div class="post-card" data-post-id="{{ post.id }}">
+            <div class="post-header">
+                {% if post.author|get_profile_image %}
+                    <img src="data:image/jpeg;base64,{{ post.author|get_profile_image|b64encode_blob }}" class="post-avatar" alt="Profile">
+                {% else %}
+                    <div class="post-avatar d-flex align-items-center justify-content-center bg-secondary text-white">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                {% endif %}
+                <div class="post-meta">
+                    <h6>{{ post.author.get_full_name|default:post.author.email }}</h6>
+                    <small class="text-muted">{{ post.created_at|timesince }} ago</small>
+                </div>
+            </div>
+            <div class="post-body">
+                {% if post.content %}<div class="post-content"><p>{{ post.content }}</p></div>{% endif %}
+                {% if post.media_files.exists %}
+                    {% with media_count=post.media_files.count %}
+                        {% if media_count == 1 %}
+                            {% with media=post.media_files.first %}
+                                <div class="media-single" onclick="openMediaGallery('{{ post.id }}')">
+                                    {% if media.media_type == 'image' %}
+                                        <img src="data:{{ media.file_type }};base64,{{ media.file_data|b64encode_blob }}" alt="{{ media.file_name }}" class="img-fluid"
+                                             data-file-type="{{ media.file_type }}" data-file-name="{{ media.file_name }}" data-file-data="{{ media.file_data|b64encode_blob }}">
+                                    {% elif media.media_type == 'video' %}
+                                        <video controls class="img-fluid" data-file-type="{{ media.file_type }}" data-file-name="{{ media.file_name }}" data-file-data="{{ media.file_data|b64encode_blob }}">
+                                            <source src="data:{{ media.file_type }};base64,{{ media.file_data|b64encode_blob }}" type="{{ media.file_type }}">
+                                        </video>
+                                    {% else %}
+                                        <div class="media-single-doc" data-file-type="{{ media.file_type }}" data-file-name="{{ media.file_name }}" data-file-data="{{ media.file_data|b64encode_blob }}">
+                                            <i class="bi bi-file-earmark"></i><span>{{ media.file_name }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endwith %}
+                        {% else %}
+                            <div class="media-gallery" onclick="openMediaGallery('{{ post.id }}')">
+                                <div class="media-gallery-grid">
+                                    <div class="media-main">
+                                        {% with m=post.media_files.first %}
+                                            {% if m.media_type == 'image' %}
+                                                <img src="data:{{ m.file_type }};base64,{{ m.file_data|b64encode_blob }}" alt="{{ m.file_name }}"
+                                                     data-file-type="{{ m.file_type }}" data-file-name="{{ m.file_name }}" data-file-data="{{ m.file_data|b64encode_blob }}">
+                                            {% elif m.media_type == 'video' %}
+                                                <video muted data-file-type="{{ m.file_type }}" data-file-name="{{ m.file_name }}" data-file-data="{{ m.file_data|b64encode_blob }}">
+                                                    <source src="data:{{ m.file_type }};base64,{{ m.file_data|b64encode_blob }}" type="{{ m.file_type }}">
+                                                </video>
+                                            {% else %}
+                                                <div class="media-main-doc" data-file-type="{{ m.file_type }}" data-file-name="{{ m.file_name }}" data-file-data="{{ m.file_data|b64encode_blob }}">
+                                                    <i class="bi bi-file-earmark"></i><span>{{ m.file_name }}</span>
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
+                                        <div class="media-overlay"><div class="media-count">+{{ media_count }}</div></div>
+                                    </div>
+                                    <div class="media-secondary">
+                                        {% for media in post.media_files.all|slice:"1:3" %}
+                                            <div class="media-secondary-item">
+                                                {% if media.media_type == 'image' %}
+                                                    <img src="data:{{ media.file_type }};base64,{{ media.file_data|b64encode_blob }}" alt="{{ media.file_name }}"
+                                                         data-file-type="{{ media.file_type }}" data-file-name="{{ media.file_name }}" data-file-data="{{ media.file_data|b64encode_blob }}">
+                                                {% elif media.media_type == 'video' %}
+                                                    <video muted data-file-type="{{ media.file_type }}" data-file-name="{{ media.file_name }}" data-file-data="{{ media.file_data|b64encode_blob }}">
+                                                        <source src="data:{{ media.file_type }};base64,{{ media.file_data|b64encode_blob }}" type="{{ media.file_type }}">
+                                                    </video>
+                                                {% else %}
+                                                    <div class="media-secondary-doc" data-file-type="{{ media.file_type }}" data-file-name="{{ media.file_name }}" data-file-data="{{ media.file_data|b64encode_blob }}">
+                                                        <i class="bi bi-file-earmark"></i>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        <!-- Hidden all media for gallery -->
+                        <div class="all-media-files" style="display:none">
+                            {% for media in post.media_files.all %}
+                                {% if media.media_type == 'image' %}
+                                    <img src="data:{{ media.file_type }};base64,{{ media.file_data|b64encode_blob }}" alt="{{ media.file_name }}"
+                                         data-file-type="{{ media.file_type }}" data-file-name="{{ media.file_name }}" data-file-data="{{ media.file_data|b64encode_blob }}">
+                                {% elif media.media_type == 'video' %}
+                                    <video muted data-file-type="{{ media.file_type }}" data-file-name="{{ media.file_name }}" data-file-data="{{ media.file_data|b64encode_blob }}">
+                                        <source src="data:{{ media.file_type }};base64,{{ media.file_data|b64encode_blob }}" type="{{ media.file_type }}">
+                                    </video>
+                                {% else %}
+                                    <div class="media-main-doc" data-file-type="{{ media.file_type }}" data-file-name="{{ media.file_name }}" data-file-data="{{ media.file_data|b64encode_blob }}">
+                                        <i class="bi bi-file-earmark"></i><span>{{ media.file_name }}</span>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endwith %}
+                {% endif %}
+            </div>
+            <div class="post-footer">
+                <button class="post-action like-btn {% if user in post.likes.all %}liked{% endif %}" data-post-id="{{ post.id }}">
+                    <i class="bi {% if user in post.likes.all %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                    <span class="likes-count">{{ post.likes.count }}</span>
+                </button>
+                <button class="post-action" data-bs-toggle="collapse" data-bs-target="#comments-{{ post.id }}">
+                    <i class="bi bi-chat"></i>
+                    <span>{{ post.comments.count }}</span>
+                </button>
+                <button class="post-action save-btn" data-post-id="{{ post.id }}" title="Save">
+                    <i class="fa fa-bookmark" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="collapse comment-section" id="comments-{{ post.id }}">
+                <div class="comments-container mb-3" style="max-height: 300px; overflow-y: auto;">
+                    {% for comment in post.comments.all %}
+                        <div class="comment" id="comment-{{ comment.id }}">
+                            <div class="d-flex align-items-center mb-2">
+                                {% if comment.author|get_profile_image %}
+                                    <img src="data:image/jpeg;base64,{{ comment.author|get_profile_image|b64encode_blob }}" alt="{{ comment.author.get_full_name|default:comment.author.email }}" class="rounded-circle me-2" width="32" height="32">
+                                {% else %}
+                                    <div class="rounded-circle me-2 bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;"><i class="bi bi-person-fill" style="font-size: 0.875rem;"></i></div>
+                                {% endif %}
+                                <strong>{{ comment.author.get_full_name|default:comment.author.email }}</strong>
+                                <small class="text-muted ms-2">{{ comment.created_at|timesince }} ago</small>
+                                {% if comment.author == user %}
+                                    <div class="ms-auto d-flex align-items-center gap-1">
+                                        <button class="comment-action-btn edit edit-comment-btn" title="Edit" data-comment-id="{{ comment.id }}"><i class="fa fa-pencil-square-o" aria-hidden="true"></i></button>
+                                        <button class="comment-action-btn delete delete-comment-btn" title="Delete" data-comment-id="{{ comment.id }}"><i class="fa fa-trash" aria-hidden="true"></i></button>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <p class="mb-0">{{ comment.content }}</p>
+                        </div>
+                    {% empty %}
+                        <div class="text-muted">No comments yet.</div>
+                    {% endfor %}
+                </div>
+                <form class="comment-form" data-post-id="{{ post.id }}">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="text" name="content" class="form-control" placeholder="Write a comment..." maxlength="500" required>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% empty %}
+        <div class="text-center text-muted">You have no saved posts.</div>
+    {% endfor %}
+</div>
+{% endblock %}

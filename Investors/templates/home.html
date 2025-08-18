@@ -12,6 +12,11 @@
         margin: 0 auto;
         padding: 0;
     }
+    /* On desktop with right sidebar, keep posts from going under it */
+    @media (min-width: 1200px) {
+        body:not(.rs-collapsed) .feed-container { max-width: calc(100% - 320px); }
+        body.rs-collapsed .feed-container { max-width: 100%; }
+    }
 
     .post-form-card {
         background: var(--bs-body-bg);
@@ -369,7 +374,25 @@
         top: 76px;
         height: calc(100vh - 76px);
         padding: 2rem 1rem;
+        transition: transform 0.25s ease, opacity 0.25s ease;
     }
+    .right-sidebar.collapsed { transform: translateX(110%); opacity: 0; pointer-events: none; }
+
+    /* Toggle button */
+    .right-sidebar-toggle {
+        position: fixed;
+        right: 20px;
+        top: 120px;
+        z-index: 1055;
+        border-radius: 999px;
+        padding: 0.5rem 0.6rem;
+        background: var(--bs-body-bg);
+        border: 1px solid var(--cf-sidebar-border);
+        color: var(--cf-text-secondary);
+        box-shadow: var(--cf-card-shadow);
+    }
+    .right-sidebar-toggle:hover { color: var(--cf-primary); }
+    @media (max-width: 1199.98px) { .right-sidebar-toggle { display: none; } }
 
     .widget-card {
         background: var(--bs-body-bg);
@@ -411,7 +434,13 @@
 {% endblock %}
 
 {% block content %}
+<!-- Toggle button for right sidebar (desktop only) -->
+<button id="rightSidebarToggle" class="right-sidebar-toggle" title="Toggle sidebar">
+    <i class="bi bi-chevron-double-left"></i>
+</button>
+
 <!-- Post Creation Form -->
+<div class="content-container">
 <div class="feed-container">
     <!-- Posts Feed -->
     {% for post in posts %}
@@ -576,6 +605,13 @@
                 <i class="bi bi-chat"></i>
                 <span>{{ post.comments.count }}</span>
             </button>
+            <button class="post-action save-btn" data-post-id="{{ post.id }}" title="Save">
+                {% if user in post.saved_by.all %}
+                    <i class="fa fa-bookmark" aria-hidden="true"></i>
+                {% else %}
+                    <i class="fa fa-bookmark-o" aria-hidden="true"></i>
+                {% endif %}
+            </button>
         </div>
 
         <!-- Comments Section -->
@@ -630,9 +666,10 @@
     </div>
     {% endfor %}
 </div>
+</div>
 
 <!-- Right Sidebar (Desktop only) -->
-<aside class="right-sidebar d-none d-xl-block">
+<aside class="right-sidebar d-none d-xl-block collapsed">
     <!-- Suggestions Widget -->
     <div class="widget-card">
         <div class="widget-header">

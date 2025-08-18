@@ -37,6 +37,18 @@
             }
         });
 
+        // Right sidebar toggle (desktop)
+        const rsToggle = document.getElementById('rightSidebarToggle');
+        const rightSidebar = document.querySelector('.right-sidebar');
+        // Start collapsed by default
+        document.body.classList.add('rs-collapsed');
+        rsToggle?.addEventListener('click', function() {
+            const isCollapsed = rightSidebar?.classList.toggle('collapsed');
+            document.body.classList.toggle('rs-collapsed', !!isCollapsed);
+            const icon = rsToggle.querySelector('i');
+            if (icon) icon.className = isCollapsed ? 'bi bi-chevron-double-left' : 'bi bi-chevron-double-right';
+        });
+
         // Post Actions (Like, Comment, Share)
         document.querySelectorAll('.post-action').forEach(button => {
             button.addEventListener('click', function(e) {
@@ -931,4 +943,37 @@
     // Make openMediaGallery function globally available
     window.openMediaGallery = openMediaGallery;
     window.downloadDocument = downloadDocument;
+
+    // Saved posts toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.save-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const postId = this.dataset.postId;
+                const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                fetch(`/investor/toggle-save/${postId}/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrf }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const icon = this.querySelector('i');
+                        if (data.saved) {
+                            icon.className = 'fa fa-bookmark';
+                            showNotification('Post saved.', 'success');
+                        } else {
+                            icon.className = 'fa fa-bookmark-o';
+                            showNotification('Post unsaved.', 'info');
+                            // If on saved posts page, remove card
+                            const container = this.closest('[data-post-id]');
+                            if (document.body && window.location.pathname.includes('/investor/saved-posts/')) {
+                                if (container) container.remove();
+                            }
+                        }
+                    }
+                })
+                .catch(() => showNotification('Failed to toggle save.', 'danger'));
+            });
+        });
+    });
 </script>

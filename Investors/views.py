@@ -354,4 +354,27 @@ def delete_comment(request, comment_id):
 	comment.delete()
 	return JsonResponse({'success': True})
 
+@login_required
+@require_POST
+def toggle_save(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    user = request.user
+    if post.saved_by.filter(id=user.id).exists():
+        post.saved_by.remove(user)
+        return JsonResponse({'success': True, 'saved': False})
+    else:
+        post.saved_by.add(user)
+        return JsonResponse({'success': True, 'saved': True})
+
+@login_required
+def saved_posts(request):
+    posts = Post.objects.select_related(
+        'author', 'author__entrepreneur_profile', 'author__investor_profile'
+    ).prefetch_related('media_files', 'likes', 'comments').filter(saved_by=request.user).order_by('-created_at')
+    context = {
+        'posts': posts,
+        'saved_page': True,
+    }
+    return render(request, 'saved_posts.html', context)
+
 

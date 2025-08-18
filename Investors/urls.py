@@ -19,3 +19,9 @@ urlpatterns += [
 	path('edit-comment/<int:comment_id>/', views.edit_comment, name='edit_comment'),
 	path('delete-comment/<int:comment_id>/', views.delete_comment, name='delete_comment'),
 ]
+
+# Saved posts
+urlpatterns += [
+	path('toggle-save/<int:post_id>/', views.toggle_save, name='toggle_save'),
+	path('saved-posts/', views.saved_posts, name='saved_posts'),
+]
