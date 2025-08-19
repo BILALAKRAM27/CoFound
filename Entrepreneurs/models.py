@@ -1,6 +1,7 @@
 from django.db import models
 from django.db.models import Q
 from django.contrib.auth.models import AbstractUser, Group, Permission
+from rest_framework import serializers
 
 # Choice constants for EntrepreneurProfile
 COMPANY_STAGES = [
@@ -70,6 +71,11 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    MESSAGE_PRIVACY_CHOICES = [
+        ('public', 'Public'),
+        ('private', 'Private'),
+    ]
+    message_privacy = models.CharField(max_length=10, choices=MESSAGE_PRIVACY_CHOICES, default='public')
     created_at = models.DateTimeField(auto_now_add=True)
     last_active = models.DateTimeField(auto_now=True)
 
@@ -257,11 +263,23 @@ class CollaborationRequest(models.Model):
 
 
 class Message(models.Model):
+    MESSAGE_TYPES = [
+        ('text', 'Text'),
+        ('image', 'Image'),
+        ('video', 'Video'),
+        ('document', 'Document'),
+    ]
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
-    content = models.TextField()
+    content = models.TextField(blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
+    message_type = models.CharField(max_length=10, choices=MESSAGE_TYPES, default='text')
+    # Attachment fields (nullable)
+    file_name = models.CharField(max_length=255, blank=True, null=True)
+    file_type = models.CharField(max_length=100, blank=True, null=True)
+    file_data = models.BinaryField(editable=True, null=True, blank=True)
+    file_size = models.PositiveIntegerField(default=0, blank=True, null=True)
 
     class Meta:
         ordering = ['timestamp']
@@ -377,3 +395,22 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.author.get_full_name() or self.author.email} on {self.post_id}"
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
+    receiver_name = serializers.CharField(source='receiver.get_full_name', read_only=True)
+    file_base64 = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Message
+        fields = [
+            'id', 'sender', 'sender_name', 'receiver', 'receiver_name', 'content', 'timestamp',
+            'is_read', 'message_type', 'file_name', 'file_type', 'file_size', 'file_base64'
+        ]
+
+    def get_file_base64(self, obj):
+        if obj.file_data:
+            import base64
+            return base64.b64encode(obj.file_data).decode('utf-8')
+        return None

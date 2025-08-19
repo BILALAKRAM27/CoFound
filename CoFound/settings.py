@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'Entrepreneurs',
     'Investors',
+    'rest_framework',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -74,6 +76,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'CoFound.wsgi.application'
+
+ASGI_APPLICATION = 'CoFound.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 
 # Database

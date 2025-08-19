@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+{% load profile_filters %}
+
+{% block title %}Messages - CoFound{% endblock %}
+
+{% block styles %}
+<style>
+  .chat-container { display: grid; grid-template-columns: 320px 1fr; height: calc(100vh - 120px); gap: 1rem; }
+  .chat-sidebar { background: var(--bs-body-bg); border-radius: 12px; box-shadow: var(--cf-card-shadow); padding: .75rem; display: flex; flex-direction: column; }
+  .chat-main { background: var(--bs-body-bg); border-radius: 12px; box-shadow: var(--cf-card-shadow); display: flex; flex-direction: column; height: 100%; position: relative; }
+  .search-input-chat { border-radius: 8px; }
+  .recents { overflow: auto; margin-top: .75rem; }
+  .recent-item { display: flex; align-items: center; gap: .75rem; padding: .6rem .7rem; border-radius: 10px; cursor: pointer; transition: background 0.15s; position: relative; }
+  .recent-item.active, .recent-item:active, .recent-item.selected { background: #e0e7ff; }
+  .recent-item:hover { background: #f1f5f9; }
+  .recent-item .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #f3f4f6; }
+  .recent-item .unread-badge { background: #2563eb; color: #fff; font-size: 12px; border-radius: 12px; padding: 2px 7px; position: absolute; right: 12px; top: 12px; }
+  .chat-header { padding: .75rem 1rem; border-bottom: 1px solid var(--cf-sidebar-border); display:flex; align-items:center; gap:.75rem; flex-shrink: 0; }
+  .chat-messages { flex:1; overflow-y: auto; padding: 1rem; display:flex; flex-direction:column; gap:.5rem; min-height: 0; }
+  .bubble { max-width: 70%; padding:.5rem .75rem; border-radius: 16px; position: relative; word-wrap: break-word; }
+  .bubble.sender { align-self: flex-end; background: #2563eb; color: #fff; margin-left: auto; }
+  .bubble.receiver { align-self: flex-start; background: var(--bs-secondary-bg); color: var(--bs-body-color); margin-right: auto; }
+  .chat-input { border-top:1px solid var(--cf-sidebar-border); padding:.5rem; display:flex; gap:.5rem; flex-shrink: 0; background: var(--bs-body-bg); position: sticky; bottom: 0; z-index: 2; }
+  .chat-header-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #f3f4f6; margin-right: 0.75rem; }
+  .chat-header .avatar-placeholder { font-size: 1.5rem; color: #b0b0b0; }
+  .chat-input-preview { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .chat-input-preview img, .chat-input-preview video { max-width: 80px; max-height: 80px; border-radius: 8px; }
+  .chat-input-preview .preview-cancel { cursor: pointer; color: #dc2626; font-size: 1.2rem; margin-left: 4px; }
+  .message-status { position: absolute; bottom: -15px; right: 0; font-size: 12px; }
+  .bubble.sender .message-status { color: #2563eb; }
+  .bubble.receiver .message-status { color: var(--bs-secondary-color); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-container">
+  <div class="chat-container">
+    <div class="chat-sidebar">
+      <div class="input-group">
+        <input id="chatSearch" type="text" class="form-control search-input-chat" placeholder="Search users to message...">
+        <button class="btn btn-outline-secondary" id="chatSearchBtn"><i class="bi bi-search"></i></button>
+      </div>
+      <div id="searchResults" class="recents mt-2" style="display:none;"></div>
+      <div class="mt-2 small text-muted">Recent</div>
+      <div id="recentList" class="recents">
+        {% for u in recents %}
+        <div class="recent-item" data-user-id="{{ u.id }}">
+          {% if u|get_profile_image %}
+            <img src="data:image/jpeg;base64,{{ u|get_profile_image|b64encode_blob }}" class="avatar">
+          {% else %}<i class="bi bi-person-circle fs-4 avatar"></i>{% endif %}
+          <div class="flex-grow-1">
+            <div class="fw-semibold">{{ u.get_full_name|default:u.email }}</div>
+            <div class="small text-muted">{{ u.role|title }}</div>
+          </div>
+          <span class="unread-badge" style="display:none;">0</span>
+        </div>
+        {% empty %}
+        <div class="text-muted">No recent chats.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="chat-main">
+      <div class="chat-header" id="chatHeader">
+        <div class="chat-header-avatar" id="chatPeerAvatar"></div>
+        <div>
+          <div id="chatPeerName" class="fw-semibold"></div>
+          <div id="chatPeerMeta" class="small text-muted"></div>
+        </div>
+      </div>
+      <div id="chatMessages" class="chat-messages"></div>
+      <div class="chat-input">
+        <div id="chatInputPreview" class="chat-input-preview" style="display:none;"></div>
+        <input id="chatInput" type="text" class="form-control" placeholder="Type a message" autocomplete="off">
+        <input id="chatFile" type="file" style="display:none;" multiple>
+        <button id="chatAttach" class="btn btn-outline-secondary" title="Attach file"><i class="bi bi-paperclip"></i></button>
+        <button id="chatSend" class="btn btn-primary"><i class="bi bi-send"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  const searchInput = document.getElementById('chatSearch');
+  const searchBtn = document.getElementById('chatSearchBtn');
+  const results = document.getElementById('searchResults');
+  const recents = document.getElementById('recentList');
+  const messagesEl = document.getElementById('chatMessages');
+  const sendBtn = document.getElementById('chatSend');
+  const inputEl = document.getElementById('chatInput');
+  const attachBtn = document.getElementById('chatAttach');
+  const fileInput = document.getElementById('chatFile');
+  const chatHeader = document.getElementById('chatHeader');
+  const chatInputPreview = document.getElementById('chatInputPreview');
+  let currentPeerId = null;
+  let currentPeerData = null;
+  let socket = null;
+  let unreadIds = [];
+  let previewFile = null;
+  let previewType = null;
+  let previewUrl = null;
+  let unreadCounts = {}; // Track unread counts per user
+  let recentUsers = Array.from(recents.querySelectorAll('.recent-item')).map(item => ({
+    id: item.dataset.userId,
+    name: item.querySelector('.fw-semibold').textContent.trim().toLowerCase(),
+    el: item
+  }));
+  const currentUserId = document.querySelector('meta[name="current-user-id"]').content;
+  window.currentUserId = currentUserId;
+  let socketListeners = [];
+
+  // --- Sidebar: Unread badge logic ---
+  function setUnreadBadge(userId, count) {
+    const item = recents.querySelector(`.recent-item[data-user-id="${userId}"]`);
+    if (item) {
+      const badge = item.querySelector('.unread-badge');
+      unreadCounts[userId] = count;
+      if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = '';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  }
+
+  // --- Update unread count when receiving messages ---
+  function updateUnreadCount(senderId, increment = true) {
+    if (senderId == currentPeerId) {
+      setUnreadBadge(senderId, 0);
+    } else {
+      const currentCount = unreadCounts[senderId] || 0;
+      setUnreadBadge(senderId, increment ? currentCount + 1 : currentCount);
+    }
+  }
+
+  // --- Sidebar: Contact selection ---
+  function selectContact(userId) {
+    Array.from(recents.querySelectorAll('.recent-item')).forEach(item => {
+      item.classList.toggle('selected', item.dataset.userId == userId);
+    });
+  }
+
+  // --- Sidebar: Dynamic search ---
+  searchInput.addEventListener('input', function() {
+    const q = this.value.trim().toLowerCase();
+    recentUsers.forEach(u => {
+      u.el.style.display = (!q || u.name.includes(q)) ? '' : 'none';
+    });
+    if (q.length > 0) {
+      fetch(`/investor/messages/search/?q=${encodeURIComponent(q)}`)
+        .then(r=>r.json())
+        .then(d=> renderSearch(d.results || []));
+    } else {
+      results.style.display = 'none';
+    }
+  });
+
+  // --- Sidebar: Click to open chat ---
+  recents.addEventListener('click', e => {
+    const item = e.target.closest('.recent-item');
+    if (!item) return;
+    openChat(item.dataset.userId, {
+      name: item.querySelector('.fw-semibold').textContent,
+      avatar: item.querySelector('img') ? item.querySelector('img').src : null,
+      role: item.querySelector('.small.text-muted').textContent
+    });
+    selectContact(item.dataset.userId);
+  });
+
+  // --- Search results: Click to open chat ---
+  results.addEventListener('click', e => {
+    const item = e.target.closest('.recent-item');
+    if (!item) return;
+    openChat(item.dataset.userId, {
+      name: item.querySelector('.fw-semibold').textContent,
+      avatar: item.querySelector('img') ? item.querySelector('img').src : null,
+      role: item.querySelector('.small.text-muted').textContent
+    });
+    selectContact(item.dataset.userId);
+    results.style.display = 'none';
+    searchInput.value = '';
+  });
+
+  // --- Chat open logic ---
+  function cleanupSocket() {
+    if (socket) {
+      socket.onopen = null;
+      socket.onmessage = null;
+      socket.onclose = null;
+      socket.close();
+      socket = null;
+    }
+    socketListeners.forEach(fn => fn && fn());
+    socketListeners = [];
+  }
+
+  function openChat(peerId, peerData) {
+    if (currentPeerId === peerId) return;
+    currentPeerId = peerId;
+    currentPeerData = peerData;
+    unreadIds = [];
+    // Clear previous messages
+    messagesEl.innerHTML = '';
+    // Update chat header
+    chatHeader.innerHTML = `
+      <div class="chat-header-avatar">
+        ${peerData.avatar ? `<img src="${peerData.avatar}" alt="${peerData.name}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<div class="avatar-placeholder">👤</div>'}
+      </div>
+      <div>
+        <div class="fw-semibold">${peerData.name}</div>
+        <small class="text-muted">${peerData.role}</small>
+      </div>
+    `;
+    // Highlight selected contact
+    recents.querySelectorAll('.recent-item').forEach(item => {
+      item.classList.remove('selected');
+      if (item.dataset.userId == peerId) item.classList.add('selected');
+    });
+    // Clean up previous socket
+    cleanupSocket();
+    // Connect WebSocket
+    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    socket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${peerId}/`);
+    socket.onopen = function() {
+      // No-op
+    };
+    socket.onmessage = function(e){
+      const data = JSON.parse(e.data);
+      if (data.type === 'chat_message') {
+        const existingMessage = messagesEl.querySelector(`[data-message-id="${data.message.id}"]`);
+        if (!existingMessage) {
+          renderMessage(data.message);
+          if (String(data.message.sender) !== String(currentUserId)) {
+            if (String(data.message.sender) === String(peerId)) {
+              setUnreadBadge(peerId, 0);
+            } else {
+              updateUnreadCount(data.message.sender);
+            }
+          }
+        }
+      } else if (data.type === 'read_receipt') {
+        updateReadReceipts(data.message_ids, data.reader_id);
+      }
+    };
+    socket.onclose = function(){ socket = null; };
+    // Fetch existing messages
+    fetch(`/entrepreneur/messages/${peerId}/`)
+      .then(r=>r.json())
+      .then(d => {
+        (d.messages||[]).forEach(m => {
+          renderMessage(m);
+          if (!m.is_read && String(m.sender) !== String(currentUserId)) unreadIds.push(m.id);
+        });
+        if (unreadIds.length && socket) {
+          socket.send(JSON.stringify({action:'mark_read', message_ids: unreadIds}));
+        }
+        setUnreadBadge(peerId, 0);
+        Object.keys(unreadCounts).forEach(userId => {
+          if (userId != peerId && unreadCounts[userId] > 0) {
+            setUnreadBadge(userId, unreadCounts[userId]);
+          }
+        });
+        setTimeout(()=>{ messagesEl.scrollTop = messagesEl.scrollHeight; }, 100);
+      });
+    clearPreview();
+  }
+
+  // --- Media preview logic ---
+  function showPreview(file) {
+    previewFile = file;
+    previewType = null;
+    previewUrl = null;
+    chatInputPreview.innerHTML = '';
+    if (!file) { chatInputPreview.style.display = 'none'; return; }
+    let type = 'document';
+    if (file.type.startsWith('image/')) type = 'image';
+    else if (file.type.startsWith('video/')) type = 'video';
+    previewType = type;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      previewUrl = e.target.result;
+      let html = '';
+      if (type === 'image') {
+        html = `<img src="${previewUrl}">`;
+      } else if (type === 'video') {
+        html = `<video src="${previewUrl}" controls></video>`;
+      } else {
+        html = `<i class="bi bi-file-earmark"></i> ${file.name}`;
+      }
+      html += `<span class="preview-cancel" title="Remove">&times;</span>`;
+      chatInputPreview.innerHTML = html;
+      chatInputPreview.style.display = '';
+      chatInputPreview.querySelector('.preview-cancel').onclick = clearPreview;
+    };
+    reader.readAsDataURL(file);
+  }
+  function clearPreview() {
+    previewFile = null; previewType = null; previewUrl = null;
+    chatInputPreview.innerHTML = '';
+    chatInputPreview.style.display = 'none';
+    fileInput.value = '';
+  }
+  fileInput.addEventListener('change', function(){
+    if (fileInput.files.length) showPreview(fileInput.files[0]);
+    else clearPreview();
+  });
+
+  // --- Chat message rendering ---
+  function renderMessage(m) {
+    if (m.id && messagesEl.querySelector(`[data-message-id="${m.id}"]`)) return;
+    const bubble = document.createElement('div');
+    const isMe = String(m.sender) === String(currentUserId);
+    bubble.className = 'bubble ' + (isMe ? 'sender msg--out' : 'receiver msg--in');
+    if (m.id) {
+      bubble.setAttribute('data-message-id', m.id);
+    }
+    if (m.message_type === 'image' && m.file_base64) {
+      bubble.innerHTML = `<img src="data:${m.file_type};base64,${m.file_base64}" style="max-width:200px;max-height:200px;display:block;">`;
+    } else if (m.message_type === 'video' && m.file_base64) {
+      bubble.innerHTML = `<video controls style="max-width:200px;max-height:200px;"><source src="data:${m.file_type};base64,${m.file_base64}"></video>`;
+    } else if (m.message_type === 'document' && m.file_name) {
+      bubble.innerHTML = `<a href="data:${m.file_type};base64,${m.file_base64}" download="${m.file_name}"><i class="bi bi-file-earmark"></i> ${m.file_name}</a>`;
+    } else {
+      bubble.textContent = m.content;
+    }
+    if (isMe) {
+      const statusDiv = document.createElement('div');
+      statusDiv.className = 'message-status';
+      if (m.is_read) {
+        statusDiv.innerHTML = '<i class="bi bi-check2-all" style="color:#2563eb"></i> Read';
+      } else {
+        statusDiv.innerHTML = '<i class="bi bi-check"></i> Delivered';
+      }
+      bubble.appendChild(statusDiv);
+    }
+    messagesEl.appendChild(bubble);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function updateReadReceipts(ids, readerId) {
+    if (String(readerId) === String(currentUserId)) return;
+    const myMessages = messagesEl.querySelectorAll('.bubble.sender');
+    myMessages.forEach(bubble => {
+      const statusDiv = bubble.querySelector('.message-status');
+      if (statusDiv) {
+        statusDiv.innerHTML = '<i class="bi bi-check2-all" style="color:#2563eb"></i> Read';
+      }
+    });
+  }
+
+  sendBtn.addEventListener('click', () => {
+    if (!currentPeerId || !socket) return;
+    const text = inputEl.value.trim();
+    if (previewFile) {
+      const file = previewFile;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64 = e.target.result.split(',')[1];
+        const messageData = {
+          action: 'send_message',
+          content: '',
+          message_type: previewType,
+          file_data: base64,
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size
+        };
+        socket.send(JSON.stringify(messageData));
+        clearPreview();
+      };
+      reader.readAsDataURL(file);
+    } else if (text) {
+      socket.send(JSON.stringify({ action: 'send_message', content: text, message_type: 'text' }));
+      inputEl.value='';
+    }
+  });
+  attachBtn.addEventListener('click', () => fileInput.click());
+
+  // Clean up socket on page unload
+  window.addEventListener('beforeunload', cleanupSocket);
+})();
+</script>
+{% endblock %}

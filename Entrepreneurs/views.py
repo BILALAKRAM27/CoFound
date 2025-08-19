@@ -18,6 +18,14 @@ import base64
 from Investors.models import InvestorProfile
 from django.db.models import Q
 from django.db import transaction
+from .models import Message, MessageSerializer
+from .forms import MessageForm
+from django.http import JsonResponse, HttpResponseForbidden
+from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Q
+from django.contrib.auth.decorators import login_required
+
+# --- Django Channels Consumer for Messaging (placeholder, to be moved to consumers.py) ---
 
 
 def entrepreneur_register(request):
@@ -374,4 +382,53 @@ def toggle_connection(request, target_id):
         return JsonResponse({'success': True, 'connected': False})
     Favorite.objects.create(user=request.user, target_user=target)
     return JsonResponse({'success': True, 'connected': True})
+
+@login_required
+@csrf_exempt
+def send_message(request):
+    if request.method == 'POST':
+        form = MessageForm(request.POST, request.FILES)
+        if form.is_valid():
+            receiver = form.cleaned_data['receiver']
+            # Privacy enforcement
+            if receiver.message_privacy == 'private':
+                # Only allow if mutual connection (friend)
+                is_friend = (request.user.favorited_by.filter(user=receiver).exists() and
+                             request.user.favorites.filter(target_user=receiver).exists())
+                if not is_friend:
+                    return HttpResponseForbidden('User only accepts messages from friends.')
+            msg = form.save(commit=False)
+            msg.sender = request.user
+            # Handle file upload
+            uploaded_file = request.FILES.get('file')
+            if uploaded_file:
+                msg.file_name = uploaded_file.name
+                msg.file_type = uploaded_file.content_type
+                msg.file_data = uploaded_file.read()
+                msg.file_size = uploaded_file.size
+            msg.save()
+            serializer = MessageSerializer(msg)
+            # TODO: Trigger WebSocket event for real-time update
+            return JsonResponse({'success': True, 'message': serializer.data})
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+@login_required
+def get_messages(request, user_id):
+    # Enforce privacy: only show messages if allowed
+    other = User.objects.get(id=user_id)
+    if other.message_privacy == 'private':
+        is_friend = (request.user.favorited_by.filter(user=other).exists() and
+                     request.user.favorites.filter(target_user=other).exists())
+        if not is_friend:
+            return HttpResponseForbidden('User only allows messages from friends.')
+    qs = Message.objects.filter(
+        (Q(sender=request.user) & Q(receiver=other)) |
+        (Q(sender=other) & Q(receiver=request.user))
+    ).order_by('timestamp')
+    # Mark unread messages as read
+    qs.filter(receiver=request.user, is_read=False).update(is_read=True)
+    serializer = MessageSerializer(qs, many=True)
+    return JsonResponse({'messages': serializer.data})
 

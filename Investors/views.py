@@ -18,6 +18,79 @@ from django.shortcuts import get_object_or_404
 import base64
 from django.db import transaction
 from django.db.models import Q
+from django.forms import ModelForm
+
+
+class MessageSettingsForm(ModelForm):
+    class Meta:
+        model = User
+        fields = ['message_privacy']
+
+@login_required
+def message_settings(request):
+    if request.method == 'POST':
+        form = MessageSettingsForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save(update_fields=['message_privacy'])
+            return redirect('investors:messages')
+    else:
+        form = MessageSettingsForm(instance=request.user)
+    return render(request, 'messages/settings.html', { 'form': form })
+
+@login_required
+def messages_page(request):
+    # Recent chats = users you've exchanged messages with OR you follow
+    recent_users = set()
+    # Favorites
+    for f in Favorite.objects.filter(user=request.user).select_related('target_user'):
+        recent_users.add(f.target_user)
+    # People who follow you (optional to show)
+    for f in Favorite.objects.filter(target_user=request.user).select_related('user'):
+        recent_users.add(f.user)
+    # Limit and sort
+    recent_list = sorted(recent_users, key=lambda u: (u.get_full_name() or u.email))[:25]
+    return render(request, 'messages/index.html', { 'recents': recent_list })
+
+@login_required
+def message_search(request):
+    """Search public users or friends if private; enforce privacy server-side."""
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return JsonResponse({ 'results': [] })
+    # Who is allowed to appear?
+    # public users OR private users followed by current user (friend)
+    allowed_ids = set(User.objects.filter(message_privacy='public').values_list('id', flat=True))
+    # friends: targets you follow
+    friend_ids = set(Favorite.objects.filter(user=request.user).values_list('target_user_id', flat=True))
+    # also people who follow you (optional):
+    follower_ids = set(Favorite.objects.filter(target_user=request.user).values_list('user_id', flat=True))
+    allowed_ids.update(friend_ids)
+    allowed_ids.update(follower_ids)
+    allowed_ids.discard(request.user.id)
+
+    qs = User.objects.filter(id__in=list(allowed_ids)).filter(
+        Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q)
+    ).select_related('entrepreneur_profile', 'investor_profile')[:20]
+
+    def img64(u):
+        try:
+            if hasattr(u, 'entrepreneur_profile') and u.entrepreneur_profile.image:
+                import base64
+                return base64.b64encode(u.entrepreneur_profile.image).decode('utf-8')
+            if hasattr(u, 'investor_profile') and u.investor_profile.image:
+                import base64
+                return base64.b64encode(u.investor_profile.image).decode('utf-8')
+        except Exception:
+            return ''
+        return ''
+
+    results = [{
+        'id': u.id,
+        'name': u.get_full_name() or u.email,
+        'role': u.role,
+        'avatar': img64(u)
+    } for u in qs]
+    return JsonResponse({ 'results': results })
 
 
 def investor_register(request):

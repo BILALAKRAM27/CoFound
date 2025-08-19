@@ -306,9 +306,13 @@ class CollaborationRequestForm(forms.ModelForm):
 
 
 class MessageForm(forms.ModelForm):
+    # Add file field for attachments (optional)
+    file = forms.FileField(required=False, widget=forms.ClearableFileInput(attrs={'class': 'form-control'}))
+    message_type = forms.ChoiceField(choices=Message.MESSAGE_TYPES, initial='text', widget=forms.Select(attrs={'class': 'form-select'}))
+
     class Meta:
         model = Message
-        fields = ['receiver', 'content']
+        fields = ['receiver', 'content', 'file', 'message_type']
         widgets = {
             'receiver': forms.Select(attrs={
                 'class': 'form-select'

@@ -19,6 +19,9 @@ urlpatterns = [
     path('toggle-connect/<int:target_id>/', views.toggle_connection, name='toggle_connect'),
     path('my-network/', views.my_network, name='my_network'),
     path('network-data/', views.network_data, name='network_data'),
+    path('messages/', views.messages_page, name='messages'),
+    path('messages/settings/', views.message_settings, name='message_settings'),
+    path('messages/search/', views.message_search, name='message_search'),
 ]
 
 # Comments
