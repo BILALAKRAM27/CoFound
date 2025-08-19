@@ -69,16 +69,29 @@
     {% for post in posts %}
         <div class="post-card" data-post-id="{{ post.id }}">
             <div class="post-header">
-                {% if post.author|get_profile_image %}
-                    <img src="data:image/jpeg;base64,{{ post.author|get_profile_image|b64encode_blob }}" class="post-avatar" alt="Profile">
+                {% if post.author.role == 'entrepreneur' %}
+                    <a href="{% url 'entrepreneurs:profile_detail' post.author.id %}">
                 {% else %}
-                    <div class="post-avatar d-flex align-items-center justify-content-center bg-secondary text-white">
-                        <i class="bi bi-person-fill"></i>
-                    </div>
+                    <a href="{% url 'investors:profile_detail' post.author.id %}">
                 {% endif %}
+                    {% if post.author|get_profile_image %}
+                        <img src="data:image/jpeg;base64,{{ post.author|get_profile_image|b64encode_blob }}" class="post-avatar" alt="Profile">
+                    {% else %}
+                        <div class="post-avatar d-flex align-items-center justify-content-center bg-secondary text-white">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                    {% endif %}
+                </a>
                 <div class="post-meta">
-                    <h6>{{ post.author.get_full_name|default:post.author.email }}</h6>
+                    <h6>
+                        {% if post.author.role == 'entrepreneur' %}
+                            <a class="text-decoration-none" href="{% url 'entrepreneurs:profile_detail' post.author.id %}">{{ post.author.get_full_name|default:post.author.email }}</a>
+                        {% else %}
+                            <a class="text-decoration-none" href="{% url 'investors:profile_detail' post.author.id %}">{{ post.author.get_full_name|default:post.author.email }}</a>
+                        {% endif %}
+                    </h6>
                     <small class="text-muted">{{ post.created_at|timesince }} ago</small>
+                    
                 </div>
             </div>
             <div class="post-body">
@@ -177,6 +190,7 @@
                 <button class="post-action save-btn" data-post-id="{{ post.id }}" title="Save">
                     <i class="fa fa-bookmark" aria-hidden="true"></i>
                 </button>
+                
             </div>
 
             <!-- Comments Section -->

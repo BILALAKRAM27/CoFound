@@ -16,6 +16,9 @@ urlpatterns = [
     path('posts/<int:post_id>/edit/', views.edit_post, name='edit_post'),
     path('posts/<int:post_id>/remove-media/<int:media_id>/', views.remove_post_media, name='remove_post_media'),
     path('posts/<int:post_id>/reorder-media/', views.reorder_post_media, name='reorder_post_media'),
+    path('toggle-connect/<int:target_id>/', views.toggle_connection, name='toggle_connect'),
+    path('my-network/', views.my_network, name='my_network'),
+    path('network-data/', views.network_data, name='network_data'),
 ]
 
 # Comments

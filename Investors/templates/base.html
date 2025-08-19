@@ -294,6 +294,18 @@
             border: none;
         }
 
+        /* Consistent Follow/Following buttons */
+        .follow-btn, .following-btn {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+            color: #fff !important;
+            border: none;
+            border-radius: 10px;
+            padding: 0.375rem 0.75rem;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .follow-btn:hover, .following-btn:hover { filter: brightness(1.05); }
+
         .floating-action-btn {
             position: fixed;
             bottom: 2rem;

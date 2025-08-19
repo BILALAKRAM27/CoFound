@@ -446,22 +446,33 @@
     {% for post in posts %}
     <div class="post-card" data-post-id="{{ post.id }}">
         <div class="post-header">
-            {% if post.author|get_profile_image %}
-                <img src="data:image/jpeg;base64,{{ post.author|get_profile_image|b64encode_blob }}" 
-                     alt="{{ post.author.get_full_name|default:post.author.email }}" class="post-avatar">
+            {% if post.author.role == 'entrepreneur' %}
+                <a href="{% url 'entrepreneurs:profile_detail' post.author.id %}">
             {% else %}
-                <div class="post-avatar d-flex align-items-center justify-content-center bg-secondary text-white">
-                    <i class="bi bi-person-fill"></i>
-                </div>
+                <a href="{% url 'investors:profile_detail' post.author.id %}">
             {% endif %}
+                {% if post.author|get_profile_image %}
+                    <img src="data:image/jpeg;base64,{{ post.author|get_profile_image|b64encode_blob }}" 
+                         alt="{{ post.author.get_full_name|default:post.author.email }}" class="post-avatar">
+                {% else %}
+                    <div class="post-avatar d-flex align-items-center justify-content-center bg-secondary text-white">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                {% endif %}
+            </a>
             <div class="post-meta">
                 <h6>
-                    {{ post.author.get_full_name|default:post.author.email }}
+                    {% if post.author.role == 'entrepreneur' %}
+                        <a class="text-decoration-none" href="{% url 'entrepreneurs:profile_detail' post.author.id %}">{{ post.author.get_full_name|default:post.author.email }}</a>
+                    {% else %}
+                        <a class="text-decoration-none" href="{% url 'investors:profile_detail' post.author.id %}">{{ post.author.get_full_name|default:post.author.email }}</a>
+                    {% endif %}
                     <span class="badge {% if post.author.role == 'entrepreneur' %}bg-success{% else %}bg-primary{% endif %} rounded-pill">
                         {{ post.author.get_role_display|default:post.author.role|title }}
                     </span>
                 </h6>
                 <small class="text-muted">{{ post.created_at|timesince }} ago</small>
+                
             </div>
         </div>
         
@@ -678,23 +689,81 @@
             <i class="bi bi-people me-2"></i>People You May Know
         </div>
         <div class="widget-body">
-            <div class="d-flex align-items-center mb-3">
-                <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face&auto=format&q=80" 
-                     alt="Emma" class="rounded-circle me-3" width="40" height="40">
+            {% for u in suggestions %}
+            <div class="d-flex align-items-center mb-3" data-user-id="{{ u.id }}">
+                <a class="me-3" href="{% if u.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' u.id %}{% else %}{% url 'investors:profile_detail' u.id %}{% endif %}">
+                    {% if u|get_profile_image %}
+                        <img src="data:image/jpeg;base64,{{ u|get_profile_image|b64encode_blob }}" class="rounded-circle" width="40" height="40">
+                    {% else %}
+                        <i class="bi bi-person-circle fs-3"></i>
+                    {% endif %}
+                </a>
                 <div class="flex-grow-1">
-                    <h6 class="mb-0">Emma Davis</h6>
-                    <small class="text-muted">FinTech Founder</small>
+                    <h6 class="mb-0">
+                        <a class="text-decoration-none" href="{% if u.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' u.id %}{% else %}{% url 'investors:profile_detail' u.id %}{% endif %}">{{ u.get_full_name|default:u.email }}</a>
+                    </h6>
+                    <small class="text-muted">{{ u.role|title }}</small>
                 </div>
-                <button class="btn btn-sm btn-outline-primary">Connect</button>
+                {% with status=user|connection_status:u %}
+                    <button class="{% if status == 'accepted' %}following-btn{% else %}follow-btn{% endif %} btn-sm connect-toggle" data-target-id="{{ u.id }}">
+                        {% if status == 'accepted' %}<i class="fa fa-check" aria-hidden="true"></i> Following{% else %}<i class="fa fa-plus" aria-hidden="true"></i> Follow{% endif %}
+                    </button>
+                {% endwith %}
             </div>
-            <div class="d-flex align-items-center mb-3">
-                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=40&h=40&fit=crop&crop=face&auto=format&q=80" 
-                     alt="David" class="rounded-circle me-3" width="40" height="40">
-                <div class="flex-grow-1">
-                    <h6 class="mb-0">David Kim</h6>
-                    <small class="text-muted">Angel Investor</small>
+            {% empty %}
+            <div class="text-muted small">No suggestions right now.</div>
+            {% endfor %}
+
+            <hr/>
+            <h6 class="text-muted">Mutual Friends</h6>
+            <div id="rsMutualContainer">
+            {% if rs_mutual %}
+                {% for u in rs_mutual %}
+                <div class="d-flex align-items-center mb-3" data-user-id="{{ u.id }}">
+                    <a class="me-3" href="{% if u.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' u.id %}{% else %}{% url 'investors:profile_detail' u.id %}{% endif %}">
+                        {% if u|get_profile_image %}
+                            <img src="data:image/jpeg;base64,{{ u|get_profile_image|b64encode_blob }}" class="rounded-circle" width="36" height="36">
+                        {% else %}
+                            <i class="bi bi-person-circle fs-5"></i>
+                        {% endif %}
+                    </a>
+                    <div class="flex-grow-1">
+                        <div class="small"><a class="text-decoration-none" href="{% if u.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' u.id %}{% else %}{% url 'investors:profile_detail' u.id %}{% endif %}">{{ u.get_full_name|default:u.email }}</a></div>
+                    </div>
+                    {% with status=user|connection_status:u %}
+                        <button class="{% if status == 'accepted' %}following-btn{% else %}follow-btn{% endif %} btn-sm connect-toggle" data-target-id="{{ u.id }}">
+                            {% if status == 'accepted' %}<i class="fa fa-check" aria-hidden="true"></i> Following{% else %}<i class="fa fa-plus" aria-hidden="true"></i> Follow{% endif %}
+                        </button>
+                    {% endwith %}
                 </div>
-                <button class="btn btn-sm btn-outline-primary">Connect</button>
+                {% endfor %}
+            {% endif %}
+            </div>
+
+            <hr/>
+            <h6 class="text-muted">Same Industry</h6>
+            <div id="rsIndustryContainer">
+            {% if rs_industry %}
+                {% for u in rs_industry %}
+                <div class="d-flex align-items-center mb-3" data-user-id="{{ u.id }}">
+                    <a class="me-3" href="{% if u.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' u.id %}{% else %}{% url 'investors:profile_detail' u.id %}{% endif %}">
+                        {% if u|get_profile_image %}
+                            <img src="data:image/jpeg;base64,{{ u|get_profile_image|b64encode_blob }}" class="rounded-circle" width="36" height="36">
+                        {% else %}
+                            <i class="bi bi-person-circle fs-5"></i>
+                        {% endif %}
+                    </a>
+                    <div class="flex-grow-1">
+                        <div class="small"><a class="text-decoration-none" href="{% if u.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' u.id %}{% else %}{% url 'investors:profile_detail' u.id %}{% endif %}">{{ u.get_full_name|default:u.email }}</a></div>
+                    </div>
+                    {% with status=user|connection_status:u %}
+                        <button class="{% if status == 'accepted' %}following-btn{% else %}follow-btn{% endif %} btn-sm connect-toggle" data-target-id="{{ u.id }}">
+                            {% if status == 'accepted' %}<i class="fa fa-check" aria-hidden="true"></i> Following{% else %}<i class="fa fa-plus" aria-hidden="true"></i> Follow{% endif %}
+                        </button>
+                    {% endwith %}
+                </div>
+                {% endfor %}
+            {% endif %}
             </div>
         </div>
     </div>

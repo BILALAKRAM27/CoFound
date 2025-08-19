@@ -11,7 +11,7 @@ from .forms import PostForm
 from .models import Post, PostMedia
 from django.views.decorators.http import require_POST, require_http_methods
 from django.http import JsonResponse, HttpResponseForbidden
-from .models import Post, Comment, CollaborationRequest
+from .models import Post, Comment, CollaborationRequest, EntrepreneurProfile, Favorite
 from .forms import CommentForm
 from django.shortcuts import get_object_or_404
 import base64
@@ -359,4 +359,19 @@ def reorder_post_media(request, post_id):
         return JsonResponse({ 'success': True })
     except Exception as e:
         return JsonResponse({ 'success': False, 'error': str(e) }, status=400)
+
+@login_required
+@require_POST
+def toggle_connection(request, target_id):
+    # Universal follow/unfollow: any user can follow any user via Favorite
+    target = get_object_or_404(User, id=target_id)
+    if request.user.id == target.id:
+        return JsonResponse({'success': False, 'error': 'Invalid target'})
+
+    fav_qs = Favorite.objects.filter(user=request.user, target_user=target)
+    if fav_qs.exists():
+        fav_qs.delete()
+        return JsonResponse({'success': True, 'connected': False})
+    Favorite.objects.create(user=request.user, target_user=target)
+    return JsonResponse({'success': True, 'connected': True})
 

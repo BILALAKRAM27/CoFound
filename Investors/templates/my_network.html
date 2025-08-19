@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load profile_filters %}
+
+{% block title %}My Network - CoFound{% endblock %}
+
+{% block styles %}
+<style>
+  .network-section { margin-bottom: 2rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+  .user-card { background: var(--bs-body-bg); border: none; border-radius: 12px; box-shadow: var(--cf-card-shadow); padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 260px; }
+  .user-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 3px solid var(--cf-sidebar-border); }
+  .user-name { margin-top: .75rem; font-weight: 600; }
+  .user-role { color: var(--cf-text-secondary); font-size: .9rem; margin-top: .25rem; }
+  .user-org { color: var(--cf-text-secondary); font-size: .85rem; margin-top: .25rem; min-height: 1.1rem; text-align: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-container">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">My Network</h4>
+  </div>
+
+  <div class="network-section">
+    <h5 class="mb-3">Connections</h5>
+    <div class="grid" id="connectionsGrid">
+      {% for u in connections %}
+        <div class="user-card">
+          <a href="{% if u.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' u.id %}{% else %}{% url 'investors:profile_detail' u.id %}{% endif %}">
+            {% if u|get_profile_image %}
+              <img class="user-avatar" src="data:image/jpeg;base64,{{ u|get_profile_image|b64encode_blob }}">
+            {% else %}
+              <i class="bi bi-person-circle fs-1"></i>
+            {% endif %}
+          </a>
+          <a class="user-name text-decoration-none" href="{% if u.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' u.id %}{% else %}{% url 'investors:profile_detail' u.id %}{% endif %}">{{ u.get_full_name|default:u.email }}</a>
+          <div class="user-role">{{ u.role|title }}</div>
+          <div class="user-org">
+            {% if u.role == 'entrepreneur' %}
+              {{ u.entrepreneur_profile.company_name|default:'' }}
+            {% else %}
+              {{ u.investor_profile.firm_name|default:'' }}
+            {% endif %}
+          </div>
+          {% with status=user|connection_status:u %}
+            <button class="mt-2 {% if status == 'accepted' %}following-btn{% else %}follow-btn{% endif %} connect-toggle" data-target-id="{{ u.id }}">
+              {% if status == 'accepted' %}<i class="fa fa-check" aria-hidden="true"></i> Following{% else %}<i class="fa fa-plus" aria-hidden="true"></i> Follow{% endif %}
+            </button>
+          {% endwith %}
+        </div>
+      {% empty %}
+        <div class="text-muted">You have no connections yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="network-section">
+    <h5 class="mb-3">Mutual Friends</h5>
+    <div class="grid" id="mutualGrid">
+      {% for u in mutual_suggestions %}
+        <div class="user-card" data-user-id="{{ u.id }}">
+          <a href="{% if u.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' u.id %}{% else %}{% url 'investors:profile_detail' u.id %}{% endif %}">
+            {% if u|get_profile_image %}
+              <img class="user-avatar" src="data:image/jpeg;base64,{{ u|get_profile_image|b64encode_blob }}">
+            {% else %}
+              <i class="bi bi-person-circle fs-1"></i>
+            {% endif %}
+          </a>
+          <a class="user-name text-decoration-none" href="{% if u.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' u.id %}{% else %}{% url 'investors:profile_detail' u.id %}{% endif %}">{{ u.get_full_name|default:u.email }}</a>
+          <div class="user-role">{{ u.role|title }}</div>
+          <div class="user-org">
+            {% if u.role == 'entrepreneur' %}
+              {{ u.entrepreneur_profile.company_name|default:'' }}
+            {% else %}
+              {{ u.investor_profile.firm_name|default:'' }}
+            {% endif %}
+          </div>
+          {% with status=user|connection_status:u %}
+            <button class="mt-2 {% if status == 'accepted' %}following-btn{% else %}follow-btn{% endif %} connect-toggle" data-target-id="{{ u.id }}">
+              {% if status == 'accepted' %}<i class="fa fa-check" aria-hidden="true"></i> Following{% else %}<i class="fa fa-plus" aria-hidden="true"></i> Follow{% endif %}
+            </button>
+          {% endwith %}
+        </div>
+      {% empty %}
+        <div class="user-card text-muted" id="mutualEmpty">No mutual connections suggestions right now.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="network-section">
+    <h5 class="mb-3">Same Industry Connections</h5>
+    <div class="grid" id="industryGrid">
+      {% for u in industry_suggestions %}
+        <div class="user-card" data-user-id="{{ u.id }}">
+          <a href="{% if u.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' u.id %}{% else %}{% url 'investors:profile_detail' u.id %}{% endif %}">
+            {% if u|get_profile_image %}
+              <img class="user-avatar" src="data:image/jpeg;base64,{{ u|get_profile_image|b64encode_blob }}">
+            {% else %}
+              <i class="bi bi-person-circle fs-1"></i>
+            {% endif %}
+          </a>
+          <a class="user-name text-decoration-none" href="{% if u.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' u.id %}{% else %}{% url 'investors:profile_detail' u.id %}{% endif %}">{{ u.get_full_name|default:u.email }}</a>
+          <div class="user-role">{{ u.role|title }}</div>
+          <div class="user-org">
+            {% if u.role == 'entrepreneur' %}
+              {{ u.entrepreneur_profile.company_name|default:'' }}
+            {% else %}
+              {{ u.investor_profile.firm_name|default:'' }}
+            {% endif %}
+          </div>
+          {% with status=user|connection_status:u %}
+            <button class="mt-2 {% if status == 'accepted' %}following-btn{% else %}follow-btn{% endif %} connect-toggle" data-target-id="{{ u.id }}">
+              {% if status == 'accepted' %}<i class="fa fa-check" aria-hidden="true"></i> Following{% else %}<i class="fa fa-plus" aria-hidden="true"></i> Follow{% endif %}
+            </button>
+          {% endwith %}
+        </div>
+      {% empty %}
+        <div class="user-card text-muted" id="industryEmpty">No same-industry suggestions yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

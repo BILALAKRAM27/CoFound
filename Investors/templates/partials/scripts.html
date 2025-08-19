@@ -1,5 +1,20 @@
 <!-- CoFound Platform JavaScript -->
 <script>
+    // Global notification helper (available to all handlers)
+    if (!window.showNotification) {
+        window.showNotification = function(message, type = 'info') {
+            try {
+                const notification = document.createElement('div');
+                notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+                notification.style.cssText = 'top: 90px; right: 20px; z-index: 1060; min-width: 300px;';
+                notification.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+                document.body.appendChild(notification);
+                setTimeout(() => { if (notification && notification.parentNode) notification.remove(); }, 5000);
+            } catch (e) {
+                console && console.warn && console.warn('Notification:', message);
+            }
+        }
+    }
     // CoFound Platform JavaScript
     document.addEventListener('DOMContentLoaded', function() {
         // Theme change event listener
@@ -393,23 +408,7 @@
         });
 
         // Notification system
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-            notification.style.cssText = 'top: 90px; right: 20px; z-index: 1060; min-width: 300px;';
-            notification.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 5000);
-        }
+        // This function is now global, so it's removed from here.
 
         // Load more posts functionality (infinite scroll simulation)
         let loading = false;
@@ -976,4 +975,118 @@
             });
         });
     });
+
+    // Global Connect/Disconnect toggle
+    document.addEventListener('click', function(e){
+        const btn = e.target.closest('.connect-toggle');
+        if (!btn) return;
+        const targetId = btn.dataset.targetId;
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        const role = document.body.dataset.userRole;
+        const url = role === 'entrepreneur' ? `/entrepreneur/toggle-connect/${targetId}/` : `/investor/toggle-connect/${targetId}/`;
+        btn.disabled = true;
+        fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrf } })
+          .then(r=>r.json()).then(d=>{
+            if (d.success) {
+              const wasFollowing = btn.classList.contains('following-btn');
+              if (d.connected) {
+                btn.classList.remove('follow-btn');
+                btn.classList.add('following-btn');
+                btn.setAttribute('aria-label','Following');
+                btn.innerHTML = '<i class="fa fa-check" aria-hidden="true"></i> Following';
+              } else {
+                btn.classList.remove('following-btn');
+                btn.classList.add('follow-btn');
+                btn.setAttribute('aria-label','Follow');
+                btn.innerHTML = '<i class="fa fa-plus" aria-hidden="true"></i> Follow';
+              }
+
+              // Remove this suggestion row if in sidebar and now following
+              const suggestionRow = btn.closest('.widget-body .d-flex.align-items-center');
+              if (suggestionRow && d.connected) {
+                suggestionRow.remove();
+              }
+
+              // Dynamic updates for My Network page using fresh server data
+              const onNetworkPage = document.querySelector('.content-container') && window.location.pathname.includes('/investor/my-network');
+              const rsMutualContainer = document.getElementById('rsMutualContainer');
+              const rsIndustryContainer = document.getElementById('rsIndustryContainer');
+
+              fetch('/investor/network-data/', { headers: { 'X-Requested-With':'XMLHttpRequest' }})
+                .then(r=>r.json())
+                .then(data => {
+                  if (onNetworkPage) {
+                    renderNetworkSection('connections', data.connections);
+                    renderNetworkSection('mutual', data.mutual);
+                    renderNetworkSection('industry', data.industry);
+                  }
+                  // Update right sidebar if present
+                  if (rsMutualContainer) {
+                    rsMutualContainer.innerHTML = data.mutual.map(u => sidebarRowHTML(u)).join('') || '';
+                  }
+                  if (rsIndustryContainer) {
+                    rsIndustryContainer.innerHTML = data.industry.map(u => sidebarRowHTML(u)).join('') || '';
+                  }
+                  // No need to re-bind events due to delegated handler on document for .connect-toggle
+                });
+            } else {
+              showNotification(d.error || 'Failed to toggle follow', 'danger');
+            }
+          })
+          .catch(()=> showNotification('Failed to toggle follow', 'danger'))
+          .finally(()=> { btn.disabled = false; });
+    });
+
+    // Helpers to render network sections
+    function userCardHTML(u) {
+      const profileUrl = (u.role === 'entrepreneur') ? `/entrepreneur/profile/${u.id}/` : `/investor/profile/${u.id}/`;
+      const avatar = u.avatar ? `<img class="user-avatar" src="data:image/jpeg;base64,${u.avatar}">` : `<i class="bi bi-person-circle fs-1"></i>`;
+      const org = u.org || '';
+      return `<div class="user-card" data-user-id="${u.id}">
+        <a href="${profileUrl}">${avatar}</a>
+        <a class="user-name text-decoration-none" href="${profileUrl}">${u.name}</a>
+        <div class="user-role">${u.role.charAt(0).toUpperCase()+u.role.slice(1)}</div>
+        <div class="user-org">${org}</div>
+        <button class="mt-2 following-btn connect-toggle" data-target-id="${u.id}"><i class="fa fa-check" aria-hidden="true"></i> Following</button>
+      </div>`;
+    }
+
+    function suggestionCardHTML(u) {
+      const profileUrl = (u.role === 'entrepreneur') ? `/entrepreneur/profile/${u.id}/` : `/investor/profile/${u.id}/`;
+      const avatar = u.avatar ? `<img class="user-avatar" src="data:image/jpeg;base64,${u.avatar}">` : `<i class="bi bi-person-circle fs-1"></i>`;
+      const org = u.org || '';
+      return `<div class="user-card" data-user-id="${u.id}">
+        <a href="${profileUrl}">${avatar}</a>
+        <a class="user-name text-decoration-none" href="${profileUrl}">${u.name}</a>
+        <div class="user-role">${u.role.charAt(0).toUpperCase()+u.role.slice(1)}</div>
+        <div class="user-org">${org}</div>
+        <button class="mt-2 follow-btn connect-toggle" data-target-id="${u.id}"><i class="fa fa-plus" aria-hidden="true"></i> Follow</button>
+      </div>`;
+    }
+
+    function renderNetworkSection(which, list) {
+      const map = { connections: null, mutual: 'mutualGrid', industry: 'industryGrid' };
+      if (which === 'connections') {
+        // replace first grid under Connections section
+        const section = document.querySelectorAll('.network-section .grid')[0];
+        if (section) {
+          section.innerHTML = list.length ? list.map(userCardHTML).join('') : '<div class="user-card text-muted">You have no connections yet.</div>';
+        }
+        return;
+      }
+      const gridId = map[which];
+      const grid = document.getElementById(gridId);
+      if (!grid) return;
+      grid.innerHTML = list.length ? list.map(suggestionCardHTML).join('') : (which==='mutual' ? '<div class="user-card text-muted" id="mutualEmpty">No mutual connections suggestions right now.</div>' : '<div class="user-card text-muted" id="industryEmpty">No same-industry suggestions yet.</div>');
+    }
+
+    function sidebarRowHTML(u) {
+      const url = (u.role === 'entrepreneur') ? `/entrepreneur/profile/${u.id}/` : `/investor/profile/${u.id}/`;
+      const avatar = u.avatar ? `<img src="data:image/jpeg;base64,${u.avatar}" class="rounded-circle" width="36" height="36">` : `<i class="bi bi-person-circle fs-5"></i>`;
+      return `<div class="d-flex align-items-center mb-3" data-user-id="${u.id}">
+        <a class="me-3" href="${url}">${avatar}</a>
+        <div class="flex-grow-1"><div class="small"><a class="text-decoration-none" href="${url}">${u.name}</a></div></div>
+        <button class="follow-btn btn-sm connect-toggle" data-target-id="${u.id}"><i class="fa fa-plus" aria-hidden="true"></i> Follow</button>
+      </div>`;
+    }
 </script>

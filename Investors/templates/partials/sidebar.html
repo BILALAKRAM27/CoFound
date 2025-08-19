@@ -92,7 +92,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {% if 'network' in request.path %}active{% endif %}" href="#">
+                <a class="nav-link {% if request.resolver_match.url_name == 'my_network' %}active{% endif %}" href="{% url 'investors:my_network' %}">
                     <i class="bi bi-people"></i>My Network
                 </a>
             </li>

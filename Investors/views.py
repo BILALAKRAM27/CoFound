@@ -12,11 +12,12 @@ from Entrepreneurs.models import Post, PostMedia
 from Entrepreneurs.forms import PostForm
 from django.views.decorators.http import require_POST, require_http_methods
 from django.http import JsonResponse, HttpResponseForbidden
-from Entrepreneurs.models import Post, Comment, CollaborationRequest, EntrepreneurProfile
+from Entrepreneurs.models import Post, Comment, CollaborationRequest, EntrepreneurProfile, Favorite
 from Entrepreneurs.forms import CommentForm
 from django.shortcuts import get_object_or_404
 import base64
 from django.db import transaction
+from django.db.models import Q
 
 
 def investor_register(request):
@@ -91,37 +92,96 @@ def home(request):
     if request.user.role == 'investor':
         profile = InvestorProfile.objects.get_or_create(user=request.user)[0]
     else:
-        from Entrepreneurs.models import EntrepreneurProfile
         profile = EntrepreneurProfile.objects.get_or_create(user=request.user)[0]
 
-    # Get all users for the connections/network section
-    users = User.objects.exclude(id=request.user.id).select_related(
+    # Current accepted CollaborationRequest connections
+    accepted = CollaborationRequest.objects.filter(
+        Q(investor=request.user, status='accepted') | Q(entrepreneur=request.user, status='accepted')
+    )
+    connected_user_ids = set()
+    for r in accepted:
+        connected_user_ids.add(r.investor_id)
+        connected_user_ids.add(r.entrepreneur_id)
+    connected_user_ids.discard(request.user.id)
+
+    # Current favorites (same-role follows)
+    favorites = Favorite.objects.filter(user=request.user).select_related('target_user')
+    for f in favorites:
+        connected_user_ids.add(f.target_user_id)
+
+    # Suggestions: both roles, exclude already connected and self
+    users_qs = User.objects.exclude(id=request.user.id).select_related(
         'entrepreneur_profile', 'investor_profile'
     )
+    suggestions_qs = users_qs.exclude(id__in=connected_user_ids)
+    suggestions = list(suggestions_qs[:5])
 
-    # Get all posts with media files, ordered by creation date
+    # Build mutual friends from both accepted graph and favorites graph
+    def neighbors(u: User):
+        nbrs = set()
+        # collab neighbors
+        for r in CollaborationRequest.objects.filter(
+            Q(investor=u, status='accepted') | Q(entrepreneur=u, status='accepted')
+        ):
+            nbrs.add(r.investor)
+            nbrs.add(r.entrepreneur)
+        # favorites neighbors (following)
+        for f in Favorite.objects.filter(user=u).select_related('target_user'):
+            nbrs.add(f.target_user)
+        if u in nbrs:
+            nbrs.discard(u)
+        return nbrs
+
+    my_neighbors = neighbors(request.user)
+    second_degree = set()
+    for n in my_neighbors:
+        second_degree.update(neighbors(n))
+    # Exclude already connected/self and direct neighbors
+    rs_mutual = [u for u in second_degree if u.id not in connected_user_ids and u.id != request.user.id and u not in my_neighbors]
+
+    # Same industry suggestions (role-aware terms) still exclude connected
+    def split_terms(s):
+        if not s:
+            return set()
+        return set(t.strip().lower() for t in s.split(',') if t.strip())
+
+    rs_industry = []
+    if request.user.role == 'investor':
+        inv_terms = split_terms(profile.preferred_industries)
+        for ep in EntrepreneurProfile.objects.select_related('user').all():
+            if ep.user.id in connected_user_ids or ep.user.id == request.user.id:
+                continue
+            if inv_terms and (split_terms(ep.industries) & inv_terms):
+                rs_industry.append(ep.user)
+    else:
+        ep_terms = split_terms(profile.industries)
+        for ip in InvestorProfile.objects.select_related('user').all():
+            if ip.user.id in connected_user_ids or ip.user.id == request.user.id:
+                continue
+            if ep_terms and (split_terms(ip.preferred_industries) & ep_terms):
+                rs_industry.append(ip.user)
+
+    # Posts feed unchanged...
     try:
-        from Entrepreneurs.models import Post
         posts = Post.objects.select_related(
             'author', 
             'author__entrepreneur_profile', 
             'author__investor_profile'
         ).prefetch_related(
-            'media_files', 
-            'likes', 
-            'comments',
-            'comments__author',
-            'comments__author__entrepreneur_profile',
-            'comments__author__investor_profile'
-        ).order_by('-created_at')  # Show all posts
+            'media_files', 'likes', 'comments',
+            'comments__author', 'comments__author__entrepreneur_profile', 'comments__author__investor_profile'
+        ).order_by('-created_at')
     except Exception as e:
         print(f"Error fetching posts: {e}")
         posts = []
 
     context = {
         'profile': profile,
-        'users': users,
+        'users': users_qs,
         'posts': posts,
+        'suggestions': suggestions,
+        'rs_mutual': rs_mutual[:5],
+        'rs_industry': rs_industry[:5],
     }
     return render(request, 'home.html', context)
 
@@ -461,5 +521,175 @@ def reorder_post_media(request, post_id):
         return JsonResponse({ 'success': True })
     except Exception as e:
         return JsonResponse({ 'success': False, 'error': str(e) }, status=400)
+
+@login_required
+@require_POST
+def toggle_connection(request, target_id):
+    # Universal follow/unfollow via Favorite regardless of roles
+    target = get_object_or_404(User, id=target_id)
+    if request.user.id == target.id:
+        return JsonResponse({'success': False, 'error': 'Invalid target'})
+    fav = Favorite.objects.filter(user=request.user, target_user=target)
+    if fav.exists():
+        fav.delete()
+        return JsonResponse({'success': True, 'connected': False})
+    Favorite.objects.create(user=request.user, target_user=target)
+    return JsonResponse({'success': True, 'connected': True})
+
+@login_required
+def my_network(request):
+    # Build connections as union of accepted collab and favorites
+    conns_qs = CollaborationRequest.objects.filter(
+        Q(investor=request.user, status='accepted') | Q(entrepreneur=request.user, status='accepted')
+    ).select_related('investor', 'entrepreneur', 'investor__investor_profile', 'entrepreneur__entrepreneur_profile')
+    connections = []
+    connected_user_ids = set()
+    for r in conns_qs:
+        other = r.investor if r.investor_id != request.user.id else r.entrepreneur
+        if other.id != request.user.id:
+            connections.append(other)
+            connected_user_ids.add(other.id)
+    for f in Favorite.objects.filter(user=request.user).select_related('target_user'):
+        if f.target_user_id != request.user.id and f.target_user_id not in connected_user_ids:
+            connections.append(f.target_user)
+            connected_user_ids.add(f.target_user_id)
+
+    # mutual via neighbors-of-neighbors using union graph
+    def neighbors(u: User):
+        nbrs = set()
+        for r in CollaborationRequest.objects.filter(
+            Q(investor=u, status='accepted') | Q(entrepreneur=u, status='accepted')
+        ):
+            nbrs.add(r.investor)
+            nbrs.add(r.entrepreneur)
+        for f in Favorite.objects.filter(user=u).select_related('target_user'):
+            nbrs.add(f.target_user)
+        if u in nbrs:
+            nbrs.discard(u)
+        return nbrs
+
+    my_neighbors = neighbors(request.user)
+    second_degree = set()
+    for n in my_neighbors:
+        second_degree.update(neighbors(n))
+    mutual_suggestions = [u for u in second_degree if u.id not in connected_user_ids and u.id != request.user.id and u not in my_neighbors]
+
+    # same-industry re-used from home logic
+    def split_terms(s):
+        if not s:
+            return set()
+        return set(t.strip().lower() for t in s.split(',') if t.strip())
+
+    industry_suggestions = []
+    if request.user.role == 'investor':
+        inv = InvestorProfile.objects.get_or_create(user=request.user)[0]
+        inv_terms = split_terms(inv.preferred_industries)
+        for ep in EntrepreneurProfile.objects.select_related('user').all():
+            if ep.user.id in connected_user_ids or ep.user.id == request.user.id:
+                continue
+            if inv_terms and (split_terms(ep.industries) & inv_terms):
+                industry_suggestions.append(ep.user)
+    else:
+        ep = EntrepreneurProfile.objects.get_or_create(user=request.user)[0]
+        ep_terms = split_terms(ep.industries)
+        for ip in InvestorProfile.objects.select_related('user').all():
+            if ip.user.id in connected_user_ids or ip.user.id == request.user.id:
+                continue
+            if ep_terms and (split_terms(ip.preferred_industries) & ep_terms):
+                industry_suggestions.append(ip.user)
+
+    context = {
+        'connections': connections,
+        'mutual_suggestions': mutual_suggestions,
+        'industry_suggestions': industry_suggestions,
+    }
+    return render(request, 'my_network.html', context)
+
+@login_required
+def network_data(request):
+    # Union of favorites and accepted collab for connections
+    conns_qs = CollaborationRequest.objects.filter(
+        Q(investor=request.user, status='accepted') | Q(entrepreneur=request.user, status='accepted')
+    ).select_related('investor', 'entrepreneur', 'investor__investor_profile', 'entrepreneur__entrepreneur_profile')
+    connections = []
+    connected_ids = set()
+    for r in conns_qs:
+        other = r.investor if r.investor_id != request.user.id else r.entrepreneur
+        if other.id != request.user.id:
+            connections.append(other)
+            connected_ids.add(other.id)
+    for f in Favorite.objects.filter(user=request.user).select_related('target_user'):
+        if f.target_user_id != request.user.id and f.target_user_id not in connected_ids:
+            connections.append(f.target_user)
+            connected_ids.add(f.target_user_id)
+
+    def img64(u):
+        try:
+            if hasattr(u, 'entrepreneur_profile') and u.entrepreneur_profile.image:
+                import base64
+                return base64.b64encode(u.entrepreneur_profile.image).decode('utf-8')
+            if hasattr(u, 'investor_profile') and u.investor_profile.image:
+                import base64
+                return base64.b64encode(u.investor_profile.image).decode('utf-8')
+        except Exception:
+            return ''
+        return ''
+
+    def neighbors(u: User):
+        nbrs = set()
+        for r in CollaborationRequest.objects.filter(
+            Q(investor=u, status='accepted') | Q(entrepreneur=u, status='accepted')
+        ):
+            nbrs.add(r.investor)
+            nbrs.add(r.entrepreneur)
+        for f in Favorite.objects.filter(user=u).select_related('target_user'):
+            nbrs.add(f.target_user)
+        if u in nbrs:
+            nbrs.discard(u)
+        return nbrs
+
+    my_neighbors = neighbors(request.user)
+    second_degree = set()
+    for n in my_neighbors:
+        second_degree.update(neighbors(n))
+    mutual = [u for u in second_degree if u.id not in connected_ids and u.id != request.user.id and u not in my_neighbors]
+
+    def split_terms(s):
+        if not s:
+            return set()
+        return set(t.strip().lower() for t in s.split(',') if t.strip())
+
+    industry = []
+    if request.user.role == 'investor':
+        inv = InvestorProfile.objects.get_or_create(user=request.user)[0]
+        inv_terms = split_terms(inv.preferred_industries)
+        for ep in EntrepreneurProfile.objects.select_related('user').all():
+            if ep.user.id in connected_ids or ep.user.id == request.user.id:
+                continue
+            if inv_terms and (split_terms(ep.industries) & inv_terms):
+                industry.append(ep.user)
+    else:
+        ep = EntrepreneurProfile.objects.get_or_create(user=request.user)[0]
+        ep_terms = split_terms(ep.industries)
+        for ip in InvestorProfile.objects.select_related('user').all():
+            if ip.user.id in connected_ids or ip.user.id == request.user.id:
+                continue
+            if ep_terms and (split_terms(ip.preferred_industries) & ep_terms):
+                industry.append(ip.user)
+
+    def to_json(u):
+        return {
+            'id': u.id,
+            'name': u.get_full_name() or u.email,
+            'role': u.role,
+            'avatar': img64(u),
+            'org': (getattr(getattr(u, 'entrepreneur_profile', None), 'company_name', '') if u.role == 'entrepreneur' else getattr(getattr(u, 'investor_profile', None), 'firm_name', ''))
+        }
+
+    return JsonResponse({
+        'connections': [to_json(u) for u in connections],
+        'mutual': [to_json(u) for u in mutual],
+        'industry': [to_json(u) for u in industry],
+    })
 
 
