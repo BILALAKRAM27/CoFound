@@ -491,10 +491,10 @@
       <div class="chat-input">
         <div id="chatInputPreview" class="chat-input-preview" style="display:none;"></div>
         <div class="input-group-chat">
-          <input id="chatInput" type="text" class="form-control" placeholder="Type a message..." autocomplete="off">
-          <input id="chatFile" type="file" style="display:none;" multiple>
-          <button id="chatAttach" class="btn btn-outline-secondary" title="Attach file"><i class="bi bi-paperclip"></i></button>
-          <button id="chatSend" class="btn btn-primary"><i class="bi bi-send"></i></button>
+          <input id="chatInput" type="text" class="form-control" placeholder="Type a message..." autocomplete="on">
+        <input id="chatFile" type="file" style="display:none;" multiple>
+        <button id="chatAttach" class="btn btn-outline-secondary" title="Attach file"><i class="bi bi-paperclip"></i></button>
+        <button id="chatSend" class="btn btn-primary"><i class="bi bi-send"></i></button>
         </div>
       </div>
     </div>
@@ -537,9 +537,9 @@
   function renderSearch(results) {
     const searchResultsHtml = results.map(user => `
       <div class="recent-item" data-user-id="${user.id}">
-        ${user.avatar ? `<img src="${user.avatar}" class="avatar">` : '<i class="bi bi-person-circle fs-4 avatar"></i>'}
+        ${user.avatar ? `<a href="${user.profile_url}" target="_blank"><img src="${user.avatar}" class="avatar"></a>` : `<a href="${user.profile_url}" target="_blank"><i class="bi bi-person-circle fs-4 avatar"></i></a>`}
         <div class="flex-grow-1">
-          <div class="fw-semibold">${user.name}</div>
+          <div class="fw-semibold"><a href="${user.profile_url}" target="_blank" style="text-decoration:none;color:inherit;">${user.name}</a></div>
           <div class="small text-muted">${user.role || 'User'}</div>
         </div>
       </div>
@@ -601,24 +601,34 @@
   recents.addEventListener('click', e => {
     const item = e.target.closest('.recent-item');
     if (!item) return;
-    openChat(item.dataset.userId, {
+    const userId = item.dataset.userId;
+    const role = item.querySelector('.small.text-muted').textContent.toLowerCase();
+    const profileUrl = role === 'investor' ? `/investor/profile/${userId}/` : `/entrepreneur/profile/${userId}/`;
+    
+    openChat(userId, {
       name: item.querySelector('.fw-semibold').textContent,
       avatar: item.querySelector('img') ? item.querySelector('img').src : null,
-      role: item.querySelector('.small.text-muted').textContent
+      role: item.querySelector('.small.text-muted').textContent,
+      profile_url: profileUrl
     });
-    selectContact(item.dataset.userId);
+    selectContact(userId);
   });
 
   // --- Search results: Click to open chat ---
   results.addEventListener('click', e => {
     const item = e.target.closest('.recent-item');
     if (!item) return;
-    openChat(item.dataset.userId, {
+    const userId = item.dataset.userId;
+    const role = item.querySelector('.small.text-muted').textContent.toLowerCase();
+    const profileUrl = role === 'investor' ? `/investor/profile/${userId}/` : `/entrepreneur/profile/${userId}/`;
+    
+    openChat(userId, {
       name: item.querySelector('.fw-semibold').textContent,
       avatar: item.querySelector('img') ? item.querySelector('img').src : null,
-      role: item.querySelector('.small.text-muted').textContent
+      role: item.querySelector('.small.text-muted').textContent,
+      profile_url: profileUrl
     });
-    selectContact(item.dataset.userId);
+    selectContact(userId);
     results.style.display = 'none';
     searchInput.value = '';
   });
@@ -655,10 +665,10 @@
     // Update chat header with proper styling
     chatHeader.innerHTML = `
       <div class="chat-header-avatar">
-        ${peerData.avatar ? `<img src="${peerData.avatar}" alt="${peerData.name}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">` : '<div class="avatar-placeholder"><i class="bi bi-person-circle"></i></div>'}
+        ${peerData.avatar ? `<a href="${peerData.profile_url || '#'}" target="_blank"><img src="${peerData.avatar}" alt="${peerData.name}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;"></a>` : `<a href="${peerData.profile_url || '#'}" target="_blank"><div class="avatar-placeholder"><i class="bi bi-person-circle"></i></div></a>`}
       </div>
       <div class="flex-grow-1">
-        <div class="fw-semibold text-dark">${peerData.name}</div>
+        <div class="fw-semibold text-dark"><a href="${peerData.profile_url || '#'}" target="_blank" style="text-decoration:none;color:inherit;">${peerData.name}</a></div>
         <small class="text-muted">${peerData.role}</small>
       </div>
     `;
@@ -669,30 +679,30 @@
     // Connect WebSocket with error handling
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
     try {
-      socket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${peerId}/`);
-      
-      socket.onopen = function() {
+    socket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${peerId}/`);
+    
+    socket.onopen = function() {
         console.log('WebSocket connection established');
-      };
-      
-      socket.onmessage = function(e){
+    };
+    
+    socket.onmessage = function(e){
         try {
-          const data = JSON.parse(e.data);
-          if (data.type === 'chat_message') {
-            const existingMessage = messagesEl.querySelector(`[data-message-id="${data.message.id}"]`);
-            if (!existingMessage) {
-              renderMessage(data.message);
+      const data = JSON.parse(e.data);
+      if (data.type === 'chat_message') {
+        const existingMessage = messagesEl.querySelector(`[data-message-id="${data.message.id}"]`);
+        if (!existingMessage) {
+          renderMessage(data.message);
               if (String(data.message.sender) !== String(currentUserId)) {
                 if (String(data.message.sender) === String(peerId)) {
                   setUnreadBadge(peerId, 0);
-                } else {
+            } else {
                   updateUnreadCount(data.message.sender);
-                }
-              }
             }
-          } else if (data.type === 'read_receipt') {
-            updateReadReceipts(data.message_ids, data.reader_id);
           }
+        }
+      } else if (data.type === 'read_receipt') {
+        updateReadReceipts(data.message_ids, data.reader_id);
+      }
         } catch (err) {
           console.error('Error processing WebSocket message:', err);
         }
@@ -712,7 +722,7 @@
     }
     
     // Fetch existing messages
-    const endpoint = `/entrepreneur/messages/${peerId}/`;
+    const endpoint = `/investor/messages/${peerId}/`;
     fetch(endpoint)
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -747,7 +757,7 @@
       })
       .catch(error => {
         console.error('Error fetching messages:', error);
-        messagesEl.innerHTML = '<div class="text-center text-muted py-4">Failed to load messages. Please try again.</div>';
+        messagesEl.innerHTML = '<div class="text-center text-muted py-4">This user has set their messages to private. You cannot send messages to them at this time. Any previous messages in this chat will remain hidden until the user allows messages again..</div>';
       });
     
     clearPreview();
@@ -856,7 +866,7 @@
     
     // Auto-scroll to bottom with smooth behavior
     requestAnimationFrame(() => {
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+    messagesEl.scrollTop = messagesEl.scrollHeight;
     });
   }
 
@@ -887,22 +897,25 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         try {
-          const base64 = e.target.result.split(',')[1];
-          const messageData = {
-            action: 'send_message',
+        const base64 = e.target.result.split(',')[1];
+        const messageData = {
+          action: 'send_message',
             content: text || '',
-            message_type: previewType,
-            file_data: base64,
-            file_name: file.name,
-            file_type: file.type,
-            file_size: file.size
-          };
-          socket.send(JSON.stringify(messageData));
-          clearPreview();
-          inputEl.value = '';
-        } catch (error) {
-          console.error('Error sending file:', error);
-        }
+          message_type: previewType,
+          file_data: base64,
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size
+        };
+        socket.send(JSON.stringify(messageData));
+        clearPreview();
+        inputEl.value = '';
+        
+        // Update recent chats list to include this user if not already present
+        updateRecentChatsList(currentPeerId, currentPeerData);
+      } catch (error) {
+        console.error('Error sending file:', error);
+      }
       };
       reader.readAsDataURL(file);
     } else if (text) {
@@ -913,15 +926,63 @@
           message_type: 'text' 
         }));
         inputEl.value = '';
+        
+        // Update recent chats list to include this user if not already present
+        updateRecentChatsList(currentPeerId, currentPeerData);
       } catch (error) {
         console.error('Error sending message:', error);
       }
     }
   }
 
+  // --- Update recent chats list without page reload ---
+  function updateRecentChatsList(userId, userData) {
+    // Check if user is already in recent list
+    const existingItem = recents.querySelector(`[data-user-id="${userId}"]`);
+    if (!existingItem) {
+      // Create new recent item
+      const newItem = document.createElement('div');
+      newItem.className = 'recent-item';
+      newItem.setAttribute('data-user-id', userId);
+      
+      const role = userData.role.toLowerCase();
+      const profileUrl = role === 'investor' ? `/investor/profile/${userId}/` : `/entrepreneur/profile/${userId}/`;
+      
+      newItem.innerHTML = `
+        ${userData.avatar ? `<a href="${profileUrl}" target="_blank"><img src="${userData.avatar}" class="avatar"></a>` : `<a href="${profileUrl}" target="_blank"><i class="bi bi-person-circle fs-4 avatar"></i></a>`}
+        <div class="flex-grow-1">
+          <div class="fw-semibold"><a href="${profileUrl}" target="_blank" style="text-decoration:none;color:inherit;">${userData.name}</a></div>
+          <div class="small text-muted">${userData.role}</div>
+        </div>
+        <span class="unread-badge" style="display:none;">0</span>
+      `;
+      
+      // Add click event listener to the new item
+      newItem.addEventListener('click', function() {
+        openChat(userId, {
+          name: userData.name,
+          avatar: userData.avatar,
+          role: userData.role,
+          profile_url: profileUrl
+        });
+        selectContact(userId);
+      });
+      
+      // Add to the beginning of the list
+      recents.insertBefore(newItem, recents.firstChild);
+      
+      // Update the recentUsers array
+      recentUsers.unshift({
+        id: userId,
+        name: userData.name.toLowerCase(),
+        el: newItem
+      });
+    }
+  }
+
   // --- Event listeners ---
+  // Send message event listeners
   sendBtn.addEventListener('click', sendMessage);
-  
   inputEl.addEventListener('keypress', function(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();

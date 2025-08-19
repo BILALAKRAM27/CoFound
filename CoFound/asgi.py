@@ -21,12 +21,14 @@ django_asgi_app = get_asgi_application()
 
 # Import routing after settings and Django app are initialized
 import Entrepreneurs.routing
+import Investors.routing
 
 application = ProtocolTypeRouter({
     'http': django_asgi_app,
     'websocket': AuthMiddlewareStack(
         URLRouter(
-            Entrepreneurs.routing.websocket_urlpatterns
+            Entrepreneurs.routing.websocket_urlpatterns +
+            Investors.routing.websocket_urlpatterns
         )
     ),
 })

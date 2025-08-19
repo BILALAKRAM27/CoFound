@@ -90,10 +90,21 @@ class EntrepreneurProfileForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Your startup or company name'
             }),
-            'industries': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'e.g., Fintech, AI, Healthcare, SaaS'
-            }),
+            'industries': forms.Select(attrs={
+                'class': 'form-select'
+            }, choices=[
+                ('', 'Select industries...'),
+                ('ai', 'Artificial Intelligence (AI)'),
+                ('fintech', 'Fintech'),
+                ('healthtech', 'Healthtech'),
+                ('enterprise_saas', 'Enterprise AI SaaS'),
+                ('logistics', 'Logistics & Supply Chain Tech'),
+                ('quantum', 'Quantum Computing'),
+                ('insurtech', 'InsurTech'),
+                ('spacetech', 'SpaceTech'),
+                ('creator_tools', 'Creator Economy Tools'),
+                ('cleantech', 'CleanTech & Green Energy'),
+            ]),
             'startup_description': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 4,
@@ -189,10 +200,21 @@ class StartupForm(forms.ModelForm):
                 'rows': 4,
                 'placeholder': 'Describe your startup...'
             }),
-            'industry': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'e.g., FinTech, HealthTech, AI'
-            }),
+            'industry': forms.Select(attrs={
+                'class': 'form-select'
+            }, choices=[
+                ('', 'Select industry...'),
+                ('ai', 'Artificial Intelligence (AI)'),
+                ('fintech', 'Fintech'),
+                ('healthtech', 'Healthtech'),
+                ('enterprise_saas', 'Enterprise AI SaaS'),
+                ('logistics', 'Logistics & Supply Chain Tech'),
+                ('quantum', 'Quantum Computing'),
+                ('insurtech', 'InsurTech'),
+                ('spacetech', 'SpaceTech'),
+                ('creator_tools', 'Creator Economy Tools'),
+                ('cleantech', 'CleanTech & Green Energy'),
+            ]),
             'website': forms.URLInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'https://yourstartup.com'

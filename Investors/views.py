@@ -6,32 +6,25 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from Entrepreneurs.models import User
 from .models import InvestorProfile, InvestorPortfolio, InvestmentDocument
-from .forms import InvestorRegistrationForm, InvestorProfileForm
+from .forms import InvestorRegistrationForm, InvestorProfileForm, MessageSettingsForm
 from django.http import JsonResponse
 from Entrepreneurs.models import Post, PostMedia
 from Entrepreneurs.forms import PostForm
 from django.views.decorators.http import require_POST, require_http_methods
 from django.http import JsonResponse, HttpResponseForbidden
-from Entrepreneurs.models import Post, Comment, CollaborationRequest, EntrepreneurProfile, Favorite
+from Entrepreneurs.models import Post, Comment, CollaborationRequest, EntrepreneurProfile, Favorite, Message
 from Entrepreneurs.forms import CommentForm
 from django.shortcuts import get_object_or_404
 import base64
 from django.db import transaction
 from django.db.models import Q
-from django.forms import ModelForm
-
-
-class MessageSettingsForm(ModelForm):
-    class Meta:
-        model = User
-        fields = ['message_privacy']
 
 @login_required
 def message_settings(request):
     if request.method == 'POST':
         form = MessageSettingsForm(request.POST, instance=request.user)
         if form.is_valid():
-            form.save(update_fields=['message_privacy'])
+            form.save()
             return redirect('investors:messages')
     else:
         form = MessageSettingsForm(instance=request.user)
@@ -41,6 +34,26 @@ def message_settings(request):
 def messages_page(request):
     # Recent chats = users you've exchanged messages with OR you follow
     recent_users = set()
+    # Users you've messaged (sent or received)
+    from Entrepreneurs.models import Message
+    msg_users = set()
+    # Get all messages where user is sender or receiver
+    messages = Message.objects.filter(Q(sender=request.user) | Q(receiver=request.user)).distinct()
+    
+    # Extract unique user IDs from sender and receiver fields
+    for msg in messages:
+        if msg.sender != request.user:
+            msg_users.add(msg.sender.id)
+        if msg.receiver != request.user:
+            msg_users.add(msg.receiver.id)
+    
+    # Add users to recent_users set
+    for uid in msg_users:
+        try:
+            u = User.objects.get(id=uid)
+            recent_users.add(u)
+        except User.DoesNotExist:
+            pass
     # Favorites
     for f in Favorite.objects.filter(user=request.user).select_related('target_user'):
         recent_users.add(f.target_user)
@@ -76,21 +89,70 @@ def message_search(request):
         try:
             if hasattr(u, 'entrepreneur_profile') and u.entrepreneur_profile.image:
                 import base64
-                return base64.b64encode(u.entrepreneur_profile.image).decode('utf-8')
+                return 'data:image/jpeg;base64,' + base64.b64encode(u.entrepreneur_profile.image).decode('utf-8')
             if hasattr(u, 'investor_profile') and u.investor_profile.image:
                 import base64
-                return base64.b64encode(u.investor_profile.image).decode('utf-8')
+                return 'data:image/jpeg;base64,' + base64.b64encode(u.investor_profile.image).decode('utf-8')
         except Exception:
             return ''
         return ''
+
+    def profile_url(u):
+        if u.role == 'investor':
+            return f"/investor/profile/{u.id}/"
+        else:
+            return f"/entrepreneur/profile/{u.id}/"
 
     results = [{
         'id': u.id,
         'name': u.get_full_name() or u.email,
         'role': u.role,
-        'avatar': img64(u)
+        'avatar': img64(u),
+        'profile_url': profile_url(u)
     } for u in qs]
     return JsonResponse({ 'results': results })
+
+
+@login_required
+def get_messages(request, user_id):
+    """Get messages between current user and another user"""
+    from Entrepreneurs.models import User
+    
+    # Enforce privacy: only show messages if allowed
+    other = User.objects.get(id=user_id)
+    if other.message_privacy == 'private':
+        is_friend = (request.user.favorited_by.filter(user=other).exists() and
+                     request.user.favorites.filter(target_user=other).exists())
+        if not is_friend:
+            return HttpResponseForbidden('User only allows messages from friends.')
+    
+    qs = Message.objects.filter(
+        (Q(sender=request.user) & Q(receiver=other)) |
+        (Q(sender=other) & Q(receiver=request.user))
+    ).order_by('timestamp')
+    
+    # Mark unread messages as read
+    qs.filter(receiver=request.user, is_read=False).update(is_read=True)
+    
+    # Serialize messages
+    messages_data = []
+    for msg in qs:
+        message_data = {
+            'id': msg.id,
+            'content': msg.content,
+            'sender': msg.sender.id,
+            'receiver': msg.receiver.id,
+            'timestamp': msg.timestamp.isoformat(),
+            'is_read': msg.is_read,
+            'message_type': msg.message_type,
+            'file_name': msg.file_name,
+            'file_type': msg.file_type,
+            'file_size': msg.file_size,
+            'file_base64': msg.file_data.decode('utf-8') if msg.file_data else None
+        }
+        messages_data.append(message_data)
+    
+    return JsonResponse({'messages': messages_data})
 
 
 def investor_register(request):
@@ -105,9 +167,8 @@ def investor_register(request):
             # Create a basic profile with default values
             profile = InvestorProfile.objects.create(user=user)
             
-            login(request, user)
-            messages.success(request, 'Registration successful! Welcome to CoFound!')
-            return redirect('home')  # Redirect to base.html (common home)
+            messages.success(request, 'Registration successful! Please log in to continue.')
+            return redirect('investors:login')  # Redirect to login page instead of auto-login
         else:
             # Display form errors
             for field, errors in form.errors.items():

@@ -2,6 +2,11 @@ from django import forms
 from Entrepreneurs.models import User
 from .models import InvestorProfile, InvestorPortfolio, InvestmentDocument
 
+# Message Settings Form
+class MessageSettingsForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['message_privacy']
 
 # ---------------------------
 # Registration / Profiles
@@ -90,10 +95,21 @@ class InvestorProfileForm(forms.ModelForm):
             'investment_size': forms.Select(attrs={
                 'class': 'form-select'
             }),
-            'preferred_industries': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'e.g., Fintech, AI, Healthcare, SaaS'
-            }),
+            'preferred_industries': forms.Select(attrs={
+                'class': 'form-select'
+            }, choices=[
+                ('', 'Select preferred industries...'),
+                ('ai', 'Artificial Intelligence (AI)'),
+                ('fintech', 'Fintech'),
+                ('healthtech', 'Healthtech'),
+                ('enterprise_saas', 'Enterprise AI SaaS'),
+                ('logistics', 'Logistics & Supply Chain Tech'),
+                ('quantum', 'Quantum Computing'),
+                ('insurtech', 'InsurTech'),
+                ('spacetech', 'SpaceTech'),
+                ('creator_tools', 'Creator Economy Tools'),
+                ('cleantech', 'CleanTech & Green Energy'),
+            ]),
             'portfolio_companies': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,

@@ -41,13 +41,12 @@ def entrepreneur_register(request):
             profile = EntrepreneurProfile.objects.create(
                 user=user,
                 company_stage='idea',
-                team_size=1,
-                funding_raised=0
+                team_size='1',
+                funding_raised='no_funding'
             )
             
-            login(request, user)
-            messages.success(request, 'Registration successful! Welcome to CoFound!')
-            return redirect('home')  # Redirect to base.html (common home)
+            messages.success(request, 'Registration successful! Please log in to continue.')
+            return redirect('entrepreneurs:login')  # Redirect to login page instead of auto-login
         else:
             # Display form errors
             for field, errors in form.errors.items():

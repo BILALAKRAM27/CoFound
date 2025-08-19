@@ -57,6 +57,20 @@ VALUATION_RANGES = [
     ('1b+', '$1B+')
 ]
 
+# Industry choices for both entrepreneurs and investors
+INDUSTRY_CHOICES = [
+    ('ai', 'Artificial Intelligence (AI)'),
+    ('fintech', 'Fintech'),
+    ('healthtech', 'Healthtech'),
+    ('enterprise_saas', 'Enterprise AI SaaS'),
+    ('logistics', 'Logistics & Supply Chain Tech'),
+    ('quantum', 'Quantum Computing'),
+    ('insurtech', 'InsurTech'),
+    ('spacetech', 'SpaceTech'),
+    ('creator_tools', 'Creator Economy Tools'),
+    ('cleantech', 'CleanTech & Green Energy'),
+]
+
 # -----------------------------
 # Core / Accounts / Shared
 # -----------------------------
@@ -127,7 +141,7 @@ class EntrepreneurProfile(models.Model):
     linkedin_url = models.URLField(blank=True, null=True)
     bio = models.TextField(blank=True)
     location = models.CharField(max_length=255, blank=True)
-    industries = models.CharField(max_length=500, blank=True)
+    industries = models.CharField(max_length=500, blank=True, choices=INDUSTRY_CHOICES)
     startup_description = models.TextField(blank=True)
     company_stage = models.CharField(max_length=50, choices=COMPANY_STAGES, default='idea')
     funding_need = models.CharField(max_length=50, choices=FUNDING_NEEDS, default='not_specified')
@@ -153,7 +167,7 @@ class Startup(models.Model):
     )
     name = models.CharField(max_length=255)
     description = models.TextField()
-    industry = models.CharField(max_length=100)
+    industry = models.CharField(max_length=100, choices=INDUSTRY_CHOICES)
     website = models.URLField(blank=True, null=True)
     logo = models.BinaryField(editable=True,blank=True, null=True)  # BLOB logo
 

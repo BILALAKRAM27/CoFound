@@ -22,6 +22,20 @@ INVESTMENT_SIZES = [
     ('50m+', '$50M+')
 ]
 
+# Industry choices for both entrepreneurs and investors
+INDUSTRY_CHOICES = [
+    ('ai', 'Artificial Intelligence (AI)'),
+    ('fintech', 'Fintech'),
+    ('healthtech', 'Healthtech'),
+    ('enterprise_saas', 'Enterprise AI SaaS'),
+    ('logistics', 'Logistics & Supply Chain Tech'),
+    ('quantum', 'Quantum Computing'),
+    ('insurtech', 'InsurTech'),
+    ('spacetech', 'SpaceTech'),
+    ('creator_tools', 'Creator Economy Tools'),
+    ('cleantech', 'CleanTech & Green Energy'),
+]
+
 # -----------------------------
 # Investors domain
 # -----------------------------
@@ -36,7 +50,7 @@ class InvestorProfile(models.Model):
     location = models.CharField(max_length=255, blank=True)
     investment_stage = models.CharField(max_length=50, choices=INVESTMENT_STAGES, default='not_specified')
     investment_size = models.CharField(max_length=50, choices=INVESTMENT_SIZES, default='not_specified')
-    preferred_industries = models.CharField(max_length=500, blank=True)
+    preferred_industries = models.CharField(max_length=500, blank=True, choices=INDUSTRY_CHOICES)
     portfolio_companies = models.TextField(blank=True)
     notable_exits = models.TextField(blank=True)
     image = models.BinaryField(editable=True, null=True, blank=True)

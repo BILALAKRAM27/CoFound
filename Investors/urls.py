@@ -22,6 +22,7 @@ urlpatterns = [
     path('messages/', views.messages_page, name='messages'),
     path('messages/settings/', views.message_settings, name='message_settings'),
     path('messages/search/', views.message_search, name='message_search'),
+    path('messages/<int:user_id>/', views.get_messages, name='get_messages'),
 ]
 
 # Comments
