@@ -531,9 +531,6 @@
                                             </div>
                                         {% endif %}
                                     {% endwith %}
-                                    <div class="media-overlay">
-                                        <div class="media-count">+{{ media_count }}</div>
-                                    </div>
                                 </div>
                                 <div class="media-secondary">
                                     {% for media in post.media_files.all|slice:"1:3" %}
@@ -557,6 +554,11 @@
                                                      data-file-name="{{ media.file_name }}"
                                                      data-file-data="{{ media.file_data|b64encode_blob }}">
                                                     <i class="bi bi-file-earmark"></i>
+                                                </div>
+                                            {% endif %}
+                                            {% if forloop.first %}
+                                                <div class="media-overlay">
+                                                    <div class="media-count">+{{ media_count }}</div>
                                                 </div>
                                             {% endif %}
                                         </div>

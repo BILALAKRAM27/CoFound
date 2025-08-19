@@ -11,13 +11,17 @@
       <div class="col-12 col-sm-6 col-lg-4">
         <div class="card border-0 shadow-sm h-100">
           <div class="card-body d-flex gap-3">
-            {% if st.user|get_profile_image %}
-              <img src="data:image/jpeg;base64,{{ st.user|get_profile_image|b64encode_blob }}" class="rounded-circle" width="56" height="56" alt="">
-            {% else %}
-              <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style="width:56px;height:56px;"><i class="bi bi-person"></i></div>
-            {% endif %}
+            <a href="{% url 'entrepreneurs:profile_detail' st.user.id %}">
+              {% if st.user|get_profile_image %}
+                <img src="data:image/jpeg;base64,{{ st.user|get_profile_image|b64encode_blob }}" class="rounded-circle" width="56" height="56" alt="">
+              {% else %}
+                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style="width:56px;height:56px;"><i class="bi bi-person"></i></div>
+              {% endif %}
+            </a>
             <div class="flex-grow-1">
-              <h6 class="mb-1">{{ st.user.get_full_name|default:st.user.email }}</h6>
+              <h6 class="mb-1">
+                <a href="{% url 'entrepreneurs:profile_detail' st.user.id %}" class="text-decoration-none text-dark">{{ st.user.get_full_name|default:st.user.email }}</a>
+              </h6>
               <small class="text-muted d-block">Startup • {{ st.company_name|default:"Company N/A" }}</small>
               {% if st.startup_description %}<p class="mb-2 small text-muted">{{ st.startup_description|truncatechars:120 }}</p>{% endif %}
               <div class="d-flex gap-2">

@@ -394,4 +394,31 @@ def investor_connect(request, target_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
+@login_required
+def investor_profile_detail(request, user_id):
+    from Entrepreneurs.models import EntrepreneurProfile, Post, CollaborationRequest
+    from .models import InvestorProfile
+    from django.shortcuts import get_object_or_404
+    from django.db.models import Q
+    target_user = get_object_or_404(User, id=user_id, role='investor')
+    profile = get_object_or_404(InvestorProfile, user=target_user)
+    posts = Post.objects.filter(author=target_user).order_by('-created_at')
+    # Check connection status if viewer is entrepreneur
+    connection = None
+    if request.user.role == 'entrepreneur':
+        connection = CollaborationRequest.objects.filter(
+            investor=target_user, entrepreneur=request.user, status='accepted'
+        ).first()
+    # For investors viewing, show if they are viewing their own profile
+    is_self = (request.user == target_user)
+    context = {
+        'profile_user': target_user,
+        'profile': profile,
+        'posts': posts,
+        'connection': connection,
+        'is_self': is_self,
+        'viewer_role': request.user.role,
+    }
+    return render(request, 'profile_detail.html', context)
+
 

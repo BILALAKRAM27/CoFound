@@ -9,6 +9,7 @@ urlpatterns = [
 	path('logout/', views.investor_logout, name='logout'),
 	path('dashboard/', views.investor_dashboard, name='dashboard'),
 	path('profile/', views.investor_profile, name='profile'),
+	path('profile/<int:user_id>/', views.investor_profile_detail, name='profile_detail'),
 	path('create-post/', views.create_post, name='create_post'),
 	path('like-post/<int:post_id>/', views.like_post, name='like_post'),
 ]
