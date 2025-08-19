@@ -13,7 +13,7 @@ urlpatterns = [
 	path('like-post/<int:post_id>/', views.like_post, name='like_post'),
 ]
 
-# Comment endpoints
+# Comments
 urlpatterns += [
 	path('add-comment/<int:post_id>/', views.add_comment, name='add_comment'),
 	path('edit-comment/<int:comment_id>/', views.edit_comment, name='edit_comment'),
@@ -24,4 +24,10 @@ urlpatterns += [
 urlpatterns += [
 	path('toggle-save/<int:post_id>/', views.toggle_save, name='toggle_save'),
 	path('saved-posts/', views.saved_posts, name='saved_posts'),
+]
+
+# Discovery
+urlpatterns += [
+	path('find-startups/', views.find_startups, name='find_startups'),
+	path('connect/<int:target_id>/', views.investor_connect, name='connect_startup'),
 ]

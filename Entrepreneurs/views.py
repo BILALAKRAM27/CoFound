@@ -11,10 +11,12 @@ from .forms import PostForm
 from .models import Post, PostMedia
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponseForbidden
-from .models import Post, Comment
+from .models import Post, Comment, CollaborationRequest
 from .forms import CommentForm
 from django.shortcuts import get_object_or_404
 import base64
+from Investors.models import InvestorProfile
+from django.db.models import Q
 
 
 def entrepreneur_register(request):
@@ -267,4 +269,25 @@ def delete_comment(request, comment_id):
 		return HttpResponseForbidden('Not allowed')
 	comment.delete()
 	return JsonResponse({'success': True})
+
+
+@login_required
+def find_investors(request):
+    if request.user.role != 'entrepreneur':
+        messages.error(request, 'Access denied.')
+        return redirect('home')
+    investors = InvestorProfile.objects.select_related('user').all()
+    return render(request, 'Entrepreneurs/find_investors.html', { 'investors': investors })
+
+@login_required
+@require_POST
+def entrepreneur_connect(request, target_id):
+    if request.user.role != 'entrepreneur':
+        return JsonResponse({'success': False, 'error': 'Access denied'})
+    try:
+        target = User.objects.get(id=target_id, role='investor')
+        CollaborationRequest.objects.create(investor=target, entrepreneur=request.user, status='pending')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 

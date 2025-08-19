@@ -12,7 +12,7 @@ from Entrepreneurs.models import Post, PostMedia
 from Entrepreneurs.forms import PostForm
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponseForbidden
-from Entrepreneurs.models import Post, Comment
+from Entrepreneurs.models import Post, Comment, CollaborationRequest, EntrepreneurProfile
 from Entrepreneurs.forms import CommentForm
 from django.shortcuts import get_object_or_404
 import base64
@@ -373,5 +373,25 @@ def saved_posts(request):
         'saved_page': True,
     }
     return render(request, 'saved_posts.html', context)
+
+@login_required
+def find_startups(request):
+    if request.user.role != 'investor':
+        messages.error(request, 'Access denied.')
+        return redirect('home')
+    startups = EntrepreneurProfile.objects.select_related('user').all()
+    return render(request, 'find_startups.html', { 'startups': startups })
+
+@login_required
+@require_POST
+def investor_connect(request, target_id):
+    if request.user.role != 'investor':
+        return JsonResponse({'success': False, 'error': 'Access denied'})
+    try:
+        target = User.objects.get(id=target_id, role='entrepreneur')
+        CollaborationRequest.objects.create(investor=request.user, entrepreneur=target, status='pending')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 
