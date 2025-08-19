@@ -12,6 +12,10 @@ urlpatterns = [
 	path('profile/<int:user_id>/', views.investor_profile_detail, name='profile_detail'),
 	path('create-post/', views.create_post, name='create_post'),
 	path('like-post/<int:post_id>/', views.like_post, name='like_post'),
+    path('my-posts/', views.my_posts, name='my_posts'),
+    path('posts/<int:post_id>/edit/', views.edit_post, name='edit_post'),
+    path('posts/<int:post_id>/remove-media/<int:media_id>/', views.remove_post_media, name='remove_post_media'),
+    path('posts/<int:post_id>/reorder-media/', views.reorder_post_media, name='reorder_post_media'),
 ]
 
 # Comments

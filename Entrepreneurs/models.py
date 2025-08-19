@@ -344,7 +344,11 @@ class PostMedia(models.Model):
     file_type = models.CharField(max_length=100, blank=True)
     file_data = models.BinaryField(editable=True, null=True, blank=True)
     file_size = models.PositiveIntegerField(default=0)
+    position = models.PositiveIntegerField(default=0)
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['position', 'uploaded_at', 'id']
 
     def file_base64(self):
         if self.file_data:

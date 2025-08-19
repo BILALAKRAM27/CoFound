@@ -9,7 +9,7 @@ from .forms import EntrepreneurRegistrationForm, EntrepreneurProfileForm
 from django.http import JsonResponse
 from .forms import PostForm
 from .models import Post, PostMedia
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.http import JsonResponse, HttpResponseForbidden
 from .models import Post, Comment, CollaborationRequest
 from .forms import CommentForm
@@ -17,6 +17,7 @@ from django.shortcuts import get_object_or_404
 import base64
 from Investors.models import InvestorProfile
 from django.db.models import Q
+from django.db import transaction
 
 
 def entrepreneur_register(request):
@@ -318,4 +319,44 @@ def entrepreneur_profile_detail(request, user_id):
         'viewer_role': request.user.role,
     }
     return render(request, 'profile_detail.html', context)
+
+@login_required
+def my_posts(request):
+    posts = Post.objects.select_related(
+        'author', 'author__entrepreneur_profile', 'author__investor_profile'
+    ).prefetch_related('media_files', 'likes', 'comments').filter(author=request.user).order_by('-created_at')
+    return render(request, 'my_posts.html', { 'posts': posts })
+
+@login_required
+@require_http_methods(["POST"]) 
+@transaction.atomic
+def edit_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id, author=request.user)
+    new_content = request.POST.get('content', '').strip()
+    post.content = new_content
+    post.save(update_fields=['content', 'updated_at'])
+    return JsonResponse({ 'success': True })
+
+@login_required
+@require_http_methods(["POST"]) 
+@transaction.atomic
+def remove_post_media(request, post_id, media_id):
+    post = get_object_or_404(Post, id=post_id, author=request.user)
+    media = get_object_or_404(PostMedia, id=media_id, post=post)
+    media.delete()
+    return JsonResponse({ 'success': True })
+
+@login_required
+@require_http_methods(["POST"]) 
+@transaction.atomic
+def reorder_post_media(request, post_id):
+    post = get_object_or_404(Post, id=post_id, author=request.user)
+    # Expect payload: order=[media_id_1, media_id_2, ...]
+    order = request.POST.getlist('order[]') or request.POST.getlist('order')
+    try:
+        for index, media_id in enumerate(order):
+            PostMedia.objects.filter(id=int(media_id), post=post).update(position=index)
+        return JsonResponse({ 'success': True })
+    except Exception as e:
+        return JsonResponse({ 'success': False, 'error': str(e) }, status=400)
 

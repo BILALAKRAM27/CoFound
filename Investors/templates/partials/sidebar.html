@@ -51,15 +51,21 @@
     <nav class="sidebar-nav">
         <ul class="nav flex-column">
             <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" 
+                   href="{% url 'home' %}">
+                    <i class="fa fa-home" aria-hidden="true"></i>Home
+                </a>
+            </li>
+            <li class="nav-item">
                 {% if user.is_authenticated and user.role == 'entrepreneur' %}
                     <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.namespace == 'entrepreneurs' %}active{% endif %}" 
                        href="{% url 'entrepreneurs:dashboard' %}">
-                        <i class="bi bi-house-door"></i>Dashboard
+                       <i class="fa fa-line-chart" aria-hidden="true"></i>Dashboard
                     </a>
                 {% else %}
                     <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.namespace == 'investors' %}active{% endif %}" 
                        href="{% url 'investors:dashboard' %}">
-                        <i class="bi bi-house-door"></i>Dashboard
+                       <i class="fa fa-line-chart" aria-hidden="true"></i>Dashboard
                     </a>
                 {% endif %}
             </li>
@@ -76,6 +82,11 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'my_posts' %}active{% endif %}" href="{% url 'investors:my_posts' %}">
+                    <i class="fa fa-map-signs" aria-hidden="true"></i>My posts
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'saved_posts' %}active{% endif %}" href="{% url 'investors:saved_posts' %}">
                     <i class="bi bi-bookmark"></i>Saved Posts
                 </a>
@@ -85,14 +96,10 @@
                     <i class="bi bi-people"></i>My Network
                 </a>
             </li>
+            
             <li class="nav-item">
-                <a class="nav-link {% if 'analytics' in request.path %}active{% endif %}" href="#">
-                    <i class="bi bi-graph-up"></i>Analytics
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if 'events' in request.path %}active{% endif %}" href="#">
-                    <i class="bi bi-calendar-event"></i>Events
+                <a class="nav-link {% if 'sign-out' in request.path %}active{% endif %}" href="{% url 'investors:logout' %}" style="color: rgb(251, 71, 71);">
+                    <i class="fa fa-sign-out" aria-hidden="true"></i>Sign-out
                 </a>
             </li>
         </ul>
