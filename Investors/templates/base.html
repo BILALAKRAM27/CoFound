@@ -1,9 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CoFound - Where Innovation Meets Investment{% endblock %}</title>
+    
+    <script>
+        (function() {
+            try {
+                var theme = localStorage.getItem('cf-theme') || 'light';
+                document.documentElement.setAttribute('data-bs-theme', theme);
+            } catch (e) { /* ignore */ }
+        })();
+    </script>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -529,38 +538,25 @@
                 this.themeToggle = document.getElementById('themeToggle');
                 this.html = document.documentElement;
                 this.themeIcon = this.themeToggle?.querySelector('i');
-                this.currentTheme = 'light';
-                
+                this.currentTheme = localStorage.getItem('cf-theme') || 'light';
                 this.init();
             }
 
             init() {
-            // Load saved theme or default to light
-                this.loadTheme();
-                
-                // Set up event listeners
-                this.setupEventListeners();
-                
-                // Apply theme to body and other elements
                 this.applyTheme();
-            }
-
-            loadTheme() {
-                this.currentTheme = localStorage.getItem('cf-theme') || 'light';
+                this.setupEventListeners();
+                this.updateIcon();
             }
 
             setupEventListeners() {
                 if (this.themeToggle) {
-                    this.themeToggle.addEventListener('click', () => {
-                        this.toggleTheme();
-                    });
+                    this.themeToggle.addEventListener('click', () => this.toggleTheme());
                 }
-
-                // Listen for theme changes from other instances
                 window.addEventListener('storage', (e) => {
                     if (e.key === 'cf-theme') {
                         this.currentTheme = e.newValue || 'light';
                         this.applyTheme();
+                        this.updateIcon();
                     }
                 });
             }
@@ -570,34 +566,19 @@
                 this.saveTheme();
                 this.applyTheme();
                 this.updateIcon();
-                
-                // Dispatch custom event for other components
-                window.dispatchEvent(new CustomEvent('themeChanged', {
-                    detail: { theme: this.currentTheme }
-                }));
+                window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: this.currentTheme } }));
             }
 
-            saveTheme() {
-                localStorage.setItem('cf-theme', this.currentTheme);
-            }
+            saveTheme() { localStorage.setItem('cf-theme', this.currentTheme); }
 
             applyTheme() {
-                // Apply to HTML element
                 this.html.setAttribute('data-bs-theme', this.currentTheme);
-                
-                // Apply to body
                 document.body.setAttribute('data-bs-theme', this.currentTheme);
-                
-                // Update CSS custom properties
                 this.updateCSSVariables();
-                
-                // Apply theme to Bootstrap components
-                this.updateBootstrapTheme();
             }
 
             updateCSSVariables() {
                 const root = document.documentElement;
-                
                 if (this.currentTheme === 'dark') {
                     root.style.setProperty('--cf-sidebar-bg', '#1e293b');
                     root.style.setProperty('--cf-sidebar-border', '#334155');
@@ -611,38 +592,13 @@
                 }
             }
 
-            updateBootstrapTheme() {
-                // Update Bootstrap theme for components
-                const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-                tooltips.forEach(tooltip => {
-                    if (tooltip._tooltip) {
-                        tooltip._tooltip.dispose();
-                        new bootstrap.Tooltip(tooltip);
-                    }
-                });
-            }
-
             updateIcon() {
                 if (this.themeIcon) {
                     this.themeIcon.className = this.currentTheme === 'light' ? 'bi bi-moon' : 'bi bi-sun';
                 }
             }
-
-            getCurrentTheme() {
-                return this.currentTheme;
-            }
-
-            setTheme(theme) {
-                if (['light', 'dark'].includes(theme)) {
-                    this.currentTheme = theme;
-                    this.saveTheme();
-                    this.applyTheme();
-                    this.updateIcon();
-                }
-            }
         }
 
-        // Initialize theme manager when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             window.themeManager = new ThemeManager();
         });
