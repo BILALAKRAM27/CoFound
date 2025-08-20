@@ -12,14 +12,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if not self.user or not self.user.is_authenticated:
             await self.close()
             return
+        
         self.other_user_id = self.scope['url_route']['kwargs']['user_id']
         self.room_name = self.get_room_name(self.user.id, self.other_user_id)
         self.room_group_name = f'chat_{self.room_name}'
-        # Privacy enforcement
+        
+        # Strict privacy enforcement - reject connection if not allowed
         allowed = await self.is_allowed(self.user.id, int(self.other_user_id))
         if not allowed:
-            await self.close()
+            print(f"WebSocket connection rejected: User {self.user.id} cannot message user {self.other_user_id} due to privacy settings")
+            await self.close(code=4001, reason="Privacy violation: User not allowed to message this user")
             return
+        
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -115,9 +119,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             other = User.objects.get(id=other_id)
             if other.message_privacy == 'public':
                 return True
-            # Private: only mutual friends
-            is_friend = (user.favorited_by.filter(user=other).exists() and
-                         user.favorites.filter(target_user=other).exists())
+            # Private: allow if either user follows the other (more permissive friendship)
+            is_friend = (user.favorites.filter(target_user=other).exists() or
+                         user.favorited_by.filter(user=other).exists())
             return is_friend
         except Exception:
             return False
@@ -127,6 +131,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             sender = User.objects.get(id=sender_id)
             receiver = User.objects.get(id=receiver_id)
+            
+            # Double privacy enforcement - even though connection is protected
+            if receiver.message_privacy == 'private':
+                is_friend = (sender.favorites.filter(target_user=receiver).exists() or
+                             sender.favorited_by.filter(user=receiver).exists())
+                if not is_friend:
+                    print(f"Privacy violation blocked: User {sender_id} attempted to message private user {receiver_id}")
+                    return None
+            
             msg = Message(
                 sender=sender,
                 receiver=receiver,

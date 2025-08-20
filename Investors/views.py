@@ -47,17 +47,27 @@ def messages_page(request):
         if msg.receiver != request.user:
             msg_users.add(msg.receiver.id)
     
-    # Add users to recent_users set
+    # Add users to recent_users set, respecting privacy settings
     for uid in msg_users:
         try:
             u = User.objects.get(id=uid)
-            recent_users.add(u)
+            # For private users, only show if there's a connection
+            if u.message_privacy == 'public':
+                recent_users.add(u)
+            else:
+                # Check if there's any connection (following or followed)
+                is_connected = (request.user.favorites.filter(target_user=u).exists() or
+                               request.user.favorited_by.filter(user=u).exists())
+                if is_connected:
+                    recent_users.add(u)
         except User.DoesNotExist:
             pass
-    # Favorites
+    
+    # Add users you follow (favorites)
     for f in Favorite.objects.filter(user=request.user).select_related('target_user'):
         recent_users.add(f.target_user)
-    # People who follow you (optional to show)
+    
+    # Add users who follow you
     for f in Favorite.objects.filter(target_user=request.user).select_related('user'):
         recent_users.add(f.user)
     # Limit and sort
@@ -71,14 +81,23 @@ def message_search(request):
     if not q:
         return JsonResponse({ 'results': [] })
     # Who is allowed to appear?
-    # public users OR private users followed by current user (friend)
+    # public users OR private users who have any connection with current user
     allowed_ids = set(User.objects.filter(message_privacy='public').values_list('id', flat=True))
-    # friends: targets you follow
-    friend_ids = set(Favorite.objects.filter(user=request.user).values_list('target_user_id', flat=True))
-    # also people who follow you (optional):
+    
+    # Private users who follow current user OR are followed by current user
+    private_friend_ids = set()
+    # Users I follow
+    following_ids = set(Favorite.objects.filter(user=request.user).values_list('target_user_id', flat=True))
+    # Users who follow me
     follower_ids = set(Favorite.objects.filter(target_user=request.user).values_list('user_id', flat=True))
-    allowed_ids.update(friend_ids)
-    allowed_ids.update(follower_ids)
+    
+    # Add private users who have any connection
+    private_users = User.objects.filter(message_privacy='private')
+    for private_user in private_users:
+        if (private_user.id in following_ids or private_user.id in follower_ids):
+            private_friend_ids.add(private_user.id)
+    
+    allowed_ids.update(private_friend_ids)
     allowed_ids.discard(request.user.id)
 
     qs = User.objects.filter(id__in=list(allowed_ids)).filter(
@@ -108,7 +127,8 @@ def message_search(request):
         'name': u.get_full_name() or u.email,
         'role': u.role,
         'avatar': img64(u),
-        'profile_url': profile_url(u)
+        'profile_url': profile_url(u),
+        'is_private': u.message_privacy == 'private'
     } for u in qs]
     return JsonResponse({ 'results': results })
 
@@ -121,8 +141,8 @@ def get_messages(request, user_id):
     # Enforce privacy: only show messages if allowed
     other = User.objects.get(id=user_id)
     if other.message_privacy == 'private':
-        is_friend = (request.user.favorited_by.filter(user=other).exists() and
-                     request.user.favorites.filter(target_user=other).exists())
+        is_friend = (request.user.favorites.filter(target_user=other).exists() or
+                     request.user.favorited_by.filter(user=other).exists())
         if not is_friend:
             return HttpResponseForbidden('User only allows messages from friends.')
     

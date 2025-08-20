@@ -391,9 +391,9 @@ def send_message(request):
             receiver = form.cleaned_data['receiver']
             # Privacy enforcement
             if receiver.message_privacy == 'private':
-                # Only allow if mutual connection (friend)
-                is_friend = (request.user.favorited_by.filter(user=receiver).exists() and
-                             request.user.favorites.filter(target_user=receiver).exists())
+                # Allow if either user follows the other (more permissive friendship)
+                is_friend = (request.user.favorites.filter(target_user=receiver).exists() or
+                             request.user.favorited_by.filter(user=receiver).exists())
                 if not is_friend:
                     return HttpResponseForbidden('User only accepts messages from friends.')
             msg = form.save(commit=False)
@@ -414,12 +414,122 @@ def send_message(request):
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
 
 @login_required
+def messages_page(request):
+    """Main messages page for entrepreneurs"""
+    # Recent chats = users you've exchanged messages with OR you follow
+    recent_users = set()
+    # Users you've messaged (sent or received)
+    from .models import Message, Favorite
+    
+    msg_users = set()
+    # Get all messages where user is sender or receiver
+    messages = Message.objects.filter(Q(sender=request.user) | Q(receiver=request.user)).distinct()
+    
+    # Extract unique user IDs from sender and receiver fields
+    for msg in messages:
+        if msg.sender != request.user:
+            msg_users.add(msg.sender.id)
+        if msg.receiver != request.user:
+            msg_users.add(msg.receiver.id)
+    
+    # Add users to recent_users set, respecting privacy settings
+    for uid in msg_users:
+        try:
+            u = User.objects.get(id=uid)
+            # For private users, only show if there's a connection
+            if u.message_privacy == 'public':
+                recent_users.add(u)
+            else:
+                # Check if there's any connection (following or followed)
+                is_connected = (request.user.favorites.filter(target_user=u).exists() or
+                               request.user.favorited_by.filter(user=u).exists())
+                if is_connected:
+                    recent_users.add(u)
+        except User.DoesNotExist:
+            pass
+    
+    # Add users you follow (favorites)
+    for f in Favorite.objects.filter(user=request.user).select_related('target_user'):
+        recent_users.add(f.target_user)
+    
+    # Add users who follow you
+    for f in Favorite.objects.filter(target_user=request.user).select_related('user'):
+        recent_users.add(f.user)
+    
+    # Limit and sort
+    recent_list = sorted(recent_users, key=lambda u: (u.get_full_name() or u.email))[:25]
+    
+    return render(request, 'messages/index.html', { 'recents': recent_list })
+
+
+@login_required
+def message_search(request):
+    """Search public users or friends if private; enforce privacy server-side."""
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return JsonResponse({ 'results': [] })
+    
+    # Who is allowed to appear?
+    # public users OR private users who have any connection with current user
+    allowed_ids = set(User.objects.filter(message_privacy='public').values_list('id', flat=True))
+    
+    # Private users who follow current user OR are followed by current user
+    private_friend_ids = set()
+    # Users I follow
+    following_ids = set(Favorite.objects.filter(user=request.user).values_list('target_user_id', flat=True))
+    # Users who follow me
+    follower_ids = set(Favorite.objects.filter(target_user=request.user).values_list('user_id', flat=True))
+    
+    # Add private users who have any connection
+    private_users = User.objects.filter(message_privacy='private')
+    for private_user in private_users:
+        if (private_user.id in following_ids or private_user.id in follower_ids):
+            private_friend_ids.add(private_user.id)
+    
+    allowed_ids.update(private_friend_ids)
+    allowed_ids.discard(request.user.id)
+
+    qs = User.objects.filter(id__in=list(allowed_ids)).filter(
+        Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q)
+    ).select_related('entrepreneur_profile', 'investor_profile')[:20]
+
+    def img64(u):
+        try:
+            if hasattr(u, 'entrepreneur_profile') and u.entrepreneur_profile.image:
+                import base64
+                return 'data:image/jpeg;base64,' + base64.b64encode(u.entrepreneur_profile.image).decode('utf-8')
+            if hasattr(u, 'investor_profile') and u.investor_profile.image:
+                import base64
+                return 'data:image/jpeg;base64,' + base64.b64encode(u.investor_profile.image).decode('utf-8')
+        except Exception:
+            return ''
+        return ''
+
+    def profile_url(u):
+        if u.role == 'investor':
+            return f"/investor/profile/{u.id}/"
+        else:
+            return f"/entrepreneur/profile/{u.id}/"
+
+    results = [{
+        'id': u.id,
+        'name': u.get_full_name() or u.email,
+        'role': u.role,
+        'avatar': img64(u),
+        'profile_url': profile_url(u),
+        'is_private': u.message_privacy == 'private'
+    } for u in qs]
+    
+    return JsonResponse({ 'results': results })
+
+
+@login_required
 def get_messages(request, user_id):
     # Enforce privacy: only show messages if allowed
     other = User.objects.get(id=user_id)
     if other.message_privacy == 'private':
-        is_friend = (request.user.favorited_by.filter(user=other).exists() and
-                     request.user.favorites.filter(target_user=other).exists())
+        is_friend = (request.user.favorites.filter(target_user=other).exists() or
+                     request.user.favorited_by.filter(user=other).exists())
         if not is_friend:
             return HttpResponseForbidden('User only allows messages from friends.')
     qs = Message.objects.filter(

@@ -161,7 +161,7 @@
                                     </button>
                                 {% endwith %}
                                 <!-- Message Button -->
-                                <button class="btn btn-outline-secondary" onclick="window.location.href='/chat/{{ profile_user.id }}/'">
+                                <button class="btn btn-outline-secondary" onclick="openMessageChat('{{ profile_user.id }}', '{{ profile_user.role }}')">
                                     <i class="fa fa-commenting me-1"></i>Message
                                 </button>
                             {% endif %}
@@ -194,4 +194,21 @@
         </div>
     </div>
 </div>
+
+<script>
+function openMessageChat(userId, userRole) {
+    // Redirect to the messages page with the user ID as a parameter
+    // This will open the chat with the specific user
+    const currentUserRole = '{{ user.role }}'; // Get current user's role
+    
+    if (currentUserRole === 'investor') {
+        // Current user is investor, redirect to investor messages page
+        window.location.href = `/investor/messages/?open_chat=${userId}`;
+    } else {
+        // Current user is entrepreneur, redirect to entrepreneur messages page
+        window.location.href = `/entrepreneur/messages/?open_chat=${userId}`;
+    }
+}
+</script>
+
 {% endblock %}
