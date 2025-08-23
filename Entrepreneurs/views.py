@@ -544,21 +544,34 @@ def message_search(request):
 
 @login_required
 def get_messages(request, user_id):
-    # Enforce privacy: only show messages if allowed
-    other = User.objects.get(id=user_id)
-    if other.message_privacy == 'private':
-        is_friend = (request.user.favorites.filter(target_user=other).exists() or
-                     request.user.favorited_by.filter(user=other).exists())
-        if not is_friend:
-            return HttpResponseForbidden('User only allows messages from friends.')
-    qs = Message.objects.filter(
-        (Q(sender=request.user) & Q(receiver=other)) |
-        (Q(sender=other) & Q(receiver=request.user))
-    ).order_by('timestamp')
-    # Mark unread messages as read
-    qs.filter(receiver=request.user, is_read=False).update(is_read=True)
-    serializer = MessageSerializer(qs, many=True)
-    return JsonResponse({'messages': serializer.data})
+    # Check if this is a direct access (not an AJAX request)
+    # If it's a direct browser access, redirect to the chat page
+    if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # This is a direct browser access, redirect to the chat page
+        current_user_role = request.user.role
+        messages_url = '/investor/messages/' if current_user_role == 'investor' else '/entrepreneur/messages/'
+        redirect_url = f"{messages_url}?open_chat={user_id}"
+        return redirect(redirect_url)
+    
+    # This is an AJAX request, return JSON data
+    try:
+        # Enforce privacy: only show messages if allowed
+        other = User.objects.get(id=user_id)
+        if other.message_privacy == 'private':
+            is_friend = (request.user.favorites.filter(target_user=other).exists() or
+                         request.user.favorited_by.filter(user=other).exists())
+            if not is_friend:
+                return HttpResponseForbidden('User only allows messages from friends.')
+        qs = Message.objects.filter(
+            (Q(sender=request.user) & Q(receiver=other)) |
+            (Q(sender=other) & Q(receiver=request.user))
+        ).order_by('timestamp')
+        # Mark unread messages as read
+        qs.filter(receiver=request.user, is_read=False).update(is_read=True)
+        serializer = MessageSerializer(qs, many=True)
+        return JsonResponse({'messages': serializer.data})
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
 
 
 @login_required
@@ -594,3 +607,77 @@ def create_startup(request):
     
     return render(request, 'Entrepreneurs/create_startup.html', {'form': form})
 
+
+# Notification Views
+@login_required
+def notifications_list(request):
+    """Display user's notifications"""
+    from Investors.services import NotificationService
+    notifications = NotificationService.get_user_notifications(request.user, limit=100)
+    unread_count = NotificationService.get_unread_count(request.user)
+    
+    return render(request, 'Investors/notifications.html', {
+        'notifications': notifications,
+        'unread_count': unread_count,
+        'user': request.user
+    })
+
+@login_required
+@require_POST
+def mark_notification_read(request):
+    """Mark a specific notification as read"""
+    from Investors.services import NotificationService
+    notification_id = request.POST.get('notification_id')
+    if not notification_id:
+        return JsonResponse({'success': False, 'error': 'Missing notification_id'}, status=400)
+    
+    success = NotificationService.mark_as_read(notification_id, request.user)
+    if success:
+        unread_count = NotificationService.get_unread_count(request.user)
+        return JsonResponse({
+            'success': True,
+            'unread_count': unread_count
+        })
+    else:
+        return JsonResponse({'success': False, 'error': 'Notification not found'}, status=404)
+
+@login_required
+@require_POST
+def mark_all_notifications_read(request):
+    """Mark all notifications as read"""
+    from Investors.services import NotificationService
+    NotificationService.mark_all_as_read(request.user)
+    return JsonResponse({'success': True, 'unread_count': 0})
+
+@login_required
+def get_unread_count(request):
+    """Get unread notification count for AJAX requests"""
+    from Investors.services import NotificationService
+    count = NotificationService.get_unread_count(request.user)
+    return JsonResponse({'count': count})
+
+@login_required
+def get_notifications_data(request):
+    """Get notifications data for AJAX requests"""
+    from Investors.services import NotificationService
+    notifications = NotificationService.get_user_notifications(request.user, limit=20)
+    unread_count = NotificationService.get_unread_count(request.user)
+    
+    notifications_data = []
+    for notification in notifications:
+        notifications_data.append({
+            'id': notification.id,
+            'type': notification.notification_type,
+            'title': notification.title,
+            'message': notification.message,
+            'sender_name': notification.sender.get_full_name() if notification.sender else None,
+            'time_ago': notification.time_ago,
+            'is_read': notification.is_read,
+            'related_object_id': notification.related_object_id,
+            'related_object_type': notification.related_object_type,
+        })
+    
+    return JsonResponse({
+        'notifications': notifications_data,
+        'unread_count': unread_count
+    })

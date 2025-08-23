@@ -208,6 +208,6 @@ def notify_message_received(message):
         notification_type='message',
         title='New Message',
         message=f'{message.sender.get_full_name() or message.sender.email} sent you a message',
-        related_object_id=message.id,
-        related_object_type='message'
+        related_object_id=message.sender.id,  # Use sender's user ID for correct redirect
+        related_object_type='user'
     )

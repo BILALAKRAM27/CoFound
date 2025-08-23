@@ -156,7 +156,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function markNotificationAsRead(notificationId) {
-        fetch('{% url "investors:mark_notification_read" %}', {
+        const currentUserRole = '{{ user.role }}' || 'investor';
+        const markReadUrl = currentUserRole === 'investor' ? '{% url "investors:mark_notification_read" %}' : '{% url "entrepreneurs:mark_notification_read" %}';
+        fetch(markReadUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -191,7 +193,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function markAllNotificationsAsRead() {
-        fetch('{% url "investors:mark_all_notifications_read" %}', {
+        const currentUserRole = '{{ user.role }}' || 'investor';
+        const markAllReadUrl = currentUserRole === 'investor' ? '{% url "investors:mark_all_notifications_read" %}' : '{% url "entrepreneurs:mark_all_notifications_read" %}';
+        fetch(markAllReadUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -244,11 +248,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!relatedObjectId) return;
         
         let redirectUrl = '';
+        const currentUserRole = '{{ user.role }}' || 'investor';
         
         switch (notificationType) {
             case 'follow':
                 // Redirect to the sender's profile
-                redirectUrl = `/investor/profile/${relatedObjectId}/`;
+                const profileUrl = currentUserRole === 'investor' ? '/investor/profile/' : '/entrepreneur/profile/';
+                redirectUrl = `${profileUrl}${relatedObjectId}/`;
                 break;
             case 'post':
                 // Redirect to the post (assuming it's on home page)
@@ -276,7 +282,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
             case 'message':
                 // Redirect to the messages page with the specific conversation
-                redirectUrl = `/investor/messages/${relatedObjectId}/`;
+                const messagesUrl = currentUserRole === 'investor' ? '/investor/messages/' : '/entrepreneur/messages/';
+                redirectUrl = `${messagesUrl}?open_chat=${relatedObjectId}`;
                 break;
             default:
                 return;
@@ -341,11 +348,11 @@ document.addEventListener('DOMContentLoaded', function() {
             div.style.opacity = 0;
             list.prepend(div);
             setTimeout(() => { div.style.transition = 'opacity 0.5s'; div.style.opacity = 1; }, 10);
-            // Add click handler
-            div.addEventListener('click', function() {
-                markNotificationAsRead(notification.id, div);
-                handleNotificationRedirect(notification.type, notification.related_object_id, notification.related_object_type);
-            });
+                    // Add click handler
+        div.addEventListener('click', function() {
+            markNotificationAsRead(notification.id, div);
+            handleNotificationRedirect(notification.type, notification.related_object_id, notification.related_object_type);
+        });
         } else {
             // Not on notifications page, show toast (handled elsewhere)
         }
@@ -366,7 +373,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // Mark as read: update background for theme
     function markNotificationAsRead(notificationId, itemDiv) {
-        fetch('{% url "investors:mark_notification_read" %}', {
+        const currentUserRole = '{{ user.role }}' || 'investor';
+        const markReadUrl = currentUserRole === 'investor' ? '{% url "investors:mark_notification_read" %}' : '{% url "entrepreneurs:mark_notification_read" %}';
+        fetch(markReadUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',

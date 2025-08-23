@@ -766,7 +766,11 @@
     // Fetch existing messages
     const currentUserRole = '{{ user.role }}' || 'investor';
     const endpoint = currentUserRole === 'investor' ? `/investor/messages/${peerId}/` : `/entrepreneur/messages/${peerId}/`;
-    fetch(endpoint)
+    fetch(endpoint, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -1121,7 +1125,9 @@
       window.history.replaceState({}, document.title, window.location.pathname);
     } else {
       // User not in recent chats, search for them
-      fetch(`/investor/messages/search/?q=${openChatId}`)
+      const currentUserRole = '{{ user.role }}' || 'investor';
+      const searchEndpoint = currentUserRole === 'investor' ? `/investor/messages/search/` : `/entrepreneur/messages/search/`;
+      fetch(`${searchEndpoint}?q=${openChatId}`)
         .then(r => r.json())
         .then(d => {
           const user = d.results.find(u => u.id == openChatId);

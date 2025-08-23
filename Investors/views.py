@@ -154,41 +154,54 @@ def get_messages(request, user_id):
     """Get messages between current user and another user"""
     from Entrepreneurs.models import User
     
-    # Enforce privacy: only show messages if allowed
-    other = User.objects.get(id=user_id)
-    if other.message_privacy == 'private':
-        is_friend = (request.user.favorites.filter(target_user=other).exists() or
-                     request.user.favorited_by.filter(user=other).exists())
-        if not is_friend:
-            return HttpResponseForbidden('User only allows messages from friends.')
+    # Check if this is a direct access (not an AJAX request)
+    # If it's a direct browser access, redirect to the chat page
+    if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # This is a direct browser access, redirect to the chat page
+        current_user_role = request.user.role
+        messages_url = '/investor/messages/' if current_user_role == 'investor' else '/entrepreneur/messages/'
+        redirect_url = f"{messages_url}?open_chat={user_id}"
+        return redirect(redirect_url)
     
-    qs = Message.objects.filter(
-        (Q(sender=request.user) & Q(receiver=other)) |
-        (Q(sender=other) & Q(receiver=request.user))
-    ).order_by('timestamp')
-    
-    # Mark unread messages as read
-    qs.filter(receiver=request.user, is_read=False).update(is_read=True)
-    
-    # Serialize messages
-    messages_data = []
-    for msg in qs:
-        message_data = {
-            'id': msg.id,
-            'content': msg.content,
-            'sender': msg.sender.id,
-            'receiver': msg.receiver.id,
-            'timestamp': msg.timestamp.isoformat(),
-            'is_read': msg.is_read,
-            'message_type': msg.message_type,
-            'file_name': msg.file_name,
-            'file_type': msg.file_type,
-            'file_size': msg.file_size,
-            'file_base64': msg.file_data.decode('utf-8') if msg.file_data else None
-        }
-        messages_data.append(message_data)
-    
-    return JsonResponse({'messages': messages_data})
+    # This is an AJAX request, return JSON data
+    try:
+        # Enforce privacy: only show messages if allowed
+        other = User.objects.get(id=user_id)
+        if other.message_privacy == 'private':
+            is_friend = (request.user.favorites.filter(target_user=other).exists() or
+                         request.user.favorited_by.filter(user=other).exists())
+            if not is_friend:
+                return HttpResponseForbidden('User only allows messages from friends.')
+        
+        qs = Message.objects.filter(
+            (Q(sender=request.user) & Q(receiver=other)) |
+            (Q(sender=other) & Q(receiver=request.user))
+        ).order_by('timestamp')
+        
+        # Mark unread messages as read
+        qs.filter(receiver=request.user, is_read=False).update(is_read=True)
+        
+        # Serialize messages
+        messages_data = []
+        for msg in qs:
+            message_data = {
+                'id': msg.id,
+                'content': msg.content,
+                'sender': msg.sender.id,
+                'receiver': msg.receiver.id,
+                'timestamp': msg.timestamp.isoformat(),
+                'is_read': msg.is_read,
+                'message_type': msg.message_type,
+                'file_name': msg.file_name,
+                'file_type': msg.file_type,
+                'file_size': msg.file_size,
+                'file_base64': base64.b64encode(msg.file_data).decode('utf-8') if msg.file_data else None
+            }
+            messages_data.append(message_data)
+        
+        return JsonResponse({'messages': messages_data})
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
 
 
 def investor_register(request):
@@ -1205,5 +1218,23 @@ def test_investor_notification(request):
         )
         return JsonResponse({'success': True})
     return JsonResponse({'success': False, 'error': 'Not an investor'})
+
+@login_required
+def test_notification_redirect(request):
+    """Test view to verify notification redirect logic"""
+    user_id = request.GET.get('user_id', '6')
+    current_user_role = request.user.role
+    
+    # This is the same logic as in the notification template
+    messages_url = '/investor/messages/' if current_user_role == 'investor' else '/entrepreneur/messages/'
+    redirect_url = f"{messages_url}?open_chat={user_id}"
+    
+    return JsonResponse({
+        'current_user_role': current_user_role,
+        'user_id': user_id,
+        'messages_url': messages_url,
+        'redirect_url': redirect_url,
+        'expected_behavior': 'Should redirect to messages page with open_chat parameter'
+    })
 
 

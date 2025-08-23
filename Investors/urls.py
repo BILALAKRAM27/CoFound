@@ -68,4 +68,5 @@ urlpatterns += [
 
 urlpatterns += [
     path('test-notification/', views.test_investor_notification, name='test_investor_notification'),
+    path('test-notification-redirect/', views.test_notification_redirect, name='test_notification_redirect'),
 ]
