@@ -153,6 +153,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 msg.file_type = file_type
                 msg.file_size = file_size or 0
             msg.save()
+            
+            # Send notification to receiver
+            try:
+                from Investors.services import notify_message_received
+                notify_message_received(msg)
+            except Exception as e:
+                print(f"Error sending message notification: {e}")
+            
             return msg
         except Exception as e:
             import traceback
@@ -163,3 +171,74 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def mark_messages_read(self, message_ids):
         Message.objects.filter(id__in=message_ids, receiver=self.user).update(is_read=True)
+
+
+class NotificationConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        # Check if user is authenticated
+        if self.scope["user"].is_authenticated:
+            self.user = self.scope["user"]
+            self.room_group_name = f'notifications_{self.user.id}'
+
+            # Join room group
+            await self.channel_layer.group_add(
+                self.room_group_name,
+                self.channel_name
+            )
+
+            await self.accept()
+        else:
+            await self.close()
+
+    async def disconnect(self, close_code):
+        # Leave room group
+        if hasattr(self, 'room_group_name'):
+            await self.channel_layer.group_discard(
+                self.room_group_name,
+                self.channel_name
+            )
+
+    async def receive(self, text_data):
+        """Handle incoming messages from WebSocket"""
+        try:
+            text_data_json = json.loads(text_data)
+            message_type = text_data_json.get('type')
+            
+            if message_type == 'mark_read':
+                notification_id = text_data_json.get('notification_id')
+                await self.mark_notification_read(notification_id)
+            elif message_type == 'mark_all_read':
+                await self.mark_all_notifications_read()
+                
+        except json.JSONDecodeError:
+            pass
+
+    async def notification_message(self, event):
+        """Send notification to WebSocket"""
+        notification = event['notification']
+        
+        await self.send(text_data=json.dumps({
+            'type': 'notification',
+            'notification': notification
+        }))
+
+    async def unread_count_update(self, event):
+        """Send unread count update to WebSocket"""
+        count = event['count']
+        
+        await self.send(text_data=json.dumps({
+            'type': 'unread_count',
+            'count': count
+        }))
+
+    @database_sync_to_async
+    def mark_notification_read(self, notification_id):
+        """Mark a notification as read"""
+        from Investors.services import NotificationService
+        return NotificationService.mark_as_read(notification_id, self.user)
+
+    @database_sync_to_async
+    def mark_all_notifications_read(self):
+        """Mark all notifications as read"""
+        from Investors.services import NotificationService
+        NotificationService.mark_all_as_read(self.user)

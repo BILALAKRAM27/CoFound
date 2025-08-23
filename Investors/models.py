@@ -37,6 +37,8 @@ INDUSTRY_CHOICES = [
     ('cleantech', 'CleanTech & Green Energy'),
 ]
 
+
+
 # -----------------------------
 # Investors domain
 # -----------------------------

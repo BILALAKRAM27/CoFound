@@ -1,0 +1,399 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - CoFound{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notification-item {
+        transition: all 0.2s ease;
+        border-radius: 8px;
+        margin-bottom: 4px;
+        background: var(--cf-sidebar-bg);
+    }
+    .notification-unread {
+        /* Theme-aware unread background */
+        background-color: #e9f3ff !important;
+        /* Light blue for light mode */
+    }
+    [data-bs-theme="dark"] .notification-unread {
+        background-color: #232a36 !important;
+    }
+    .notification-item:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    [data-bs-theme="dark"] .notification-item {
+        background-color: var(--bs-dark);
+        border-color: var(--bs-border-color);
+    }
+    [data-bs-theme="dark"] .notification-item:hover {
+        background-color: var(--bs-dark-subtle);
+        box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+    }
+    .notification-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+    }
+    [data-bs-theme="dark"] .notification-icon {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    .notification-icon i {
+        font-size: 1.2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">Notifications</h2>
+                {% if unread_count > 0 %}
+                    <button class="btn btn-outline-primary btn-sm" id="markAllReadBtn">
+                        <i class="bi bi-check-all me-1"></i>Mark All as Read
+                    </button>
+                {% endif %}
+            </div>
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-0">
+                    {% if notifications %}
+                        <div class="list-group list-group-flush" id="notificationList">
+                            {% for notification in notifications %}
+                            <div class="list-group-item border-0 py-3 px-4 notification-item {% if not notification.is_read %}notification-unread{% endif %}"
+                                 data-notification-id="{{ notification.id }}"
+                                 data-notification-type="{{ notification.notification_type }}"
+                                 data-related-object-id="{{ notification.related_object_id|default:notification.sender.id }}"
+                                 data-related-object-type="{{ notification.related_object_type }}"
+                                 style="cursor: pointer; transition: all 0.2s ease;">
+                                <div class="d-flex align-items-start">
+                                    <div class="flex-shrink-0 me-3">
+                                        <div class="notification-icon">
+                                            {% if notification.notification_type == 'follow' %}
+                                                <i class="bi bi-person-plus-fill text-primary"></i>
+                                            {% elif notification.notification_type == 'post' %}
+                                                <i class="bi bi-file-post text-info"></i>
+                                            {% elif notification.notification_type == 'like' %}
+                                                <i class="bi bi-heart-fill text-danger"></i>
+                                            {% elif notification.notification_type == 'comment' %}
+                                                <i class="bi bi-chat-fill text-success"></i>
+                                            {% elif notification.notification_type == 'startup' %}
+                                                <i class="bi bi-building text-warning"></i>
+                                            {% elif notification.notification_type == 'funding_round' %}
+                                                <i class="bi bi-currency-dollar text-success"></i>
+                                            {% elif notification.notification_type == 'investment' %}
+                                                <i class="bi bi-graph-up text-primary"></i>
+                                            {% elif notification.notification_type == 'message' %}
+                                                <i class="bi bi-envelope-fill text-info"></i>
+                                            {% else %}
+                                                <i class="bi bi-bell-fill text-secondary"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1 {% if not notification.is_read %}fw-bold{% endif %}">
+                                                    {{ notification.title }}
+                                                </h6>
+                                                <p class="mb-1 text-muted">{{ notification.message }}</p>
+                                                <small class="text-muted">{{ notification.time_ago }}</small>
+                                            </div>
+                                            {% if not notification.is_read %}
+                                                <div class="flex-shrink-0">
+                                                    <span class="badge bg-primary rounded-pill">New</span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-bell text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="mt-3 text-muted">No notifications yet</h5>
+                            <p class="text-muted">You'll see notifications here when you receive them.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mark individual notification as read when clicked and handle redirects
+    document.querySelectorAll('.notification-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+            const notificationId = this.dataset.notificationId;
+            const notificationType = this.dataset.notificationType;
+            const relatedObjectId = this.dataset.relatedObjectId;
+            const relatedObjectType = this.dataset.relatedObjectType;
+            
+            if (notificationId) {
+                markNotificationAsRead(notificationId);
+                handleNotificationRedirect(notificationType, relatedObjectId, relatedObjectType);
+            }
+        });
+    });
+    
+    // Mark all as read button
+    const markAllReadBtn = document.getElementById('markAllReadBtn');
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', function() {
+            markAllNotificationsAsRead();
+        });
+    }
+    
+    function markNotificationAsRead(notificationId) {
+        fetch('{% url "investors:mark_notification_read" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `notification_id=${notificationId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update UI
+                const notificationItem = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                if (notificationItem) {
+                    notificationItem.classList.remove('notification-unread');
+                    const badge = notificationItem.querySelector('.badge');
+                    if (badge) {
+                        badge.remove();
+                    }
+                    const title = notificationItem.querySelector('h6');
+                    if (title) {
+                        title.classList.remove('fw-bold');
+                    }
+                }
+                
+                // Update navbar counter
+                updateNavbarCounter(data.unread_count);
+            }
+        })
+        .catch(error => {
+            console.error('Error marking notification as read:', error);
+        });
+    }
+    
+    function markAllNotificationsAsRead() {
+        fetch('{% url "investors:mark_all_notifications_read" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update UI
+                document.querySelectorAll('.notification-item').forEach(function(item) {
+                    item.classList.remove('notification-unread');
+                    const badge = item.querySelector('.badge');
+                    if (badge) {
+                        badge.remove();
+                    }
+                    const title = item.querySelector('h6');
+                    if (title) {
+                        title.classList.remove('fw-bold');
+                    }
+                });
+                
+                // Hide mark all read button
+                if (markAllReadBtn) {
+                    markAllReadBtn.style.display = 'none';
+                }
+                
+                // Update navbar counter
+                updateNavbarCounter(0);
+            }
+        })
+        .catch(error => {
+            console.error('Error marking all notifications as read:', error);
+        });
+    }
+    
+    function updateNavbarCounter(count) {
+        const navbarCounter = document.getElementById('notificationCounter');
+        if (navbarCounter) {
+            if (count > 0) {
+                navbarCounter.textContent = count;
+                navbarCounter.style.display = 'block';
+            } else {
+                navbarCounter.style.display = 'none';
+            }
+        }
+    }
+    
+    function handleNotificationRedirect(notificationType, relatedObjectId, relatedObjectType) {
+        if (!relatedObjectId) return;
+        
+        let redirectUrl = '';
+        
+        switch (notificationType) {
+            case 'follow':
+                // Redirect to the sender's profile
+                redirectUrl = `/investor/profile/${relatedObjectId}/`;
+                break;
+            case 'post':
+                // Redirect to the post (assuming it's on home page)
+                redirectUrl = `/home/#post-${relatedObjectId}`;
+                break;
+            case 'like':
+                // Redirect to the post that was liked
+                redirectUrl = `/home/#post-${relatedObjectId}`;
+                break;
+            case 'comment':
+                // Redirect to the post that was commented on
+                redirectUrl = `/home/#post-${relatedObjectId}`;
+                break;
+            case 'startup':
+                // Redirect to the startup detail page
+                redirectUrl = `/entrepreneur/startup/${relatedObjectId}/`;
+                break;
+            case 'funding_round':
+                // Redirect to the funding round detail page
+                redirectUrl = `/investor/funding/round/${relatedObjectId}/`;
+                break;
+            case 'investment':
+                // Redirect to the funding round detail page
+                redirectUrl = `/investor/funding/round/${relatedObjectId}/`;
+                break;
+            case 'message':
+                // Redirect to the messages page with the specific conversation
+                redirectUrl = `/investor/messages/${relatedObjectId}/`;
+                break;
+            default:
+                return;
+        }
+        
+        if (redirectUrl) {
+            // Small delay to allow the notification to be marked as read
+            setTimeout(() => {
+                window.location.href = redirectUrl;
+            }, 100);
+        }
+    }
+
+    // WebSocket for real-time notifications
+    let notificationSocket = null;
+    function connectNotificationSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/notifications/`;
+        notificationSocket = new WebSocket(wsUrl);
+        notificationSocket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.type === 'notification') {
+                handleLiveNotification(data.notification);
+            } else if (data.type === 'unread_count') {
+                updateNavbarCounter(data.count);
+            }
+        };
+    }
+    function handleLiveNotification(notification) {
+        // If on notifications page, insert at top
+        const list = document.getElementById('notificationList');
+        if (list) {
+            const div = document.createElement('div');
+            div.className = 'list-group-item border-0 py-3 px-4 notification-item notification-unread';
+            div.setAttribute('data-notification-id', notification.id);
+            div.setAttribute('data-notification-type', notification.type);
+            div.setAttribute('data-related-object-id', notification.related_object_id);
+            div.setAttribute('data-related-object-type', notification.related_object_type);
+            div.style.cursor = 'pointer';
+            div.innerHTML = `
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0 me-3">
+                        <div class="notification-icon">
+                            ${getNotificationIcon(notification.type)}
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1 fw-bold">${notification.title}</h6>
+                                <p class="mb-1 text-muted">${notification.message}</p>
+                                <small class="text-muted">${notification.time_ago}</small>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <span class="badge bg-primary rounded-pill">New</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            // Animate in
+            div.style.opacity = 0;
+            list.prepend(div);
+            setTimeout(() => { div.style.transition = 'opacity 0.5s'; div.style.opacity = 1; }, 10);
+            // Add click handler
+            div.addEventListener('click', function() {
+                markNotificationAsRead(notification.id, div);
+                handleNotificationRedirect(notification.type, notification.related_object_id, notification.related_object_type);
+            });
+        } else {
+            // Not on notifications page, show toast (handled elsewhere)
+        }
+        updateNavbarCounter((parseInt(document.getElementById('notificationCounter').textContent) || 0) + 1);
+    }
+    function getNotificationIcon(type) {
+        switch(type) {
+            case 'follow': return '<i class="bi bi-person-plus-fill text-primary"></i>';
+            case 'post': return '<i class="bi bi-file-post text-info"></i>';
+            case 'like': return '<i class="bi bi-heart-fill text-danger"></i>';
+            case 'comment': return '<i class="bi bi-chat-fill text-success"></i>';
+            case 'startup': return '<i class="bi bi-building text-warning"></i>';
+            case 'funding_round': return '<i class="bi bi-currency-dollar text-success"></i>';
+            case 'investment': return '<i class="bi bi-graph-up text-primary"></i>';
+            case 'message': return '<i class="bi bi-envelope-fill text-info"></i>';
+            default: return '<i class="bi bi-bell-fill text-secondary"></i>';
+        }
+    }
+    // Mark as read: update background for theme
+    function markNotificationAsRead(notificationId, itemDiv) {
+        fetch('{% url "investors:mark_notification_read" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `notification_id=${notificationId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (itemDiv) {
+                    itemDiv.classList.remove('notification-unread');
+                    // Remove badge and bold
+                    const badge = itemDiv.querySelector('.badge');
+                    if (badge) badge.remove();
+                    const title = itemDiv.querySelector('h6');
+                    if (title) title.classList.remove('fw-bold');
+                } else {
+                    // fallback: update by id
+                    const notificationItem = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                    if (notificationItem) notificationItem.classList.remove('notification-unread');
+                }
+                updateNavbarCounter(data.unread_count);
+            }
+        });
+    }
+    connectNotificationSocket();
+});
+</script>
+{% endblock %}

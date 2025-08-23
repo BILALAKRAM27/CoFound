@@ -56,3 +56,16 @@ urlpatterns += [
     path('dashboard/startup/offers/', views.startup_dashboard_offers, name='startup_dashboard_offers'),
     path('dashboard/investor/offers/', views.investor_dashboard_offers, name='investor_dashboard_offers'),
 ]
+
+# Notifications
+urlpatterns += [
+    path('notifications/', views.notifications_list, name='notifications_list'),
+    path('notifications/mark-read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('notifications/unread-count/', views.get_unread_count, name='get_unread_count'),
+    path('notifications/data/', views.get_notifications_data, name='get_notifications_data'),
+]
+
+urlpatterns += [
+    path('test-notification/', views.test_investor_notification, name='test_investor_notification'),
+]

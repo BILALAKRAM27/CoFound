@@ -23,6 +23,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import FundingRound, InvestmentCommitment
 from django.db.models import Sum
 from decimal import Decimal
+from .services import NotificationService
 
 # Utility to add percent_raised to rounds
 def annotate_percent_raised(rounds):
@@ -491,6 +492,10 @@ def create_post(request):
                         file_size=document.size
                     )
                 
+                # Send notification to followers
+                from .services import notify_post_created
+                notify_post_created(post)
+                
                 messages.success(request, 'Post created successfully!')
                 return JsonResponse({'success': True, 'post_id': post.id})
             except Exception as e:
@@ -515,6 +520,9 @@ def like_post(request, post_id):
         else:
             post.likes.add(request.user)
             liked = True
+            # Send notification to post author
+            from .services import notify_like
+            notify_like(post, request.user)
         
         return JsonResponse({
             'success': True,
@@ -535,6 +543,10 @@ def add_comment(request, post_id):
         comment.author = request.user
         comment.post = post
         comment.save()
+
+        # Send notification to post author
+        from .services import notify_comment
+        notify_comment(post, request.user)
 
         # Safely resolve and encode profile image
         image_bytes = None
@@ -703,6 +715,11 @@ def toggle_connection(request, target_id):
         fav.delete()
         return JsonResponse({'success': True, 'connected': False})
     Favorite.objects.create(user=request.user, target_user=target)
+    
+    # Send notification to target user
+    from .services import notify_follow
+    notify_follow(request.user, target)
+    
     return JsonResponse({'success': True, 'connected': True})
 
 @login_required
@@ -943,6 +960,11 @@ def create_funding_round(request):
                 equity_offered=equity_offered,
                 deadline=deadline_dt
             )
+            
+            # Send notification to all investors
+            from .services import notify_funding_round_created
+            notify_funding_round_created(fr)
+            
             return redirect('investors:funding_round_detail', round_id=fr.id)
     
     return render(request, 'Investors/create_funding_round.html', {
@@ -1016,6 +1038,10 @@ def commit_investment(request):
             amount_float = float(amount_decimal)
         except (ValueError, TypeError):
             amount_float = float(str(amount_decimal))
+        
+        # Send notification to startup owner
+        from .services import notify_investment_committed
+        notify_investment_committed(fr, request.user, amount_decimal)
         
         return JsonResponse({
             'success': True, 
@@ -1096,5 +1122,88 @@ def investor_dashboard_offers(request):
         fr = c.funding_round
         c.funding_round.percent_raised = float(fr.total_committed()) / float(fr.target_goal) * 100 if fr.target_goal else 0
     return render(request, 'Investors/investor_dashboard_offers.html', {'commitments': commitments, 'user': request.user})
+
+
+# Notification Views
+@login_required
+def notifications_list(request):
+    """Display user's notifications"""
+    notifications = NotificationService.get_user_notifications(request.user, limit=100)
+    unread_count = NotificationService.get_unread_count(request.user)
+    
+    return render(request, 'Investors/notifications.html', {
+        'notifications': notifications,
+        'unread_count': unread_count,
+        'user': request.user
+    })
+
+@login_required
+@require_POST
+def mark_notification_read(request):
+    """Mark a specific notification as read"""
+    notification_id = request.POST.get('notification_id')
+    if not notification_id:
+        return JsonResponse({'success': False, 'error': 'Missing notification_id'}, status=400)
+    
+    success = NotificationService.mark_as_read(notification_id, request.user)
+    if success:
+        unread_count = NotificationService.get_unread_count(request.user)
+        return JsonResponse({
+            'success': True,
+            'unread_count': unread_count
+        })
+    else:
+        return JsonResponse({'success': False, 'error': 'Notification not found'}, status=404)
+
+@login_required
+@require_POST
+def mark_all_notifications_read(request):
+    """Mark all notifications as read"""
+    NotificationService.mark_all_as_read(request.user)
+    return JsonResponse({'success': True, 'unread_count': 0})
+
+@login_required
+def get_unread_count(request):
+    """Get unread notification count for AJAX requests"""
+    count = NotificationService.get_unread_count(request.user)
+    return JsonResponse({'count': count})
+
+@login_required
+def get_notifications_data(request):
+    """Get notifications data for AJAX requests"""
+    notifications = NotificationService.get_user_notifications(request.user, limit=20)
+    unread_count = NotificationService.get_unread_count(request.user)
+    
+    notifications_data = []
+    for notification in notifications:
+        notifications_data.append({
+            'id': notification.id,
+            'type': notification.notification_type,
+            'title': notification.title,
+            'message': notification.message,
+            'sender_name': notification.sender.get_full_name() if notification.sender else None,
+            'time_ago': notification.time_ago,
+            'is_read': notification.is_read,
+            'related_object_id': notification.related_object_id,
+            'related_object_type': notification.related_object_type,
+        })
+    
+    return JsonResponse({
+        'notifications': notifications_data,
+        'unread_count': unread_count
+    })
+
+@login_required
+def test_investor_notification(request):
+    if request.user.role == 'investor':
+        from .services import NotificationService
+        NotificationService.create_notification(
+            recipient=request.user,
+            notification_type='test',
+            title='Test Notification',
+            message='This is a test notification for an investor.'
+        )
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False, 'error': 'Not an investor'})
 
 

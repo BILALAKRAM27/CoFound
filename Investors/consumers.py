@@ -1,10 +1,9 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from django.contrib.auth import get_user_model
-from Entrepreneurs.models import Message, User
-from asgiref.sync import sync_to_async
-from django.db.models import Q
+from django.contrib.auth.models import AnonymousUser
+from Entrepreneurs.models import User
+
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -65,24 +64,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
         if msg is None:
             return
+        from Entrepreneurs.models import MessageSerializer
+        serializer = MessageSerializer(msg)
         # Only send to group, not echo to sender as receiver
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'chat_message',
-                'message': {
-                    'id': msg.id,
-                    'content': msg.content,
-                    'sender': msg.sender.id,
-                    'receiver': msg.receiver.id,
-                    'timestamp': msg.timestamp.isoformat(),
-                    'is_read': msg.is_read,
-                    'message_type': msg.message_type,
-                    'file_name': msg.file_name,
-                    'file_type': msg.file_type,
-                    'file_size': msg.file_size,
-                    'file_base64': msg.file_data.decode('utf-8') if msg.file_data else None
-                },
+                'message': serializer.data,
                 'sender_id': self.user.id
             }
         )
@@ -118,32 +107,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'reader_id': event['reader_id']
         }))
 
-    def get_room_name(self, user1_id, user2_id):
-        """Create a unique room name for two users"""
-        return f"chat_{min(user1_id, user2_id)}_{max(user1_id, user2_id)}"
+    @staticmethod
+    def get_room_name(user1_id, user2_id):
+        # Deterministic room name for a pair of users
+        return '_'.join(sorted([str(user1_id), str(user2_id)]))
 
     @database_sync_to_async
-    def is_allowed(self, user_id, other_user_id):
-        """Check if user can message the other user"""
+    def is_allowed(self, user_id, other_id):
         try:
             user = User.objects.get(id=user_id)
-            other = User.objects.get(id=other_user_id)
-            
-            # Allow if other user is public
+            other = User.objects.get(id=other_id)
             if other.message_privacy == 'public':
                 return True
-            
-            # Allow if either user follows the other (more permissive friendship)
+            # Private: allow if either user follows the other (more permissive friendship)
             is_friend = (user.favorites.filter(target_user=other).exists() or
                          user.favorited_by.filter(user=other).exists())
             return is_friend
-        except User.DoesNotExist:
+        except Exception:
             return False
 
     @database_sync_to_async
     def create_message(self, sender_id, receiver_id, content, message_type, file_data, file_name, file_type, file_size):
-        """Create a new message"""
         try:
+            from Entrepreneurs.models import Message
             sender = User.objects.get(id=sender_id)
             receiver = User.objects.get(id=receiver_id)
             
@@ -155,29 +141,106 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     print(f"Privacy violation blocked: User {sender_id} attempted to message private user {receiver_id}")
                     return None
             
-            msg = Message.objects.create(
+            msg = Message(
                 sender=sender,
                 receiver=receiver,
                 content=content,
-                message_type=message_type,
-                file_data=file_data.encode('utf-8') if file_data else None,
-                file_name=file_name,
-                file_type=file_type,
-                file_size=file_size
+                message_type=message_type
             )
+            if file_data:
+                import base64
+                msg.file_data = base64.b64decode(file_data)
+                msg.file_name = file_name
+                msg.file_type = file_type
+                msg.file_size = file_size or 0
+            msg.save()
+            
+            # Send notification to receiver
+            try:
+                from Investors.services import notify_message_received
+                notify_message_received(msg)
+            except Exception as e:
+                print(f"Error sending message notification: {e}")
+            
             return msg
         except Exception as e:
-            print(f"Error creating message: {e}")
+            import traceback
+            print('Error in create_message:', e)
+            traceback.print_exc()
             return None
 
     @database_sync_to_async
     def mark_messages_read(self, message_ids):
-        """Mark messages as read"""
+        from Entrepreneurs.models import Message
+        Message.objects.filter(id__in=message_ids, receiver=self.user).update(is_read=True)
+
+
+class NotificationConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        # Check if user is authenticated
+        if self.scope["user"].is_authenticated:
+            self.user = self.scope["user"]
+            self.room_group_name = f'notifications_{self.user.id}'
+
+            # Join room group
+            await self.channel_layer.group_add(
+                self.room_group_name,
+                self.channel_name
+            )
+
+            await self.accept()
+        else:
+            await self.close()
+
+    async def disconnect(self, close_code):
+        # Leave room group
+        if hasattr(self, 'room_group_name'):
+            await self.channel_layer.group_discard(
+                self.room_group_name,
+                self.channel_name
+            )
+
+    async def receive(self, text_data):
+        """Handle incoming messages from WebSocket"""
         try:
-            Message.objects.filter(
-                id__in=message_ids,
-                receiver=self.user,
-                is_read=False
-            ).update(is_read=True)
-        except Exception as e:
-            print(f"Error marking messages as read: {e}")
+            text_data_json = json.loads(text_data)
+            message_type = text_data_json.get('type')
+            
+            if message_type == 'mark_read':
+                notification_id = text_data_json.get('notification_id')
+                await self.mark_notification_read(notification_id)
+            elif message_type == 'mark_all_read':
+                await self.mark_all_notifications_read()
+                
+        except json.JSONDecodeError:
+            pass
+
+    async def notification_message(self, event):
+        """Send notification to WebSocket"""
+        notification = event['notification']
+        
+        await self.send(text_data=json.dumps({
+            'type': 'notification',
+            'notification': notification
+        }))
+
+    async def unread_count_update(self, event):
+        """Send unread count update to WebSocket"""
+        count = event['count']
+        
+        await self.send(text_data=json.dumps({
+            'type': 'unread_count',
+            'count': count
+        }))
+
+    @database_sync_to_async
+    def mark_notification_read(self, notification_id):
+        """Mark a notification as read"""
+        from .services import NotificationService
+        return NotificationService.mark_as_read(notification_id, self.user)
+
+    @database_sync_to_async
+    def mark_all_notifications_read(self):
+        """Mark all notifications as read"""
+        from .services import NotificationService
+        NotificationService.mark_all_as_read(self.user)

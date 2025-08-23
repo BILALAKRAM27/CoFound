@@ -2,6 +2,7 @@ from django.db import models
 from django.db.models import Q
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from rest_framework import serializers
+from django.conf import settings
 
 # Choice constants for EntrepreneurProfile
 COMPANY_STAGES = [
@@ -302,18 +303,58 @@ class Message(models.Model):
         return f"Message from {self.sender} to {self.receiver}"
 
 
+# Notification types
+NOTIFICATION_TYPES = [
+    ('follow', 'Follow'),
+    ('post', 'Post'),
+    ('like', 'Like'),
+    ('comment', 'Comment'),
+    ('startup', 'Startup'),
+    ('funding_round', 'Funding Round'),
+    ('investment', 'Investment'),
+    ('message', 'Message'),
+]
+
 class Notification(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_notifications', null=True, blank=True)
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='message')
     title = models.CharField(max_length=255)
     message = models.TextField()
+    related_object_id = models.PositiveIntegerField(null=True, blank=True)
+    related_object_type = models.CharField(max_length=50, null=True, blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read']),
+            models.Index(fields=['created_at']),
+        ]
 
     def __str__(self):
-        return f"Notification for {self.user} - {self.title}"
+        return f"{self.notification_type} notification for {self.user}"
+
+    @property
+    def time_ago(self):
+        """Return human-readable time ago"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        now = timezone.now()
+        diff = now - self.created_at
+        
+        if diff.days > 0:
+            return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
+        elif diff.seconds >= 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        elif diff.seconds >= 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        else:
+            return "Just now"
 
 
 class Favorite(models.Model):

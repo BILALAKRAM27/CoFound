@@ -192,6 +192,11 @@ def create_post(request):
                     PostMedia.objects.create(post=post, media_type='video', file_name=video.name, file_type=video.content_type, file_data=video.read(), file_size=video.size)
                 for document in documents:
                     PostMedia.objects.create(post=post, media_type='document', file_name=document.name, file_type=document.content_type, file_data=document.read(), file_size=document.size)
+                
+                # Send notification to followers
+                from Investors.services import notify_post_created
+                notify_post_created(post)
+                
                 messages.success(request, 'Post created successfully!')
                 return JsonResponse({'success': True, 'post_id': post.id})
             except Exception as e:
@@ -211,6 +216,10 @@ def like_post(request, post_id):
         else:
             post.likes.add(request.user)
             liked = True
+            # Send notification to post author when someone likes their post
+            if request.user != post.author:
+                from Investors.services import notify_like
+                notify_like(post, request.user)
         
         return JsonResponse({
             'success': True,
@@ -231,6 +240,11 @@ def add_comment(request, post_id):
         comment.author = request.user
         comment.post = post
         comment.save()
+
+        # Send notification to post author when someone comments on their post
+        if request.user != post.author:
+            from Investors.services import notify_comment
+            notify_comment(post, request.user)
 
         # Safely resolve and encode profile image
         image_bytes = None
@@ -380,6 +394,11 @@ def toggle_connection(request, target_id):
         fav_qs.delete()
         return JsonResponse({'success': True, 'connected': False})
     Favorite.objects.create(user=request.user, target_user=target)
+    
+    # Send notification to target user
+    from Investors.services import notify_follow
+    notify_follow(request.user, target)
+    
     return JsonResponse({'success': True, 'connected': True})
 
 @login_required
@@ -561,6 +580,11 @@ def create_startup(request):
                 startup.logo = logo_file.read()
             
             startup.save()
+            
+            # Send notification to all investors
+            from Investors.services import notify_startup_created
+            notify_startup_created(startup)
+            
             messages.success(request, f'Startup "{startup.name}" created successfully!')
             return redirect('investors:create_funding_round')
         else:

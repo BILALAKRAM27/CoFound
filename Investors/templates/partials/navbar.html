@@ -48,9 +48,11 @@
 
             <!-- Notifications -->
             <li class="nav-item">
-                <a class="nav-link position-relative" href="#" title="Notifications">
+                <a class="nav-link position-relative" href="{% url 'investors:notifications_list' %}" title="Notifications" id="notificationLink">
                     <i class="bi bi-bell fs-5"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-accent" style="font-size: 0.6rem;">7</span>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-accent" 
+                          style="font-size: 0.6rem; {% if unread_notification_count == 0 %}display: none;{% endif %}" 
+                          id="notificationCounter">{{ unread_notification_count }}</span>
                 </a>
             </li>
 

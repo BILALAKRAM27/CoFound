@@ -621,6 +621,240 @@
     {% include 'partials/scripts.html' %}
 
     {% block scripts %}{% endblock %}
+
+    <!-- Notification System -->
+    {% if user.is_authenticated %}
+    <script>
+        // Notification WebSocket Connection
+        class NotificationManager {
+            constructor() {
+                this.socket = null;
+                this.notificationCounter = document.getElementById('notificationCounter');
+                this.notificationLink = document.getElementById('notificationLink');
+                this.isConnected = false;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 5;
+                this.reconnectDelay = 1000;
+                
+                this.init();
+            }
+
+            init() {
+                this.connectWebSocket();
+                this.loadInitialCount();
+                this.setupEventListeners();
+            }
+
+            connectWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws/notifications/`;
+                
+                try {
+                    this.socket = new WebSocket(wsUrl);
+                    
+                    this.socket.onopen = () => {
+                        console.log('Notification WebSocket connected');
+                        this.isConnected = true;
+                        this.reconnectAttempts = 0;
+                    };
+                    
+                    this.socket.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        this.handleWebSocketMessage(data);
+                    };
+                    
+                    this.socket.onclose = () => {
+                        console.log('Notification WebSocket disconnected');
+                        this.isConnected = false;
+                        this.attemptReconnect();
+                    };
+                    
+                    this.socket.onerror = (error) => {
+                        console.error('Notification WebSocket error:', error);
+                    };
+                } catch (error) {
+                    console.error('Failed to connect to notification WebSocket:', error);
+                }
+            }
+
+            attemptReconnect() {
+                if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                    this.reconnectAttempts++;
+                    setTimeout(() => {
+                        console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+                        this.connectWebSocket();
+                    }, this.reconnectDelay * this.reconnectAttempts);
+                }
+            }
+
+            handleWebSocketMessage(data) {
+                switch (data.type) {
+                    case 'notification':
+                        this.handleNewNotification(data.notification);
+                        break;
+                    case 'unread_count':
+                        this.updateCounter(data.count);
+                        break;
+                    default:
+                        console.log('Unknown WebSocket message type:', data.type);
+                }
+            }
+
+            handleNewNotification(notification) {
+                // Update counter
+                this.loadInitialCount();
+                
+                // Show toast notification
+                this.showToastNotification(notification);
+            }
+
+            showToastNotification(notification) {
+                // Create toast container if it doesn't exist
+                let toastContainer = document.getElementById('toastContainer');
+                if (!toastContainer) {
+                    toastContainer = document.createElement('div');
+                    toastContainer.id = 'toastContainer';
+                    toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                    toastContainer.style.zIndex = '9999';
+                    document.body.appendChild(toastContainer);
+                }
+
+                // Create toast with click handler
+                const toastId = `toast-${Date.now()}`;
+                const toastHtml = `
+                    <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true" 
+                         style="cursor: pointer;" data-notification-type="${notification.type}" 
+                         data-related-object-id="${notification.related_object_id}">
+                        <div class="toast-header">
+                            <i class="bi bi-bell-fill text-primary me-2"></i>
+                            <strong class="me-auto">${notification.title}</strong>
+                            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                        </div>
+                        <div class="toast-body">
+                            ${notification.message}
+                        </div>
+                    </div>
+                `;
+                
+                toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+                
+                // Show toast
+                const toastElement = document.getElementById(toastId);
+                const toast = new bootstrap.Toast(toastElement, {
+                    autohide: true,
+                    delay: 5000
+                });
+                toast.show();
+                
+                // Add click handler for redirect
+                toastElement.addEventListener('click', function(e) {
+                    // Don't redirect if clicking the close button
+                    if (e.target.classList.contains('btn-close')) return;
+                    
+                    const notificationType = this.dataset.notificationType;
+                    const relatedObjectId = this.dataset.relatedObjectId;
+                    
+                    if (notificationType && relatedObjectId) {
+                        handleToastRedirect(notificationType, relatedObjectId);
+                    }
+                });
+                
+                // Remove toast element after it's hidden
+                toastElement.addEventListener('hidden.bs.toast', () => {
+                    toastElement.remove();
+                });
+            }
+            
+            handleToastRedirect(notificationType, relatedObjectId) {
+                let redirectUrl = '';
+                
+                switch (notificationType) {
+                    case 'follow':
+                        redirectUrl = `/investor/profile/${relatedObjectId}/`;
+                        break;
+                    case 'post':
+                        redirectUrl = `/home/#post-${relatedObjectId}`;
+                        break;
+                    case 'like':
+                        redirectUrl = `/home/#post-${relatedObjectId}`;
+                        break;
+                    case 'comment':
+                        redirectUrl = `/home/#post-${relatedObjectId}`;
+                        break;
+                    case 'startup':
+                        redirectUrl = `/entrepreneur/startup/${relatedObjectId}/`;
+                        break;
+                    case 'funding_round':
+                        redirectUrl = `/investor/funding/round/${relatedObjectId}/`;
+                        break;
+                    case 'investment':
+                        redirectUrl = `/investor/funding/round/${relatedObjectId}/`;
+                        break;
+                    case 'message':
+                        redirectUrl = `/investor/messages/${relatedObjectId}/`;
+                        break;
+                    default:
+                        return;
+                }
+                
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                }
+            }
+
+            updateCounter(count) {
+                if (this.notificationCounter) {
+                    if (count > 0) {
+                        this.notificationCounter.textContent = count;
+                        this.notificationCounter.style.display = 'block';
+                    } else {
+                        this.notificationCounter.style.display = 'none';
+                    }
+                }
+            }
+
+            loadInitialCount() {
+                fetch('{% url "investors:get_unread_count" %}')
+                    .then(response => response.json())
+                    .then(data => {
+                        this.updateCounter(data.count);
+                    })
+                    .catch(error => {
+                        console.error('Error loading notification count:', error);
+                    });
+            }
+
+            setupEventListeners() {
+                // Mark notifications as read when visiting notifications page
+                if (window.location.pathname.includes('/notifications/')) {
+                    this.markAllAsRead();
+                }
+            }
+
+            markAllAsRead() {
+                if (this.socket && this.isConnected) {
+                    this.socket.send(JSON.stringify({
+                        type: 'mark_all_read'
+                    }));
+                }
+            }
+
+            markAsRead(notificationId) {
+                if (this.socket && this.isConnected) {
+                    this.socket.send(JSON.stringify({
+                        type: 'mark_read',
+                        notification_id: notificationId
+                    }));
+                }
+            }
+        }
+
+        // Initialize notification manager when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            window.notificationManager = new NotificationManager();
+        });
+    </script>
+    {% endif %}
 </body>
 </html>
                     

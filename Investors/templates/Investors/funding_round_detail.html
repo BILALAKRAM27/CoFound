@@ -75,7 +75,12 @@
                             <tbody>
                                 {% for c in commitments %}
                                 <tr>
-                                                                     <td>{{ c.investor.get_full_name|default:c.investor.email }}</td>
+                                                                     <td>
+                                     <a href="{% url 'investors:profile_detail' c.investor.id %}" class="text-decoration-none text-primary fw-bold">
+                                         {{ c.investor.get_full_name|default:c.investor.email }}
+                                         <i class="bi bi-arrow-up-right ms-1" style="font-size: 0.8em;"></i>
+                                     </a>
+                                 </td>
                                  <td>${{ c.amount|floatformat:0 }}</td>
                                  <td>{{ c.safe_equity_share|floatformat:2 }}%</td>
                                 </tr>
