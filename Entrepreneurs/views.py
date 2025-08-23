@@ -24,6 +24,7 @@ from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
+from django.db import models
 
 # --- Django Channels Consumer for Messaging (placeholder, to be moved to consumers.py) ---
 
@@ -92,10 +93,70 @@ def entrepreneur_dashboard(request):
     if request.user.role != 'entrepreneur':
         messages.error(request, 'Access denied. You are not an entrepreneur.')
         return redirect('entrepreneurs:login')
-        
+    
+    from .models import Favorite, CollaborationRequest, Startup, ActivityLog
+    from Investors.models import FundingRound, InvestmentCommitment
+    from Investors.services import NotificationService
+    
     profile = EntrepreneurProfile.objects.get_or_create(user=request.user)[0]
+    
+    # Calculate connections (both favorites and accepted collaboration requests)
+    favorites_count = Favorite.objects.filter(user=request.user).count()
+    accepted_requests = CollaborationRequest.objects.filter(
+        Q(investor=request.user, status='accepted') | 
+        Q(entrepreneur=request.user, status='accepted')
+    ).count()
+    total_connections = favorites_count + accepted_requests
+    
+    # Calculate profile views (from activity logs)
+    profile_views = ActivityLog.objects.filter(
+        action='view_profile',
+        details__contains=f'viewed {request.user.get_full_name() or request.user.email}'
+    ).count()
+    
+    # Get user's startups
+    user_startups = Startup.objects.filter(entrepreneur=request.user)
+    
+    # Calculate investment offers (funding rounds created)
+    investment_offers = FundingRound.objects.filter(startup__entrepreneur=request.user).count()
+    
+    # Calculate total funding raised
+    total_funding_raised = FundingRound.objects.filter(
+        startup__entrepreneur=request.user,
+        status='successful'
+    ).aggregate(
+        total=models.Sum('target_goal')
+    )['total'] or 0
+    
+    # Get recent notifications (top 3)
+    recent_notifications = NotificationService.get_user_notifications(request.user, limit=3)
+    
+    # Get recent funding rounds
+    recent_funding_rounds = FundingRound.objects.filter(
+        startup__entrepreneur=request.user
+    ).select_related('startup').order_by('-created_at')[:5]
+    
+    # Get recent investment commitments to user's startups
+    recent_investments = InvestmentCommitment.objects.filter(
+        funding_round__startup__entrepreneur=request.user
+    ).select_related('investor', 'funding_round', 'funding_round__startup').order_by('-committed_at')[:5]
+    
+    sidebar_connections_count = total_connections
+    sidebar_posts_count = request.user.posts.count() if hasattr(request.user, 'posts') else 0
+    sidebar_profile_views = profile.profile_views
     context = {
         'profile': profile,
+        'total_connections': total_connections,
+        'profile_views': profile.profile_views,
+        'investment_offers': investment_offers,
+        'total_funding_raised': total_funding_raised,
+        'recent_notifications': recent_notifications,
+        'recent_funding_rounds': recent_funding_rounds,
+        'recent_investments': recent_investments,
+        'user_startups': user_startups,
+        'sidebar_connections_count': sidebar_connections_count,
+        'sidebar_posts_count': sidebar_posts_count,
+        'sidebar_profile_views': sidebar_profile_views,
     }
     return render(request, 'Entrepreneurs/dashboard.html', context)
 
@@ -331,6 +392,10 @@ def entrepreneur_profile_detail(request, user_id):
         ).first()
     # For entrepreneurs viewing, show if they are viewing their own profile
     is_self = (request.user == target_user)
+    # Increment profile views if not self
+    if not is_self:
+        profile.profile_views = (profile.profile_views or 0) + 1
+        profile.save(update_fields=["profile_views"])
     context = {
         'profile_user': target_user,
         'profile': profile,
@@ -681,3 +746,75 @@ def get_notifications_data(request):
         'notifications': notifications_data,
         'unread_count': unread_count
     })
+
+def search_users(request):
+    """Search users by name, email, or role"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    
+    query = request.GET.get('q', '').strip()
+    if not query or len(query) < 2:
+        return JsonResponse({'users': [], 'total': 0})
+    
+    # Search in User model (removed username since it doesn't exist)
+    users = User.objects.filter(
+        Q(first_name__icontains=query) | 
+        Q(last_name__icontains=query) | 
+        Q(email__icontains=query)
+    ).exclude(id=request.user.id)[:5]
+    
+    results = []
+    for user in users:
+        user_data = {
+            'id': user.id,
+            'name': user.get_full_name() or user.email,
+            'email': user.email,
+            'role': user.role,
+            'profile_url': f'/{user.role}/profile/{user.id}/' if user.role in ['investor', 'entrepreneur'] else '#'
+        }
+        results.append(user_data)
+    
+    return JsonResponse({
+        'users': results,
+        'total': len(results),
+        'query': query
+    })
+
+def search_results_page(request):
+    """Display full search results page"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return redirect('home')
+    
+    # Search in User model (removed username since it doesn't exist)
+    users = User.objects.filter(
+        Q(first_name__icontains=query) | 
+        Q(last_name__icontains=query) | 
+        Q(email__icontains=query)
+    ).exclude(id=request.user.id)
+    
+    # Get profile images for users
+    for user in users:
+        try:
+            if user.role == 'entrepreneur':
+                profile = getattr(user, 'entrepreneur_profile', None)
+                user.profile_image = profile.image if profile and profile.image else None
+            elif user.role == 'investor':
+                profile = getattr(user, 'investor_profile', None)
+                user.profile_image = profile.image if profile and profile.image else None
+            else:
+                user.profile_image = None
+        except Exception as e:
+            print(f"Error getting profile image for user {user.id}: {e}")
+            user.profile_image = None
+    
+    context = {
+        'users': users,
+        'query': query,
+        'total_results': users.count()
+    }
+    
+    return render(request, 'search_results.html', context)

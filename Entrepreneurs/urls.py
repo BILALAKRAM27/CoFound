@@ -44,6 +44,8 @@ urlpatterns += [
 # Notifications
 urlpatterns += [
     path('notifications/', views.notifications_list, name='notifications_list'),
+    path('search/', views.search_users, name='search_users'),
+    path('search/results/', views.search_results_page, name='search_results_page'),
     path('notifications/mark-read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
     path('notifications/unread-count/', views.get_unread_count, name='get_unread_count'),

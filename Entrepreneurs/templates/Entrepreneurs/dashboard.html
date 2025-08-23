@@ -14,44 +14,45 @@
                 </div>
 
             <!-- Entrepreneur Stats -->
-                <div class="row mb-4">
+            <div class="row mb-4">
                 <div class="col-md-3">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body text-center">
                             <i class="bi bi-people fs-1 text-primary mb-2"></i>
-                            <h4 class="mb-1">247</h4>
+                            <h4 class="mb-1">{{ total_connections|default:"0" }}</h4>
                             <p class="text-muted mb-0">Investor Connections</p>
+                        </div>
                     </div>
                 </div>
-                        </div>
                 <div class="col-md-3">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body text-center">
                             <i class="bi bi-eye fs-1 text-success mb-2"></i>
-                            <h4 class="mb-1">1,234</h4>
+                            <h4 class="mb-1">{{ profile_views|default:"0" }}</h4>
                             <p class="text-muted mb-0">Profile Views</p>
-                    </div>
                         </div>
                     </div>
+                </div>
                 <div class="col-md-3">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body text-center">
                             <i class="bi bi-handshake fs-1 text-warning mb-2"></i>
-                            <h4 class="mb-1">18</h4>
+                            <h4 class="mb-1">{{ investment_offers|default:"0" }}</h4>
                             <p class="text-muted mb-0">Investment Offers</p>
                         </div>
                     </div>
-                        </div>
+                </div>
                 <div class="col-md-3">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body text-center">
                             <i class="bi bi-graph-up fs-1 text-info mb-2"></i>
-                            <h4 class="mb-1">$50K</h4>
-                            <p class="text-muted mb-0">Funding Raised</p>
-                    </div>
-                </div>
+                            <h4 class="mb-1">${{ total_funding_raised|floatformat:0|default:"0" }}</h4>
+                            <a href="{% url 'investors:startup_dashboard_offers' %} " class="text-muted mb-0" style="text-decoration: none;"> Funding Raised
+                            </a>
                         </div>
                     </div>
+                </div>
+            </div>
 
             <!-- Startup Information -->
             <div class="row mb-4">
@@ -107,62 +108,132 @@
                                 </div>
                             </div>
 
+            <!-- Recent Funding Rounds -->
+            {% if recent_funding_rounds %}
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-transparent border-0">
+                            <h5 class="mb-0">Recent Funding Rounds</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group list-group-flush">
+                                {% for round in recent_funding_rounds %}
+                                <div class="list-group-item border-0 px-0">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ round.round_name }}</h6>
+                                            <p class="text-muted mb-1">{{ round.startup.name }}</p>
+                                            <small class="text-muted">Target: ${{ round.target_goal|floatformat:0 }}</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge {% if round.status == 'successful' %}bg-success{% elif round.status == 'active' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ round.status|title }}
+                                            </span>
+                                            <br>
+                                            <small class="text-muted">{{ round.created_at|date:"M d, Y" }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-transparent border-0">
+                            <h5 class="mb-0">Recent Investments</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_investments %}
+                                <div class="list-group list-group-flush">
+                                    {% for investment in recent_investments %}
+                                    <div class="list-group-item border-0 px-0">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">{{ investment.investor.get_full_name|default:investment.investor.email }}</h6>
+                                                <p class="text-muted mb-1">{{ investment.funding_round.startup.name }}</p>
+                                                <small class="text-muted">{{ investment.funding_round.round_name }}</small>
+                                            </div>
+                                            <div class="text-end">
+                                                <strong>${{ investment.amount|floatformat:0 }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ investment.committed_at|date:"M d, Y" }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-graph-up text-muted" style="font-size: 2rem;"></i>
+                                    <p class="text-muted mt-2 mb-0">No recent investments</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Recent Activity -->
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Recent Activity</h5>
-                            </div>
+                    <a href="{% url 'entrepreneurs:notifications_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
                 <div class="card-body">
-                                <div class="list-group list-group-flush">
-                        <div class="list-group-item border-0 px-0">
-                                        <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <i class="bi bi-person-plus text-success fs-4"></i>
-                                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h6 class="mb-1">New Investor Connection</h6>
-                                    <p class="text-muted mb-0">Angel Investor David Kim connected with you</p>
-                                    <small class="text-muted">2 hours ago</small>
-                                            </div>
-                                <div class="flex-shrink-0">
-                                    <button class="btn btn-sm btn-primary">View Profile</button>
-                                        </div>
-                                                </div>
-                                            </div>
-                        <div class="list-group-item border-0 px-0">
-                                        <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <i class="bi bi-chat-dots text-primary fs-4"></i>
-                                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h6 class="mb-1">Investment Interest</h6>
-                                    <p class="text-muted mb-0">VC Firm TechVentures showed interest in your startup</p>
-                                    <small class="text-muted">1 day ago</small>
-                                            </div>
-                                <div class="flex-shrink-0">
-                                    <button class="btn btn-sm btn-outline-primary">Respond</button>
-                                        </div>
-                                </div>
-                            </div>
-                        <div class="list-group-item border-0 px-0">
+                    {% if recent_notifications %}
+                        <div class="list-group list-group-flush">
+                            {% for notification in recent_notifications %}
+                            <div class="list-group-item border-0 px-0">
                                 <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <i class="bi bi-heart text-danger fs-4"></i>
+                                    <div class="flex-shrink-0">
+                                        {% if notification.notification_type == 'follow' %}
+                                            <i class="bi bi-person-plus text-success fs-4"></i>
+                                        {% elif notification.notification_type == 'post' %}
+                                            <i class="bi bi-file-post text-info fs-4"></i>
+                                        {% elif notification.notification_type == 'like' %}
+                                            <i class="bi bi-heart text-danger fs-4"></i>
+                                        {% elif notification.notification_type == 'comment' %}
+                                            <i class="bi bi-chat-fill text-primary fs-4"></i>
+                                        {% elif notification.notification_type == 'startup' %}
+                                            <i class="bi bi-building text-warning fs-4"></i>
+                                        {% elif notification.notification_type == 'funding_round' %}
+                                            <i class="bi bi-currency-dollar text-success fs-4"></i>
+                                        {% elif notification.notification_type == 'investment' %}
+                                            <i class="bi bi-graph-up text-info fs-4"></i>
+                                        {% elif notification.notification_type == 'message' %}
+                                            <i class="bi bi-envelope-fill text-info fs-4"></i>
+                                        {% else %}
+                                            <i class="bi bi-bell text-secondary fs-4"></i>
+                                        {% endif %}
                                     </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h6 class="mb-1">Profile Liked</h6>
-                                    <p class="text-muted mb-0">Emma Davis liked your startup profile</p>
-                                    <small class="text-muted">2 days ago</small>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">{{ notification.title }}</h6>
+                                        <p class="text-muted mb-0">{{ notification.message }}</p>
+                                        <small class="text-muted">{{ notification.time_ago }}</small>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        {% if notification.notification_type == 'message' %}
+                                            <a href="{% url 'entrepreneurs:messages' %}?open_chat={{ notification.related_object_id }}" class="btn btn-sm btn-primary">View Chat</a>
+                                        {% elif notification.notification_type == 'follow' %}
+                                            <a href="{% url 'entrepreneurs:profile_detail' notification.related_object_id %}" class="btn btn-sm btn-outline-primary">View Profile</a>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-outline-primary">View</button>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                                <div class="flex-shrink-0">
-                                    <button class="btn btn-sm btn-outline-primary">Connect</button>
                             </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-bell text-muted" style="font-size: 2rem;"></i>
+                            <p class="text-muted mt-2 mb-0">No recent activity</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
     {% endblock %}

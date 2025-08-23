@@ -152,6 +152,7 @@ class EntrepreneurProfile(models.Model):
     funding_raised = models.CharField(max_length=50, choices=FUNDING_RANGES, default='no_funding')
     valuation = models.CharField(max_length=50, choices=VALUATION_RANGES, default='not_specified')
     image = models.BinaryField(editable=True, null=True, blank=True)
+    profile_views = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -33,15 +33,15 @@
         </small>
         <div class="d-flex justify-content-around mt-3 pt-3 border-top border-light border-opacity-25">
             <div>
-                <strong class="d-block">247</strong>
+                <strong class="d-block">{{ sidebar_connections_count|default:'0' }}</strong>
                 <small class="opacity-75">Connections</small>
             </div>
             <div>
-                <strong class="d-block">18</strong>
+                <strong class="d-block">{{ sidebar_posts_count|default:'0' }}</strong>
                 <small class="opacity-75">Posts</small>
             </div>
             <div>
-                <strong class="d-block">92</strong>
+                <strong class="d-block">{{ sidebar_profile_views|default:'0' }}</strong>
                 <small class="opacity-75">Views</small>
             </div>
         </div>
