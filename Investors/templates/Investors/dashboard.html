@@ -38,7 +38,7 @@
                 <div class="col-md-3">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body text-center">
-                            <i class="fa fa-handshake-o fs-1 text-warning mb-4"></i>
+                            <i class="bi bi-handshake fs-1 text-warning mb-2"></i>
                             <h4 class="mb-1">{{ investment_deals|default:"0" }}</h4>
                             <p class="text-muted mb-0">Investment Deals</p>
                         </div>
@@ -71,18 +71,18 @@
                                 
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <p><strong>Industry:</strong> {{ profile.preferred_industries|default:"Not specified" }}</p>
-                                        <p><strong>Notable Exits:</strong> {{ profile.notable_exits|default:"Not specified" }}</p>
+                                        <p><strong>Position:</strong> {{ profile.position|default:"Not specified" }}</p>
+                                        <p><strong>Experience:</strong> {{ profile.years_of_experience|default:"Not specified" }} years</p>
                                     </div>
                                     <div class="col-md-6">
-                                        <p><strong>Investment Size:</strong> {{ profile.investment_size|default:"Not specified" }}</p>
-                                        <p><strong>Portfolio Companies:</strong> {{ profile.portfolio_companies|default:"Not specified" }}</p>
+                                        <p><strong>Min Investment:</strong> ${{ profile.min_investment|default:"Not specified" }}</p>
+                                        <p><strong>Max Investment:</strong> ${{ profile.max_investment|default:"Not specified" }}</p>
                                     </div>
                                 </div>
                                 
                                 {% if portfolio_companies %}
                                     <div class="mt-3">
-                                        <h6 class="text-primary">Companies Invested In via Our Platform</h6>
+                                        <h6 class="text-primary">Portfolio Companies</h6>
                                         <div class="d-flex flex-wrap gap-2">
                                             {% for company in portfolio_companies %}
                                                 <span class="badge bg-light text-dark">{{ company }}</span>

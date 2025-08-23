@@ -93,7 +93,7 @@ def entrepreneur_dashboard(request):
     if request.user.role != 'entrepreneur':
         messages.error(request, 'Access denied. You are not an entrepreneur.')
         return redirect('entrepreneurs:login')
-    
+        
     from .models import Favorite, CollaborationRequest, Startup, ActivityLog
     from Investors.models import FundingRound, InvestmentCommitment
     from Investors.services import NotificationService
@@ -627,14 +627,17 @@ def get_messages(request, user_id):
                          request.user.favorited_by.filter(user=other).exists())
             if not is_friend:
                 return HttpResponseForbidden('User only allows messages from friends.')
+        
         qs = Message.objects.filter(
             (Q(sender=request.user) & Q(receiver=other)) |
             (Q(sender=other) & Q(receiver=request.user))
         ).order_by('timestamp')
+        
         # Mark unread messages as read
         qs.filter(receiver=request.user, is_read=False).update(is_read=True)
         serializer = MessageSerializer(qs, many=True)
         return JsonResponse({'messages': serializer.data})
+        
     except User.DoesNotExist:
         return JsonResponse({'error': 'User not found'}, status=404)
 
