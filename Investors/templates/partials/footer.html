@@ -1,11 +1,13 @@
+{% load static %}
 <!-- Footer -->
 <footer class="footer" id="footer">
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-6">
                 <div class="d-flex align-items-center mb-2">
-                    <i class="bi bi-rocket-takeoff me-2 text-primary"></i>
-                    <strong>CoFound</strong>
+                    <a class="navbar-brand" href="{% url 'home' %}">
+                        <img src="{% static 'Investors/assests/startup.png' %}" style="width: 30px; height: 30px;" alt="CoFound" class="footer-logo"> <span class="text-primary" style="font-size: 18px;">CoFound</span>
+                    </a>
                 </div>
                 <p class="text-muted small mb-0">Connecting entrepreneurs with investors to build the future together.</p>
             </div>

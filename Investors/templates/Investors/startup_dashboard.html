@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Startup Dashboard - CoFound{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">My Funding Rounds</h2>
+        <a href="#" class="btn btn-primary"><i class="bi bi-plus me-2"></i>New Round</a>
+    </div>
+    <div class="row g-4">
+        {% for round in rounds %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title mb-0">{{ round.round_name }}</h5>
+                        <span class="badge 
+                            {% if round.status == 'active' %}bg-primary
+                            {% elif round.status == 'successful' %}bg-success
+                            {% else %}bg-danger{% endif %}">
+                            {{ round.status|title }}
+                        </span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small">Goal:</span>
+                        <strong>${{ round.target_goal|floatformat:0 }}</strong>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small">Equity Offered:</span>
+                        <strong>{{ round.equity_offered }}%</strong>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small">Deadline:</span>
+                        <strong>{{ round.deadline|date:'M d, Y' }}</strong>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-muted small">Raised:</span>
+                        <strong>${{ round.total_committed|floatformat:0 }}</strong>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar {% if round.percent_raised >= 100 %}bg-success{% elif round.percent_raised >= 75 %}bg-info{% else %}bg-primary{% endif %}"
+                            role="progressbar" style="width: {{ round.percent_raised|floatformat:0 }}%" aria-valuenow="{{ round.percent_raised|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small">Equity Split:</span>
+                        <ul class="list-unstyled mb-0">
+                            {% for c in round.investments.all %}
+                            <li>{{ c.investor.get_full_name|default:c.investor.email }}: <strong>{{ c.equity_share|floatformat:2 }}%</strong></li>
+                            {% empty %}
+                            <li class="text-muted">No investors yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <a href="{% url 'investors:funding_round_detail' round.id %}" class="btn btn-outline-primary btn-sm w-100 mt-2">
+                        <i class="bi bi-eye me-1"></i>View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">No funding rounds found.</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

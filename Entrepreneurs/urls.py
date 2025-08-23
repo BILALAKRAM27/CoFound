@@ -35,3 +35,8 @@ urlpatterns += [
 	path('find-investors/', views.find_investors, name='find_investors'),
 	path('connect/<int:target_id>/', views.entrepreneur_connect, name='connect_investor'),
 ]
+
+# Startup Management
+urlpatterns += [
+	path('startup/create/', views.create_startup, name='create_startup'),
+]

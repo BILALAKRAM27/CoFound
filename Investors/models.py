@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from Entrepreneurs.models import User
+from decimal import Decimal
 
 # Choice constants for InvestorProfile
 INVESTMENT_STAGES = [
@@ -107,3 +108,56 @@ class InvestmentDocument(models.Model):
 
     def __str__(self):
         return f"{self.title} by {self.investor}"
+
+
+class FundingRound(models.Model):
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('successful', 'Successful'),
+        ('failed', 'Failed'),
+    ]
+    startup = models.ForeignKey(
+        'Entrepreneurs.Startup',
+        on_delete=models.CASCADE,
+        related_name='funding_rounds'
+    )
+    round_name = models.CharField(max_length=255)
+    target_goal = models.DecimalField(max_digits=12, decimal_places=2)
+    equity_offered = models.DecimalField(max_digits=5, decimal_places=2, help_text='Total equity offered (%)')
+    deadline = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def total_committed(self):
+        return sum(ic.amount for ic in self.investments.all())
+
+    def is_successful(self):
+        return self.total_committed() >= self.target_goal
+
+    def __str__(self):
+        return f"{self.round_name} for {self.startup.name}"
+
+class InvestmentCommitment(models.Model):
+    funding_round = models.ForeignKey(FundingRound, on_delete=models.CASCADE, related_name='investments')
+    investor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='investment_commitments', limit_choices_to={'role': 'investor'})
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    committed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('funding_round', 'investor')
+
+    @property
+    def equity_share(self):
+        # Proportional equity based on amount committed
+        if self.funding_round.target_goal > 0:
+            # Ensure amount is a Decimal
+            try:
+                amount = Decimal(str(self.amount)) if not isinstance(self.amount, Decimal) else self.amount
+                return (amount / self.funding_round.target_goal) * self.funding_round.equity_offered
+            except (ValueError, TypeError, AttributeError):
+                return 0
+        return 0
+
+    def __str__(self):
+        return f"{self.investor.get_full_name()} committed ${self.amount} to {self.funding_round.round_name}"

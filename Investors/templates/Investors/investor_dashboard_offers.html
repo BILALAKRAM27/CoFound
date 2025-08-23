@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}My Investments - CoFound{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">My Investments</h2>
+    </div>
+    <div class="row g-4">
+        {% for c in commitments %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title mb-0">{{ c.funding_round.round_name }}</h5>
+                        <span class="badge {% if c.funding_round.status == 'active' %}bg-primary{% elif c.funding_round.status == 'successful' %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ c.funding_round.status|title }}
+                        </span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small">Goal:</span>
+                        <strong>${{ c.funding_round.target_goal|floatformat:0 }}</strong>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small">Equity Offered:</span>
+                        <strong>{{ c.funding_round.equity_offered }}%</strong>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small">Deadline:</span>
+                        <strong>{{ c.funding_round.deadline|date:'M d, Y' }}</strong>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-muted small">Raised:</span>
+                        <strong>${{ c.funding_round.total_committed|floatformat:0 }}</strong>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar {% if c.funding_round.percent_raised >= 100 %}bg-success{% elif c.funding_round.percent_raised >= 75 %}bg-info{% else %}bg-primary{% endif %}" role="progressbar" style="width: {{ c.funding_round.percent_raised|floatformat:0 }}%;" aria-valuenow="{{ c.funding_round.percent_raised|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small">My Commitment:</span>
+                        <strong>${{ c.amount|floatformat:0 }}</strong>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small">Potential Equity:</span>
+                        <strong>{{ c.equity_share|floatformat:2 }}%</strong>
+                    </div>
+                    <a href="{% url 'investors:funding_round_detail' c.funding_round.id %}" class="btn btn-outline-primary btn-sm w-100 mt-2">
+                        <i class="bi bi-eye me-1"></i>View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">No investments found.</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

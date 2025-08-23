@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from Entrepreneurs.models import User
-from .models import InvestorProfile, InvestorPortfolio, InvestmentDocument
+from .models import InvestorProfile, InvestorPortfolio, InvestmentDocument, FundingRound, InvestmentCommitment
 from .forms import InvestorRegistrationForm, InvestorProfileForm, MessageSettingsForm
 from django.http import JsonResponse
 from Entrepreneurs.models import Post, PostMedia
@@ -18,6 +18,21 @@ from django.shortcuts import get_object_or_404
 import base64
 from django.db import transaction
 from django.db.models import Q
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from .models import FundingRound, InvestmentCommitment
+from django.db.models import Sum
+from decimal import Decimal
+
+# Utility to add percent_raised to rounds
+def annotate_percent_raised(rounds):
+    for r in rounds:
+        try:
+            total = r.total_committed()
+            r.percent_raised = float(total) / float(r.target_goal) * 100 if r.target_goal else 0
+        except Exception:
+            r.percent_raised = 0
+    return rounds
 
 @login_required
 def message_settings(request):
@@ -845,5 +860,241 @@ def network_data(request):
         'mutual': [to_json(u) for u in mutual],
         'industry': [to_json(u) for u in industry],
     })
+
+@login_required
+def create_funding_round(request):
+    if request.user.role != 'entrepreneur':
+        return redirect('home')
+    
+    # Get user's startups
+    from Entrepreneurs.models import Startup
+    user_startups = Startup.objects.filter(entrepreneur=request.user).order_by('name')
+    
+    errors = {}
+    initial = {}
+    
+    if request.method == 'POST':
+        round_name = request.POST.get('round_name', '').strip()
+        target_goal = request.POST.get('target_goal', '').strip()
+        equity_offered = request.POST.get('equity_offered', '').strip()
+        deadline = request.POST.get('deadline', '').strip()
+        startup_id = request.POST.get('startup_id', '').strip()
+        
+        initial = {
+            'round_name': round_name,
+            'target_goal': target_goal,
+            'equity_offered': equity_offered,
+            'deadline': deadline,
+            'startup_id': startup_id,
+        }
+        
+        # Validation
+        if not round_name:
+            errors['round_name'] = 'Round name is required.'
+        if not target_goal or float(target_goal) <= 0:
+            errors['target_goal'] = 'Target goal must be a positive number.'
+        if not equity_offered or float(equity_offered) <= 0 or float(equity_offered) > 100:
+            errors['equity_offered'] = 'Equity offered must be between 0 and 100%.'
+        if not deadline:
+            errors['deadline'] = 'Deadline is required.'
+        else:
+            try:
+                # Handle datetime-local input format (YYYY-MM-DDTHH:MM)
+                if 'T' in deadline:
+                    # Parse the datetime-local format manually
+                    from datetime import datetime
+                    # Remove any timezone info and parse as local time
+                    deadline_clean = deadline.split('+')[0].split('Z')[0]
+                    
+                    # Handle different formats: YYYY-MM-DDTHH:MM or YYYY-MM-DDTHH:MM:SS
+                    if deadline_clean.count(':') == 1:
+                        deadline_dt = datetime.strptime(deadline_clean, '%Y-%m-%dT%H:%M')
+                    else:
+                        deadline_dt = datetime.strptime(deadline_clean, '%Y-%m-%dT%H:%M:%S')
+                    
+                    # Make it timezone-aware
+                    deadline_dt = timezone.make_aware(deadline_dt)
+                else:
+                    # Fallback for other formats
+                    from datetime import datetime
+                    deadline_dt = datetime.strptime(deadline, '%Y-%m-%d %H:%M:%S')
+                    deadline_dt = timezone.make_aware(deadline_dt)
+                
+                if deadline_dt <= timezone.now():
+                    errors['deadline'] = 'Deadline must be in the future.'
+            except Exception as e:
+                errors['deadline'] = f'Invalid deadline format. Please use the date picker.'
+        
+        # Startup validation
+        if not startup_id:
+            errors['startup_id'] = 'Please select a startup.'
+        else:
+            try:
+                startup = Startup.objects.get(id=startup_id, entrepreneur=request.user)
+            except Startup.DoesNotExist:
+                errors['startup_id'] = 'Invalid startup selected.'
+                startup = None
+        
+        if not errors and startup:
+            fr = FundingRound.objects.create(
+                startup=startup,
+                round_name=round_name,
+                target_goal=target_goal,
+                equity_offered=equity_offered,
+                deadline=deadline_dt
+            )
+            return redirect('investors:funding_round_detail', round_id=fr.id)
+    
+    return render(request, 'Investors/create_funding_round.html', {
+        'errors': errors, 
+        'initial': initial, 
+        'user': request.user,
+        'user_startups': user_startups
+    })
+
+@login_required
+@require_POST
+def commit_investment(request):
+    try:
+        if request.user.role != 'investor':
+            return JsonResponse({'success': False, 'error': 'Only investors can commit investments.'}, status=403)
+        
+        round_id = request.POST.get('funding_round_id')
+        amount = request.POST.get('amount')
+        
+        if not all([round_id, amount]):
+            return JsonResponse({'success': False, 'error': 'Missing required fields.'}, status=400)
+        
+        # Validate amount
+        try:
+            amount_decimal = Decimal(amount)
+            if amount_decimal <= 0:
+                return JsonResponse({'success': False, 'error': 'Amount must be greater than 0.'}, status=400)
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Invalid amount format.'}, status=400)
+        
+        # Get funding round
+        try:
+            fr = FundingRound.objects.get(id=round_id, status='active')
+        except FundingRound.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Funding round not found or not active.'}, status=404)
+        
+        # Check deadline
+        if fr.deadline < timezone.now():
+            return JsonResponse({'success': False, 'error': 'Funding round deadline has passed.'}, status=400)
+        
+        # Create or get commitment
+        try:
+            ic, created = InvestmentCommitment.objects.get_or_create(
+                funding_round=fr, investor=request.user,
+                defaults={'amount': amount_decimal}
+            )
+        except Exception as e:
+            return JsonResponse({
+                'success': False, 
+                'error': f'Error creating commitment: {str(e)}'
+            }, status=500)
+        
+        if not created:
+            return JsonResponse({'success': False, 'error': 'You have already committed to this round.'}, status=400)
+        
+        # Calculate equity share safely
+        try:
+            equity_share = ic.equity_share
+        except Exception as e:
+            # If equity calculation fails, calculate manually
+            try:
+                equity_share = (amount_decimal / fr.target_goal) * fr.equity_offered
+            except Exception as calc_error:
+                return JsonResponse({
+                    'success': False, 
+                    'error': f'Error calculating equity share: {str(calc_error)}'
+                }, status=500)
+        
+        # Convert amount to float safely
+        try:
+            amount_float = float(amount_decimal)
+        except (ValueError, TypeError):
+            amount_float = float(str(amount_decimal))
+        
+        return JsonResponse({
+            'success': True, 
+            'commitment_id': ic.id, 
+            'equity_share': equity_share,
+            'amount': amount_float
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False, 
+            'error': f'Unexpected error: {str(e)}'
+        }, status=500)
+
+@login_required
+@require_POST
+def close_funding_round(request):
+    if request.user.role != 'entrepreneur':
+        return JsonResponse({'success': False, 'error': 'Only startups can close funding rounds.'}, status=403)
+    round_id = request.POST.get('funding_round_id')
+    if not round_id:
+        return JsonResponse({'success': False, 'error': 'Missing funding_round_id.'}, status=400)
+    try:
+        fr = FundingRound.objects.get(id=round_id, startup__entrepreneur=request.user)
+        if fr.status != 'active':
+            return JsonResponse({'success': False, 'error': 'Round is already closed.'}, status=400)
+        if fr.total_committed() >= fr.target_goal:
+            fr.status = 'successful'
+        else:
+            fr.status = 'failed'
+        fr.save(update_fields=['status', 'updated_at'])
+        return JsonResponse({'success': True, 'status': fr.status})
+    except FundingRound.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Funding round not found or not owned by user.'}, status=404)
+
+@login_required
+def funding_rounds_list(request):
+    if request.user.role == 'entrepreneur':
+        rounds = FundingRound.objects.filter(startup__entrepreneur=request.user).order_by('-created_at')
+    else:
+        rounds = FundingRound.objects.all().order_by('-created_at')
+    rounds = annotate_percent_raised(rounds)
+    return render(request, 'Investors/funding_rounds.html', {'rounds': rounds, 'user': request.user})
+
+@login_required
+def funding_round_detail(request, round_id):
+    round = FundingRound.objects.select_related('startup').get(id=round_id)
+    commitments = InvestmentCommitment.objects.filter(funding_round=round).select_related('investor')
+    
+    # Add safe equity_share calculation for each commitment
+    for commitment in commitments:
+        try:
+            commitment.safe_equity_share = commitment.equity_share
+        except (ValueError, TypeError, AttributeError):
+            commitment.safe_equity_share = 0
+    
+    round.percent_raised = float(round.total_committed()) / float(round.target_goal) * 100 if round.target_goal else 0
+    return render(request, 'Investors/funding_round_detail.html', {
+        'round': round,
+        'commitments': commitments,
+        'user': request.user
+    })
+
+@login_required
+def startup_dashboard_offers(request):
+    if request.user.role != 'entrepreneur':
+        return redirect('home')
+    rounds = FundingRound.objects.filter(startup__entrepreneur=request.user).order_by('-created_at')
+    rounds = annotate_percent_raised(rounds)
+    return render(request, 'Investors/startup_dashboard.html', {'rounds': rounds, 'user': request.user})
+
+@login_required
+def investor_dashboard_offers(request):
+    if request.user.role != 'investor':
+        return redirect('home')
+    commitments = InvestmentCommitment.objects.filter(investor=request.user).select_related('funding_round').order_by('-committed_at')
+    for c in commitments:
+        fr = c.funding_round
+        c.funding_round.percent_raised = float(fr.total_committed()) / float(fr.target_goal) * 100 if fr.target_goal else 0
+    return render(request, 'Investors/investor_dashboard_offers.html', {'commitments': commitments, 'user': request.user})
 
 

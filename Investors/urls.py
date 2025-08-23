@@ -43,3 +43,16 @@ urlpatterns += [
 	path('find-startups/', views.find_startups, name='find_startups'),
 	path('connect/<int:target_id>/', views.investor_connect, name='connect_startup'),
 ]
+
+urlpatterns += [
+    path('funding/create/', views.create_funding_round, name='create_funding_round'),
+    path('funding/commit/', views.commit_investment, name='commit_investment'),
+    path('funding/close/', views.close_funding_round, name='close_funding_round'),
+]
+
+urlpatterns += [
+    path('funding/rounds/', views.funding_rounds_list, name='funding_rounds_list'),
+    path('funding/round/<int:round_id>/', views.funding_round_detail, name='funding_round_detail'),
+    path('dashboard/startup/offers/', views.startup_dashboard_offers, name='startup_dashboard_offers'),
+    path('dashboard/investor/offers/', views.investor_dashboard_offers, name='investor_dashboard_offers'),
+]

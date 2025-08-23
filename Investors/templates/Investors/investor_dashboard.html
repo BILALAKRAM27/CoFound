@@ -599,6 +599,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="{% url 'investors:funding_rounds_list' %}">
+                        <i class="bi bi-currency-dollar"></i>
+                        Funding Rounds
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="#messages">
                         <i class="bi bi-chat-dots"></i>
                         Messages
@@ -623,6 +629,11 @@
 
     <!-- Main Content -->
     <main class="main-content">
+        <div class="d-flex gap-2 mb-4">
+            <a href="{% url 'investors:investor_dashboard_offers' %}" class="btn btn-outline-primary">
+                <i class="bi bi-graph-up me-1"></i> My Investments
+            </a>
+        </div>
         <!-- Overview Cards -->
         <div class="row overview-cards mb-4">
             <div class="col-xl-3 col-md-6 mb-3">

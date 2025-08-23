@@ -13,6 +13,18 @@
                 </button>
             </div>
             
+            <div class="d-flex gap-2 mb-4">
+                {% if user.role == 'investor' %}
+                    <a href="{% url 'investors:investor_dashboard_offers' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-graph-up me-1"></i> My Investments
+                    </a>
+                {% elif user.role == 'entrepreneur' %}
+                    <a href="{% url 'investors:startup_dashboard_offers' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-graph-up me-1"></i> My Funding Rounds
+                    </a>
+                {% endif %}
+            </div>
+
             <!-- Investor Stats -->
             <div class="row mb-4">
                 <div class="col-md-3">

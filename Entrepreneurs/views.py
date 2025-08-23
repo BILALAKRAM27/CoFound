@@ -4,8 +4,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from .models import User, EntrepreneurProfile
-from .forms import EntrepreneurRegistrationForm, EntrepreneurProfileForm
+from .models import User, EntrepreneurProfile, Startup
+from .forms import EntrepreneurRegistrationForm, EntrepreneurProfileForm, StartupForm
 from django.http import JsonResponse
 from .forms import PostForm
 from .models import Post, PostMedia
@@ -540,4 +540,33 @@ def get_messages(request, user_id):
     qs.filter(receiver=request.user, is_read=False).update(is_read=True)
     serializer = MessageSerializer(qs, many=True)
     return JsonResponse({'messages': serializer.data})
+
+
+@login_required
+def create_startup(request):
+    """Create a new startup for the entrepreneur"""
+    if request.user.role != 'entrepreneur':
+        messages.error(request, 'Access denied. You are not an entrepreneur.')
+        return redirect('home')
+    
+    if request.method == 'POST':
+        form = StartupForm(request.POST, request.FILES)
+        if form.is_valid():
+            startup = form.save(commit=False)
+            startup.entrepreneur = request.user
+            
+            # Handle logo upload
+            if 'logo' in request.FILES:
+                logo_file = request.FILES['logo']
+                startup.logo = logo_file.read()
+            
+            startup.save()
+            messages.success(request, f'Startup "{startup.name}" created successfully!')
+            return redirect('investors:create_funding_round')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = StartupForm()
+    
+    return render(request, 'Entrepreneurs/create_startup.html', {'form': form})
 
