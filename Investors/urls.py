@@ -71,4 +71,5 @@ urlpatterns += [
     path('test-notification-redirect/', views.test_notification_redirect, name='test_notification_redirect'),
     path('search/', views.search_users, name='search_users'),
     path('search/results/', views.search_results_page, name='search_results_page'),
+    path('portfolio-analytics/', views.portfolio_analytics, name='portfolio_analytics'),
 ]

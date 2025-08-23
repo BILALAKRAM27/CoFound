@@ -93,8 +93,8 @@
                                 <a href="{% url 'entrepreneurs:profile' %}" class="btn btn-outline-primary">
                                     <i class="bi bi-pencil me-2"></i>Edit Profile
                                 </a>
-                                <button class="btn btn-outline-success">
-                                    <i class="bi bi-upload me-2"></i>Upload Pitch Deck
+                                <button class="btn btn-outline-success" onclick="location.href='{% url 'entrepreneurs:portfolio_analytics' %}'">
+                                    <i class="bi bi-graph-up me-2"></i>Portfolio Analytics
                                 </button>
                                 <button class="btn btn-outline-info" onclick="location.href='{% url 'entrepreneurs:find_investors' %}'">
                                     <i class="bi bi-search me-2"></i>Find Investors
@@ -142,8 +142,9 @@
                 </div>
                 <div class="col-md-6">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-transparent border-0">
+                        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">Recent Investments</h5>
+                            
                         </div>
                         <div class="card-body">
                             {% if recent_investments %}

@@ -1,0 +1,649 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Portfolio Analytics - CoFound{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .metric-card {
+        transition: all 0.3s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin: 20px 0;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    [data-bs-theme="dark"] .chart-container {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .deadline-card {
+        border-left: 4px solid #dc3545;
+        transition: all 0.3s ease;
+    }
+    .deadline-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .deadline-urgent {
+        border-left-color: #dc3545;
+    }
+    .deadline-warning {
+        border-left-color: #ffc107;
+    }
+    .deadline-safe {
+        border-left-color: #28a745;
+    }
+    .no-data-message {
+        color: var(--cf-text-secondary);
+        transition: all 0.3s ease;
+    }
+    .no-data-message:hover {
+        color: var(--cf-text-primary);
+        transform: scale(1.05);
+    }
+    .chart-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 300px;
+        color: var(--cf-text-secondary);
+    }
+    .chart-loading .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+#pdf-report-table th, #pdf-report-table td {
+    padding: 0.5rem 1rem;
+    border: 1px solid #dee2e6;
+    text-align: left;
+}
+#pdf-report-table th {
+    background: #f8f9fa;
+    font-weight: bold;
+}
+[data-bs-theme="dark"] #pdf-report-table th {
+    background: #23272b;
+    color: #fff;
+}
+[data-bs-theme="dark"] #pdf-report-table td {
+    background: #181a1b;
+    color: #fff;
+}
+#pdf-report-section {
+    display: none;
+    max-width: 900px;
+    margin: 0 auto;
+    font-size: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">Portfolio Analytics</h2>
+                <div class="d-flex justify-content-end align-items-center mb-3">
+                    <button class="btn btn-outline-primary me-2" id="export-pdf-btn">
+                        <i class="bi bi-file-earmark-pdf"></i> Export as PDF
+                    </button>
+                    <button class="btn btn-outline-success" id="export-csv-btn">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export as CSV
+                    </button>
+                </div>
+            </div>
+
+            <div id="analytics-dashboard">
+                <!-- Key Metrics Row -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm metric-card">
+                            <div class="card-body text-center">
+                                <i class="bi bi-cash-stack fs-1 text-success mb-2"></i>
+                                <h3 class="mb-1">${{ total_funds_raised|floatformat:0 }}</h3>
+                                <p class="text-muted mb-0">Total Funds Raised</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm metric-card">
+                            <div class="card-body text-center">
+                                <i class="bi bi-graph-up fs-1 text-primary mb-2"></i>
+                                <h3 class="mb-1">{{ active_rounds }}</h3>
+                                <p class="text-muted mb-0">Active Rounds</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm metric-card">
+                            <div class="card-body text-center">
+                                <i class="bi bi-people fs-1 text-warning mb-2"></i>
+                                <h3 class="mb-1">{{ unique_investors }}</h3>
+                                <p class="text-muted mb-0">Unique Investors</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm metric-card">
+                            <div class="card-body text-center">
+                                <i class="bi bi-pie-chart fs-1 text-info mb-2"></i>
+                                <h3 class="mb-1">{{ equity_retained|floatformat:1 }}%</h3>
+                                <p class="text-muted mb-0">Equity Retained</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Round Progress -->
+                {% if current_round %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h5 class="mb-0">Current Funding Round Progress</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h6 class="text-primary mb-2">{{ current_round.round_name }} - {{ current_round.startup.name }}</h6>
+                                        <p class="text-muted mb-3">
+                                            Goal: ${{ current_round.target_goal|floatformat:0 }} | 
+                                            Equity Offered: {{ current_round.equity_offered }}% |
+                                            Deadline: {{ current_round.deadline|date:"M d, Y" }}
+                                        </p>
+                                        <div class="progress mb-2" style="height: 20px;">
+                                            <div class="progress-bar bg-success" style="width: {{ current_progress }}%">
+                                                {{ current_progress|floatformat:1 }}%
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">
+                                            ${{ current_round_total_committed|floatformat:0 }} raised of ${{ current_round.target_goal|floatformat:0 }} goal
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4 text-center">
+                                        <div class="display-4 text-success">{{ current_progress|floatformat:1 }}%</div>
+                                        <p class="text-muted mb-0">Progress</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Charts Row -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h5 class="mb-0">Funding Growth Over Time</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if total_funds_raised > 0 %}
+                                    <div class="chart-container">
+                                        <canvas id="growthChart"></canvas>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-5">
+                                        <i class="bi bi-graph-up fs-1 text-muted mb-3"></i>
+                                        <h6 class="text-muted">No Funding Data</h6>
+                                        <p class="text-muted mb-0">Create funding rounds to see your growth over time.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h5 class="mb-0">Startup Industry Distribution</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if industry_labels %}
+                                    <div class="chart-container">
+                                        <canvas id="industryChart"></canvas>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-5">
+                                        <i class="bi bi-pie-chart fs-1 text-muted mb-3"></i>
+                                        <h6 class="text-muted">No Startup Data</h6>
+                                        <p class="text-muted mb-0">Create startups to see industry distribution.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upcoming Deadlines & Round History -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h5 class="mb-0">Upcoming Deadlines</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if upcoming_deadlines %}
+                                    {% for deadline in upcoming_deadlines %}
+                                    <div class="deadline-card card mb-3 {% if deadline.days_remaining <= 7 %}deadline-urgent{% elif deadline.days_remaining <= 30 %}deadline-warning{% else %}deadline-safe{% endif %}">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="mb-1">{{ deadline.round_name }}</h6>
+                                                    <p class="text-muted mb-1">{{ deadline.startup }}</p>
+                                                    <small class="text-muted">Deadline: {{ deadline.deadline }}</small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="badge {% if deadline.days_remaining <= 7 %}bg-danger{% elif deadline.days_remaining <= 30 %}bg-warning{% else %}bg-success{% endif %}">
+                                                        {{ deadline.days_remaining }} days
+                                                    </span>
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">{{ deadline.progress|floatformat:1 }}% complete</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="progress mt-2" style="height: 8px;">
+                                                <div class="progress-bar bg-primary" style="width: {{ deadline.progress }}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="bi bi-check-circle fs-1 text-success mb-3"></i>
+                                        <p class="text-muted">No upcoming deadlines!</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h5 class="mb-0">Funding Round History</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if round_timeline %}
+                                    <div class="timeline">
+                                        {% for round in round_timeline %}
+                                        <div class="d-flex mb-3">
+                                            <div class="flex-shrink-0 me-3">
+                                                <div class="bg-{% if round.status == 'successful' %}success{% elif round.status == 'active' %}warning{% else %}danger{% endif %} rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                    <i class="bi bi-{% if round.status == 'successful' %}check{% elif round.status == 'active' %}clock{% else %}x{% endif %} text-white"></i>
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1">{{ round.name }}</h6>
+                                                <p class="text-muted mb-1">{{ round.date }} - ${{ round.amount|floatformat:0 }}</p>
+                                                <span class="badge {% if round.status == 'successful' %}bg-success{% elif round.status == 'active' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                    {{ round.status|title }}
+                                                </span>
+                                                <small class="text-muted ms-2">{{ round.equity }}% equity</small>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+                                        <p class="text-muted">No funding rounds yet. Create your first one!</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Investor Engagement & Performance -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h5 class="mb-0">Investor Engagement & Performance</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="text-center p-3">
+                                            <i class="bi bi-chat-dots fs-1 text-primary mb-2"></i>
+                                            <h4 class="mb-1">{{ investor_messages }}</h4>
+                                            <p class="text-muted mb-0">Investor Messages</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="text-center p-3">
+                                            <i class="fa fa-handshake-o fs-1 text-success mb-4"></i>
+                                            <h4 class="mb-1">{{ active_rounds }}</h4>
+                                            <p class="text-muted mb-0">Active Collaborations</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {% if investor_commitments %}
+                                <div class="mt-4">
+                                    <h6 class="text-primary mb-3">Recent Investor Commitments</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Investor</th>
+                                                    <th>Startup</th>
+                                                    <th>Amount</th>
+                                                    <th>Date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for commitment in investor_commitments|slice:":5" %}
+                                                <tr>
+                                                    <td>{{ commitment.investor.get_full_name|default:commitment.investor.email }}</td>
+                                                    <td>{{ commitment.funding_round.startup.name }}</td>
+                                                    <td>${{ commitment.amount|floatformat:0 }}</td>
+                                                    <td>{{ commitment.committed_at|date:"M d, Y" }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h5 class="mb-0">Performance Highlights</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <h6 class="text-success">Most Successful Round</h6>
+                                    <p class="mb-1">
+                                        {% if successful_rounds > 0 %}
+                                            {{ successful_rounds }} successful rounds
+                                        {% else %}
+                                            No successful rounds yet
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="mb-3">
+                                    <h6 class="text-warning">Current Progress</h6>
+                                    <p class="mb-1">
+                                        {% if current_round %}
+                                            {{ current_progress|floatformat:1 }}% of goal
+                                        {% else %}
+                                            No active rounds
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="mb-3">
+                                    <h6 class="text-info">Portfolio Diversity</h6>
+                                    <p class="mb-1">{{ industry_labels|length }} industries</p>
+                                </div>
+                                <div class="mb-3">
+                                    <h6 class="text-primary">Total Startups</h6>
+                                    <p class="mb-1">{{ user_startups.count }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PDF Report Section (always hidden except during export) -->
+<div id="pdf-report-section" style="display:none">
+    <h2 style="text-align:center; margin-bottom: 0.5em;">Entrepreneur Portfolio Analytics Report</h2>
+    <p style="text-align:center; color: #888;">Generated on: <span id="pdf-report-date"></span></p>
+    <h4>Key Metrics</h4>
+    <table id="pdf-report-table" style="width:100%; border-collapse:collapse; margin-bottom:1.5em;">
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Total Funds Raised</td><td>${{ total_funds_raised|floatformat:0 }}</td></tr>
+        <tr><td>Active Rounds</td><td>{{ active_rounds }}</td></tr>
+        <tr><td>Successful Rounds</td><td>{{ successful_rounds }}</td></tr>
+        <tr><td>Failed Rounds</td><td>{{ failed_rounds }}</td></tr>
+        <tr><td>Unique Investors</td><td>{{ unique_investors }}</td></tr>
+        <tr><td>Equity Retained</td><td>{{ equity_retained|floatformat:2 }}%</td></tr>
+    </table>
+    <h4>Industry Distribution</h4>
+    <table id="pdf-report-table" style="width:100%; border-collapse:collapse; margin-bottom:1.5em;">
+        <tr><th>Industry</th><th>Count</th></tr>
+        {% for label, value in industry_table %}
+        <tr><td>{{ label }}</td><td>{{ value }}</td></tr>
+        {% endfor %}
+    </table>
+    <h4>Funding Growth Over Time</h4>
+    <table id="pdf-report-table" style="width:100%; border-collapse:collapse; margin-bottom:1.5em;">
+        <tr><th>Month</th><th>Funding Amount</th></tr>
+        {% for month, amount in growth_table %}
+        <tr><td>{{ month }}</td><td>${{ amount|floatformat:0 }}</td></tr>
+        {% endfor %}
+    </table>
+    <h4>Upcoming Deadlines</h4>
+    <table id="pdf-report-table" style="width:100%; border-collapse:collapse; margin-bottom:1.5em;">
+        <tr><th>Round Name</th><th>Startup</th><th>Deadline</th><th>Days Remaining</th><th>Progress (%)</th></tr>
+        {% for deadline in upcoming_deadlines %}
+        <tr>
+            <td>{{ deadline.round_name }}</td>
+            <td>{{ deadline.startup }}</td>
+            <td>{{ deadline.deadline }}</td>
+            <td>{{ deadline.days_remaining }}</td>
+            <td>{{ deadline.progress|floatformat:1 }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+{% block extra_js %}
+<script>
+console.log('Entrepreneur PDF export and chart script loaded');
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart.js Funding Growth Over Time
+    console.log('Chart.js script running');
+    const growthCtx = document.getElementById('growthChart')?.getContext('2d');
+    if (growthCtx) {
+        const growthMonthsData = {{ growth_months|safe }};
+        const growthAmountsData = {{ growth_amounts|safe }};
+        if (growthMonthsData.length === 0 || growthAmountsData.every(val => val === 0)) {
+            const fallbackMonths = ['Jan 2024', 'Feb 2024', 'Mar 2024', 'Apr 2024', 'May 2024', 'Jun 2024',
+                                   'Jul 2024', 'Aug 2024', 'Sep 2024', 'Oct 2024', 'Nov 2024', 'Dec 2024'];
+            const fallbackData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            new Chart(growthCtx, {
+                type: 'line',
+                data: {
+                    labels: fallbackMonths,
+                    datasets: [{
+                        label: 'Funding Amount ($)',
+                        data: fallbackData,
+                        borderColor: 'rgb(40, 167, 69)',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            new Chart(growthCtx, {
+                type: 'line',
+                data: {
+                    labels: growthMonthsData,
+                    datasets: [{
+                        label: 'Funding Amount ($)',
+                        data: growthAmountsData,
+                        borderColor: 'rgb(40, 167, 69)',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // Chart.js Startup Industry Distribution
+    const industryCtx = document.getElementById('industryChart')?.getContext('2d');
+    if (industryCtx) {
+        const industryLabelsData = {{ industry_labels|safe }};
+        const industryValuesData = {{ industry_values|safe }};
+        if (industryLabelsData.length === 0 || industryValuesData.every(val => val === 0)) {
+            const fallbackLabels = ['Technology', 'Healthcare', 'Finance', 'Education', 'Other'];
+            const fallbackData = [1, 1, 1, 1, 1];
+            new Chart(industryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: fallbackLabels,
+                    datasets: [{
+                        data: fallbackData,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            new Chart(industryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: industryLabelsData,
+                    datasets: [{
+                        data: industryValuesData,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)',
+                            'rgba(199, 199, 199, 0.8)',
+                            'rgba(83, 102, 255, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(199, 199, 199, 1)',
+                            'rgba(83, 102, 255, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // PDF Export
+    const pdfBtn = document.getElementById('export-pdf-btn');
+    if (pdfBtn) {
+        pdfBtn.addEventListener('click', function() {
+            console.log('PDF export button clicked');
+            setPDFReportDate();
+            const report = document.getElementById('pdf-report-section');
+            report.style.display = 'block';
+            html2pdf().set({
+                margin: 0.5,
+                filename: 'entrepreneur_portfolio_analytics.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: null },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            }).from(report).save().then(() => {
+                report.style.display = 'none';
+            });
+        });
+    }
+
+    // Set report date
+    function setPDFReportDate() {
+        const date = new Date();
+        document.getElementById('pdf-report-date').textContent = date.toLocaleString();
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

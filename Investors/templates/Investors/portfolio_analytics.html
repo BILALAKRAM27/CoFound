@@ -1,0 +1,660 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Portfolio Analytics - CoFound{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .metric-card {
+        transition: all 0.3s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin: 20px 0;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    [data-bs-theme="dark"] .chart-container {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .progress-ring {
+        width: 120px;
+        height: 120px;
+    }
+    .risk-badge {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .no-data-message {
+        color: var(--cf-text-secondary);
+        transition: all 0.3s ease;
+    }
+    .no-data-message:hover {
+        color: var(--cf-text-primary);
+        transform: scale(1.05);
+    }
+    .chart-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 300px;
+        color: var(--cf-text-secondary);
+    }
+    .chart-loading .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+    #pdf-report-table th, #pdf-report-table td {
+        padding: 0.5rem 1rem;
+        border: 1px solid #dee2e6;
+        text-align: left;
+    }
+    #pdf-report-table th {
+        background: #f8f9fa;
+        font-weight: bold;
+    }
+    [data-bs-theme="dark"] #pdf-report-table th {
+        background: #23272b;
+        color: #fff;
+    }
+    [data-bs-theme="dark"] #pdf-report-table td {
+        background: #181a1b;
+        color: #fff;
+    }
+    #pdf-report-section {
+        display: none;
+        max-width: 900px;
+        margin: 0 auto;
+        font-size: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">Portfolio Analytics</h2>
+                <div class="d-flex justify-content-end align-items-center mb-3">
+                    <button class="btn btn-outline-primary me-2" id="export-pdf-btn">
+                        <i class="bi bi-file-earmark-pdf"></i> Export as PDF
+                    </button>
+                    <button class="btn btn-outline-success" id="export-csv-btn">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export as CSV
+                    </button>
+                </div>
+            </div>
+
+            <div id="analytics-dashboard">
+                <!-- Key Metrics Row -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm metric-card">
+                            <div class="card-body text-center">
+                                <i class="bi bi-cash-stack fs-1 text-primary mb-2"></i>
+                                <h3 class="mb-1">${{ total_invested|floatformat:0 }}</h3>
+                                <p class="text-muted mb-0">Total Invested Capital</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm metric-card">
+                            <div class="card-body text-center">
+                                <i class="bi bi-graph-up fs-1 text-success mb-2"></i>
+                                <h3 class="mb-1">{{ active_investments }}</h3>
+                                <p class="text-muted mb-0">Active Investments</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm metric-card">
+                            <div class="card-body text-center">
+                                <i class="bi bi-pie-chart fs-1 text-warning mb-2"></i>
+                                <h3 class="mb-1">{{ total_equity|floatformat:2 }}%</h3>
+                                <p class="text-muted mb-0">Total Equity</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm metric-card">
+                            <div class="card-body text-center">
+                                <i class="fa fa-line-chart fs-1 text-info mb-2"></i>
+                                <h3 class="mb-1">{{ roi_percentage|floatformat:1 }}%</h3>
+                                <p class="text-muted mb-0">ROI</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h5 class="mb-0">Portfolio Growth Over Time</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if total_invested > 0 %}
+                                    <div class="chart-container">
+                                        <canvas id="growthChart"></canvas>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-5">
+                                        <i class="bi bi-graph-up fs-1 text-muted mb-3"></i>
+                                        <h6 class="text-muted">No Investment Data</h6>
+                                        <p class="text-muted mb-0">Start making investments to see your portfolio growth over time.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h5 class="mb-0">Industry Distribution</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if industry_labels %}
+                                    <div class="chart-container">
+                                        <canvas id="industryChart"></canvas>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-5">
+                                        <i class="bi bi-pie-chart fs-1 text-muted mb-3"></i>
+                                        <h6 class="text-muted">No Industry Data</h6>
+                                        <p class="text-muted mb-0">Invest in startups to see industry distribution.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Analysis & Round Participation -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h5 class="mb-0">Risk Level Distribution</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="badge bg-warning risk-badge">Early Stage</span>
+                                    <span class="fw-bold">{{ early_stage_count }} investments</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="badge bg-success risk-badge">Growth Stage</span>
+                                    <span class="fw-bold">{{ growth_stage_count }} investments</span>
+                                </div>
+                                <div class="progress mb-3" style="height: 8px;">
+                                    {% if early_stage_count > 0 or growth_stage_count > 0 %}
+                                        {% widthratio early_stage_count early_stage_count|add:growth_stage_count 100 as early_percentage %}
+                                        <div class="progress-bar bg-warning" style="width: {{ early_percentage }}%"></div>
+                                    {% else %}
+                                        <div class="progress-bar bg-warning" style="width: 0%"></div>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Risk level based on company stage</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h5 class="mb-0">Funding Round Participation</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="roundChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Investments & Performance -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h5 class="mb-0">Top Investments by Amount</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if top_investments %}
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Startup</th>
+                                                    <th>Round</th>
+                                                    <th>Amount</th>
+                                                    <th>Equity</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for investment in top_investments %}
+                                                <tr>
+                                                    <td>
+                                                        <strong>{{ investment.funding_round.startup.name }}</strong>
+                                                        <br><small class="text-muted">{{ investment.funding_round.startup.industry|title }}</small>
+                                                    </td>
+                                                    <td>{{ investment.funding_round.round_name }}</td>
+                                                    <td>${{ investment.amount|floatformat:0 }}</td>
+                                                    <td>{{ investment.equity_share|floatformat:2 }}%</td>
+                                                    <td>
+                                                        <span class="badge {% if investment.funding_round.status == 'successful' %}bg-success{% elif investment.funding_round.status == 'active' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                            {{ investment.funding_round.status|title }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+                                        <p class="text-muted">No investments yet. Start building your portfolio!</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h5 class="mb-0">Performance Highlights</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <h6 class="text-success">Most Successful Round</h6>
+                                    <p class="mb-1">
+                                        {% if successful_investments > 0 %}
+                                            {{ successful_investments }} successful investments
+                                        {% else %}
+                                            No successful rounds yet
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="mb-3">
+                                    <h6 class="text-warning">Biggest Investment</h6>
+                                    <p class="mb-1">
+                                        {% if top_investments %}
+                                            ${{ top_investments.0.amount|floatformat:0 }}
+                                        {% else %}
+                                            No investments yet
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="mb-3">
+                                    <h6 class="text-info">Portfolio Diversity</h6>
+                                    <p class="mb-1">{{ industry_labels|length }} industries</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden PDF Report Section -->
+<div id="pdf-report-section" style="display:none">
+    <h2 style="text-align:center; margin-bottom: 0.5em;">Investor Portfolio Analytics Report</h2>
+    <p style="text-align:center; color: #888;">Generated on: <span id="pdf-report-date"></span></p>
+    <h4>Key Metrics</h4>
+    <table id="pdf-report-table" style="width:100%; border-collapse:collapse; margin-bottom:1.5em;">
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Total Invested</td><td>${{ total_invested|floatformat:0 }}</td></tr>
+        <tr><td>Active Investments</td><td>{{ active_investments }}</td></tr>
+        <tr><td>Successful Investments</td><td>{{ successful_investments }}</td></tr>
+        <tr><td>Total Equity</td><td>{{ total_equity|floatformat:2 }}%</td></tr>
+        <tr><td>ROI (%)</td><td>{{ roi_percentage|floatformat:2 }}</td></tr>
+    </table>
+    <h4>Industry Distribution</h4>
+    <table id="pdf-report-table" style="width:100%; border-collapse:collapse; margin-bottom:1.5em;">
+        <tr><th>Industry</th><th>Amount Invested</th></tr>
+        {% for label, value in industry_table %}
+        <tr><td>{{ label }}</td><td>${{ value|floatformat:0 }}</td></tr>
+        {% endfor %}
+    </table>
+    <h4>Portfolio Growth Over Time</h4>
+    <table id="pdf-report-table" style="width:100%; border-collapse:collapse; margin-bottom:1.5em;">
+        <tr><th>Month</th><th>Investment Amount</th></tr>
+        {% for month, amount in growth_table %}
+        <tr><td>{{ month }}</td><td>${{ amount|floatformat:0 }}</td></tr>
+        {% endfor %}
+    </table>
+    <h4>Funding Round Participation</h4>
+    <table id="pdf-report-table" style="width:100%; border-collapse:collapse; margin-bottom:1.5em;">
+        <tr><th>Round Type</th><th>Count</th></tr>
+        {% for round_type, count in round_types_table %}
+        <tr><td>{{ round_type|title }}</td><td>{{ count }}</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Debug logging
+console.log('Portfolio Analytics Data:', {
+    months: {{ months|safe }},
+    monthly_totals: {{ monthly_totals|safe }},
+    industry_labels: {{ industry_labels|safe }},
+    industry_values: {{ industry_values|safe }},
+    round_types: {{ round_types|safe }}
+});
+
+// Portfolio Growth Chart
+const growthCtx = document.getElementById('growthChart').getContext('2d');
+const monthsData = {{ months|safe }};
+const monthlyTotalsData = {{ monthly_totals|safe }};
+
+// Ensure we have data for the chart
+if (monthsData.length === 0 || monthlyTotalsData.every(val => val === 0)) {
+    // Fallback data if no investments
+    const fallbackMonths = ['Jan 2024', 'Feb 2024', 'Mar 2024', 'Apr 2024', 'May 2024', 'Jun 2024', 
+                           'Jul 2024', 'Aug 2024', 'Sep 2024', 'Oct 2024', 'Nov 2024', 'Dec 2024'];
+    const fallbackData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    
+    new Chart(growthCtx, {
+        type: 'line',
+        data: {
+            labels: fallbackMonths,
+            datasets: [{
+                label: 'Investment Amount ($)',
+                data: fallbackData,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+} else {
+    new Chart(growthCtx, {
+        type: 'line',
+        data: {
+            labels: monthsData,
+            datasets: [{
+                label: 'Investment Amount ($)',
+                data: monthlyTotalsData,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Industry Distribution Chart
+const industryCtx = document.getElementById('industryChart').getContext('2d');
+const industryLabelsData = {{ industry_labels|safe }};
+const industryValuesData = {{ industry_values|safe }};
+
+// Ensure we have data for the chart
+if (industryLabelsData.length === 0) {
+    // Fallback data if no industries
+    new Chart(industryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['No Data'],
+            datasets: [{
+                data: [1],
+                backgroundColor: ['#C9CBCF']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+} else {
+    new Chart(industryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: industryLabelsData,
+            datasets: [{
+                data: industryValuesData,
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Funding Round Chart
+const roundCtx = document.getElementById('roundChart').getContext('2d');
+const roundData = {
+    'seed': {{ round_types.seed|default:0 }},
+    'series_a': {{ round_types.series_a|default:0 }},
+    'series_b': {{ round_types.series_b|default:0 }},
+    'series_c': {{ round_types.series_c|default:0 }},
+    'other': {{ round_types.other|default:0 }}
+};
+
+// Ensure we have data for the chart
+const roundValues = [roundData.seed, roundData.series_a, roundData.series_b, roundData.series_c, roundData.other];
+if (roundValues.every(val => val === 0)) {
+    // Fallback data if no rounds
+    new Chart(roundCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Seed', 'Series A', 'Series B', 'Series C', 'Other'],
+            datasets: [{
+                label: 'Number of Investments',
+                data: [0, 0, 0, 0, 0],
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+} else {
+    new Chart(roundCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Seed', 'Series A', 'Series B', 'Series C', 'Other'],
+            datasets: [{
+                label: 'Number of Investments',
+                data: roundValues,
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Export functionality
+function exportData() {
+    // Simple export - in production, you might want to generate a proper PDF/CSV
+    const data = {
+        total_invested: {{ total_invested }},
+        active_investments: {{ active_investments }},
+        total_equity: {{ total_equity }},
+        roi_percentage: {{ roi_percentage }},
+        export_date: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'portfolio_analytics.json';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+// Set report date
+function setPDFReportDate() {
+    const date = new Date();
+    document.getElementById('pdf-report-date').textContent = date.toLocaleString();
+}
+
+// PDF Export
+const pdfBtn = document.getElementById('export-pdf-btn');
+pdfBtn.addEventListener('click', function() {
+    setPDFReportDate();
+    const report = document.getElementById('pdf-report-section');
+    report.style.display = 'block';
+    try {
+        html2pdf().set({
+            margin: 0.5,
+            filename: 'investor_portfolio_analytics.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: null },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        }).from(report).save().then(() => {
+            report.style.display = 'none';
+        });
+    } catch (e) {
+        alert('PDF export failed: ' + e.message);
+    }
+});
+
+// CSV Export
+const csvBtn = document.getElementById('export-csv-btn');
+csvBtn.addEventListener('click', function() {
+    // Gather key metrics and chart data
+    const metrics = [
+        ['Total Invested', {{ total_invested }}],
+        ['Active Investments', {{ active_investments }}],
+        ['Successful Investments', {{ successful_investments }}],
+        ['Total Equity', {{ total_equity|floatformat:2 }} + '%'],
+        ['ROI (%)', {{ roi_percentage|floatformat:2 }}],
+    ];
+    const industryLabels = {{ industry_labels|safe }};
+    const industryValues = {{ industry_values|safe }};
+    const months = {{ months|safe }};
+    const monthlyTotals = {{ monthly_totals|safe }};
+    const roundTypes = {{ round_types|safe }};
+
+    let csv = 'Metric,Value\n';
+    metrics.forEach(row => { csv += row.join(',') + '\n'; });
+    csv += '\nIndustry,Amount Invested\n';
+    industryLabels.forEach((label, i) => { csv += `${label},${industryValues[i]}\n`; });
+    csv += '\nMonth,Investment Amount\n';
+    months.forEach((month, i) => { csv += `${month},${monthlyTotals[i]}\n`; });
+    csv += '\nRound Type,Count\n';
+    Object.keys(roundTypes).forEach(type => { csv += `${type},${roundTypes[type]}\n`; });
+
+    // Download CSV
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'investor_portfolio_analytics.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+});
+</script>
+{% endblock %}

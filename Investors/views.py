@@ -1367,4 +1367,111 @@ def search_results_page(request):
     
     return render(request, 'search_results.html', context)
 
+@login_required
+def portfolio_analytics(request):
+    """Portfolio Analytics Dashboard for Investors"""
+    if request.user.role != 'investor':
+        messages.error(request, 'Access denied. You are not an investor.')
+        return redirect('home')
+    
+    from django.db.models import Sum, Count, Avg
+    from django.utils import timezone
+    from datetime import timedelta
+    import json
+    
+    # Get all investment commitments for the investor
+    investments = InvestmentCommitment.objects.filter(
+        investor=request.user
+    ).select_related('funding_round', 'funding_round__startup')
+    
+    # Calculate key metrics
+    total_invested = investments.aggregate(total=Sum('amount'))['total'] or 0
+    active_investments = investments.filter(funding_round__status='active').count()
+    successful_investments = investments.filter(funding_round__status='successful').count()
+    
+    # Calculate total equity across all investments
+    total_equity = sum(inv.equity_share for inv in investments)
+    
+    # Calculate ROI (simplified - based on successful rounds)
+    successful_amount = investments.filter(funding_round__status='successful').aggregate(total=Sum('amount'))['total'] or 0
+    roi_percentage = ((successful_amount - total_invested) / total_invested * 100) if total_invested > 0 else 0.0
+    
+    # Risk level categorization
+    early_stage_count = investments.filter(
+        funding_round__startup__entrepreneur__entrepreneur_profile__company_stage__in=['idea', 'mvp', 'early']
+    ).count()
+    growth_stage_count = investments.filter(
+        funding_round__startup__entrepreneur__entrepreneur_profile__company_stage__in=['growth', 'scale']
+    ).count()
+    
+    # Funding round participation by type
+    round_types = {}
+    for inv in investments:
+        round_name = inv.funding_round.round_name.lower()
+        if 'seed' in round_name:
+            round_types['seed'] = round_types.get('seed', 0) + 1
+        elif 'series a' in round_name or 'seriesa' in round_name:
+            round_types['series_a'] = round_types.get('series_a', 0) + 1
+        elif 'series b' in round_name or 'seriesb' in round_name:
+            round_types['series_b'] = round_types.get('series_b', 0) + 1
+        elif 'series c' in round_name or 'seriesc' in round_name:
+            round_types['series_c'] = round_types.get('series_c', 0) + 1
+        else:
+            round_types['other'] = round_types.get('other', 0) + 1
+    
+    # Portfolio growth over time (last 12 months)
+    months = []
+    monthly_totals = []
+    for i in range(12):
+        date = timezone.now() - timedelta(days=30*i)
+        month_investments = investments.filter(committed_at__month=date.month, committed_at__year=date.year)
+        month_total = month_investments.aggregate(total=Sum('amount'))['total'] or 0
+        months.append(date.strftime('%b %Y'))
+        monthly_totals.append(float(month_total))
+    
+    months.reverse()
+    monthly_totals.reverse()
+    
+    # Top investments by amount
+    top_investments = investments.order_by('-amount')[:5]
+    
+    # Industry distribution
+    industry_distribution = {}
+    for inv in investments:
+        industry = inv.funding_round.startup.industry
+        if industry in industry_distribution:
+            industry_distribution[industry] += float(inv.amount)
+        else:
+            industry_distribution[industry] = float(inv.amount)
+    
+    # Convert to chart data
+    industry_labels = list(industry_distribution.keys())
+    industry_values = list(industry_distribution.values())
+    months = months
+    monthly_totals = monthly_totals
+    round_types_table = list(round_types.items())
+    industry_table = list(zip(industry_labels, industry_values))
+    growth_table = list(zip(months, monthly_totals))
+    context = {
+        'total_invested': total_invested,
+        'active_investments': active_investments,
+        'successful_investments': successful_investments,
+        'total_equity': total_equity,
+        'early_stage_count': early_stage_count,
+        'growth_stage_count': growth_stage_count,
+        'round_types': round_types,
+        'months': json.dumps(months),
+        'monthly_totals': json.dumps(monthly_totals),
+        'top_investments': top_investments,
+        'industry_labels': json.dumps(industry_labels),
+        'industry_values': json.dumps(industry_values),
+        'roi_percentage': roi_percentage,
+        'investments': investments,
+        'industry_table': industry_table,
+        'growth_table': growth_table,
+        'round_types_table': round_types_table,
+    }
+    
+    return render(request, 'Investors/portfolio_analytics.html', context)
+
 

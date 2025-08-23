@@ -15,7 +15,7 @@ from .models import Post, Comment, CollaborationRequest, EntrepreneurProfile, Fa
 from .forms import CommentForm
 from django.shortcuts import get_object_or_404
 import base64
-from Investors.models import InvestorProfile
+from Investors.models import InvestorProfile, FundingRound, InvestmentCommitment
 from django.db.models import Q
 from django.db import transaction
 from .models import Message, MessageSerializer
@@ -821,3 +821,134 @@ def search_results_page(request):
     }
     
     return render(request, 'search_results.html', context)
+
+@login_required
+def portfolio_analytics(request):
+    """Portfolio Analytics Dashboard for Entrepreneurs"""
+    if request.user.role != 'entrepreneur':
+        messages.error(request, 'Access denied. You are not an entrepreneur.')
+        return redirect('home')
+    
+    from django.db.models import Sum, Count, Avg
+    from django.utils import timezone
+    from datetime import timedelta
+    import json
+    
+    # Get user's startups and funding rounds
+    user_startups = Startup.objects.filter(entrepreneur=request.user)
+    funding_rounds = FundingRound.objects.filter(
+        startup__entrepreneur=request.user
+    ).select_related('startup')
+    
+    # Calculate key metrics
+    total_funds_raised = funding_rounds.filter(status='successful').aggregate(
+        total=Sum('target_goal')
+    )['total'] or 0
+    
+    active_rounds = funding_rounds.filter(status='active').count()
+    successful_rounds = funding_rounds.filter(status='successful').count()
+    failed_rounds = funding_rounds.filter(status='failed').count()
+    
+    # Get current active round for progress tracking
+    current_round = funding_rounds.filter(status='active').first()
+    current_progress = 0
+    current_round_total_committed = 0
+    if current_round:
+        current_round_total_committed = current_round.total_committed()
+        current_progress = (current_round_total_committed / current_round.target_goal * 100) if current_round.target_goal > 0 else 0
+    
+    # Calculate total equity given vs retained
+    total_equity_offered = funding_rounds.aggregate(total=Sum('equity_offered'))['total'] or 0
+    equity_retained = 100 - total_equity_offered
+    
+    # Get investor count and distribution
+    investor_commitments = InvestmentCommitment.objects.filter(
+        funding_round__startup__entrepreneur=request.user
+    ).select_related('investor', 'funding_round')
+    
+    unique_investors = investor_commitments.values('investor').distinct().count()
+    
+    # Industry distribution of startups
+    industry_distribution = {}
+    for startup in user_startups:
+        industry = startup.industry
+        if industry in industry_distribution:
+            industry_distribution[industry] += 1
+        else:
+            industry_distribution[industry] = 1
+    
+    # Convert to chart data
+    industry_labels = list(industry_distribution.keys())
+    industry_values = list(industry_distribution.values())
+    # Prepare zipped tables for template
+    industry_table = list(zip(industry_labels, industry_values))
+    # Growth metrics (simplified - based on funding rounds)
+    growth_months = []
+    growth_amounts = []
+    for i in range(12):
+        date = timezone.now() - timedelta(days=30*i)
+        month_rounds = funding_rounds.filter(created_at__month=date.month, created_at__year=date.year)
+        month_total = month_rounds.aggregate(total=Sum('target_goal'))['total'] or 0
+        growth_months.append(date.strftime('%b %Y'))
+        growth_amounts.append(float(month_total))
+    growth_months.reverse()
+    growth_amounts.reverse()
+    # Prepare zipped tables for template
+    growth_table = list(zip(growth_months, growth_amounts))
+    
+    # Funding round history timeline
+    round_timeline = []
+    for round_obj in funding_rounds.order_by('created_at'):
+        round_timeline.append({
+            'name': round_obj.round_name,
+            'date': round_obj.created_at.strftime('%b %Y'),
+            'status': round_obj.status,
+            'amount': float(round_obj.target_goal),
+            'equity': float(round_obj.equity_offered)
+        })
+    
+    # Upcoming deadlines (active rounds)
+    upcoming_deadlines = []
+    for round_obj in funding_rounds.filter(status='active'):
+        days_remaining = (round_obj.deadline - timezone.now()).days
+        upcoming_deadlines.append({
+            'round_name': round_obj.round_name,
+            'startup': round_obj.startup.name,
+            'deadline': round_obj.deadline.strftime('%b %d, %Y'),
+            'days_remaining': days_remaining,
+            'progress': (round_obj.total_committed() / round_obj.target_goal * 100) if round_obj.target_goal > 0 else 0
+        })
+    # Sort by days remaining
+    upcoming_deadlines.sort(key=lambda x: x['days_remaining'])
+    
+    # Get investor messages and collaboration requests (simplified)
+    investor_messages = Message.objects.filter(sender=request.user).count()
+    collaboration_requests = CollaborationRequest.objects.filter(entrepreneur=request.user).count()
+    
+    context = {
+        'total_funds_raised': total_funds_raised,
+        'active_rounds': active_rounds,
+        'successful_rounds': successful_rounds,
+        'failed_rounds': failed_rounds,
+        'current_round': current_round,
+        'current_progress': current_progress,
+        'current_round_total_committed': current_round_total_committed,
+        'total_equity_offered': total_equity_offered,
+        'equity_retained': equity_retained,
+        'unique_investors': unique_investors,
+        'industry_labels': json.dumps(industry_labels),
+        'industry_values': json.dumps(industry_values),
+        'industry_table': industry_table,
+        'growth_table': growth_table,
+        'round_timeline': round_timeline,
+        'upcoming_deadlines': upcoming_deadlines,
+        'growth_months': json.dumps(growth_months),
+        'growth_amounts': json.dumps(growth_amounts),
+        'investor_messages': investor_messages,
+        'collaboration_requests': collaboration_requests,
+        'user_startups': user_startups,
+        'funding_rounds': funding_rounds,
+        'investor_commitments': investor_commitments,
+    }
+    
+    return render(request, 'Entrepreneurs/portfolio_analytics.html', context)
