@@ -543,7 +543,12 @@ def messages_page(request):
     # Limit and sort
     recent_list = sorted(recent_users, key=lambda u: (u.get_full_name() or u.email))[:25]
     
-    return render(request, 'messages/index.html', { 'recents': recent_list })
+    # Unread message count for each recent user
+    unread_counts = {}
+    for u in recent_list:
+        unread_counts[u.id] = Message.objects.filter(sender=u, receiver=request.user, is_read=False).count()
+
+    return render(request, 'messages/index.html', { 'recents': recent_list, 'unread_counts': unread_counts })
 
 
 @login_required
