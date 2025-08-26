@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 
-{% block title %}Message Settings - CoFound{% endblock %}
+{% block title %}Privacy Settings - CoFound{% endblock %}
 
 {% block content %}
 <div class="content-container">
   <div class="card" style="max-width: 520px; margin: 0 auto;">
-    <div class="card-header">Messaging Privacy</div>
+    <div class="card-header">Privacy Settings</div>
     <div class="card-body">
       <form method="post">
         {% csrf_token %}
@@ -13,6 +13,11 @@
           <label class="form-label">Who can message you?</label>
           {{ form.message_privacy }}
           <div class="form-text">Public: anyone can search and message you. Private: only users you follow or who follow you.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Show your network to others?</label>
+          {{ form.show_followers }}
+          <div class="form-text">When enabled, others can see your followers and connections. When disabled, your network will be hidden.</div>
         </div>
         <button class="btn btn-primary" type="submit">Save</button>
       </form>

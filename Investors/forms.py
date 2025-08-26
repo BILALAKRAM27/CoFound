@@ -6,7 +6,7 @@ from .models import InvestorProfile, InvestorPortfolio, InvestmentDocument
 class MessageSettingsForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['message_privacy']
+        fields = ['message_privacy', 'show_followers']
 
 # ---------------------------
 # Registration / Profiles

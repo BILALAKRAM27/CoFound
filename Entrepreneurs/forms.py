@@ -5,6 +5,12 @@ from .models import (
     Favorite, ActivityLog, Post, Comment, PostMedia
 )
 
+# Message Settings Form
+class MessageSettingsForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['message_privacy', 'show_followers']
+
 # ---------------------------
 # Registration / Profiles
 # ---------------------------

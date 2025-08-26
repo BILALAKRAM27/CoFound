@@ -167,7 +167,7 @@
                             {% endif %}
                         </div>
                         <div>
-                            <a href="#" class="btn btn-outline-accent btn-sm"><i class="fa fa-users me-1"></i>View Connections</a>
+                            <a href="{% if profile_user.role == 'entrepreneur' %}{% url 'entrepreneurs:user_network' profile_user.id %}{% else %}{% url 'investors:user_network' profile_user.id %}{% endif %}" class="btn btn-outline-accent btn-sm"><i class="fa fa-users me-1"></i>View Connections</a>
                         </div>
                     </div>
                 </div>

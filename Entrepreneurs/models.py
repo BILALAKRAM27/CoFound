@@ -91,6 +91,7 @@ class User(AbstractUser):
         ('private', 'Private'),
     ]
     message_privacy = models.CharField(max_length=10, choices=MESSAGE_PRIVACY_CHOICES, default='public')
+    show_followers = models.BooleanField(default=True, help_text='Allow others to see your followers/network')
     created_at = models.DateTimeField(auto_now_add=True)
     last_active = models.DateTimeField(auto_now=True)
 

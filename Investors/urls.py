@@ -18,6 +18,7 @@ urlpatterns = [
     path('posts/<int:post_id>/reorder-media/', views.reorder_post_media, name='reorder_post_media'),
     path('toggle-connect/<int:target_id>/', views.toggle_connection, name='toggle_connect'),
     path('my-network/', views.my_network, name='my_network'),
+    path('user/<int:user_id>/network/', views.user_network, name='user_network'),
     path('network-data/', views.network_data, name='network_data'),
     path('messages/', views.messages_page, name='messages'),
     path('messages/settings/', views.message_settings, name='message_settings'),

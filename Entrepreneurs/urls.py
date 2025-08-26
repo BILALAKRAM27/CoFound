@@ -18,7 +18,9 @@ urlpatterns = [
     path('posts/<int:post_id>/remove-media/<int:media_id>/', views.remove_post_media, name='remove_post_media'),
     path('posts/<int:post_id>/reorder-media/', views.reorder_post_media, name='reorder_post_media'),
     path('toggle-connect/<int:target_id>/', views.toggle_connection, name='toggle_connect'),
+    path('user/<int:user_id>/network/', views.user_network, name='user_network'),
     path('messages/', views.messages_page, name='messages'),
+    path('messages/settings/', views.message_settings, name='message_settings'),
     path('messages/search/', views.message_search, name='message_search'),
     path('messages/<int:user_id>/', get_messages, name='get_messages'),
 ]

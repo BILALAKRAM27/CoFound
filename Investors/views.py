@@ -1475,3 +1475,40 @@ def portfolio_analytics(request):
     return render(request, 'Investors/portfolio_analytics.html', context)
 
 
+@login_required
+def user_network(request, user_id):
+    """Display a specific user's network/followers"""
+    from django.shortcuts import get_object_or_404
+    from Entrepreneurs.models import User, Favorite
+    
+    target_user = get_object_or_404(User, id=user_id)
+    
+    # Check if the target user allows their network to be visible
+    if not target_user.show_followers:
+        context = {
+            'target_user': target_user,
+            'network_hidden': True,
+        }
+        return render(request, 'user_network.html', context)
+    
+    # Get the user's followers (people who follow this user)
+    followers = []
+    for favorite in Favorite.objects.filter(target_user=target_user).select_related('user', 'user__entrepreneur_profile', 'user__investor_profile'):
+        if favorite.user.id != target_user.id:
+            followers.append(favorite.user)
+    
+    # Get the user's following (people this user follows)
+    following = []
+    for favorite in Favorite.objects.filter(user=target_user).select_related('target_user', 'target_user__entrepreneur_profile', 'target_user__investor_profile'):
+        if favorite.target_user.id != target_user.id:
+            following.append(favorite.target_user)
+    
+    context = {
+        'target_user': target_user,
+        'followers': followers,
+        'following': following,
+        'network_hidden': False,
+    }
+    return render(request, 'user_network.html', context)
+
+
