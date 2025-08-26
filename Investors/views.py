@@ -42,7 +42,9 @@ def message_settings(request):
         form = MessageSettingsForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
-            return redirect('investors:messages')
+            # Redirect to the next parameter or default to messages page
+            next_url = request.POST.get('next') or request.GET.get('next') or 'investors:messages'
+            return redirect(next_url)
     else:
         form = MessageSettingsForm(instance=request.user)
     return render(request, 'messages/settings.html', { 'form': form })

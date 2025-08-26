@@ -89,7 +89,7 @@
                     <li><a class="dropdown-item" href="{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile' %}{% else %}{% url 'investors:profile' %}{% endif %}">
                         <i class="bi bi-person me-2"></i>My Profile
                     </a></li>
-                    <li><a class="dropdown-item" href="{% url 'investors:message_settings' %}"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                    <li><a class="dropdown-item" href="{% url 'investors:message_settings' %}?next={{ request.path }}"><i class="bi bi-gear me-2"></i>Settings</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:logout' %}{% else %}{% url 'investors:logout' %}{% endif %}">
                         <i class="bi bi-box-arrow-right me-2"></i>Logout
