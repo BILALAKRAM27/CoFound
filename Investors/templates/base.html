@@ -57,6 +57,13 @@
             background-color: var(--cf-sidebar-bg);
             line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        html {
+            overflow-x: hidden;
+            width: 100%;
         }
 
         /* Header Navbar */
@@ -65,6 +72,11 @@
             box-shadow: var(--cf-card-shadow);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
         }
 
         .navbar-brand {
@@ -87,6 +99,33 @@
             color: white !important;
             background-color: rgba(255, 255, 255, 0.1);
             transform: translateY(-1px);
+        }
+
+        /* Responsive navbar adjustments */
+        @media (max-width: 991.98px) {
+            .navbar-nav {
+                align-items: center;
+            }
+            
+            .navbar-nav .nav-link {
+                padding: 0.5rem 0.75rem;
+                margin: 0 1px;
+            }
+            
+            .navbar-brand {
+                font-size: 1.3rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .navbar-nav .nav-link {
+                padding: 0.4rem 0.5rem;
+                font-size: 0.9rem;
+            }
+            
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
         }
 
         .search-container {
@@ -138,17 +177,17 @@
 
         /* Sidebar */
         .sidebar {
-            background-color: var(--cf-sidebar-bg);
-            border-right: 2px solid var(--cf-sidebar-border);
-            width: 280px;
-            box-shadow: 4px 0 6px -1px rgba(0, 0, 0, 0.1);
             position: fixed;
-            top: 76px;
             left: 0;
+            top: 76px;
+            width: 280px;
             height: calc(100vh - 76px);
+            background: var(--cf-sidebar-bg);
+            color: white;
             overflow-y: auto;
             transition: all 0.3s ease;
             z-index: 1040;
+            box-shadow: var(--cf-card-shadow);
         }
 
         .sidebar::-webkit-scrollbar {
@@ -219,6 +258,8 @@
             transition: all 0.3s ease;
             background-color: var(--cf-sidebar-bg);
             display: block;
+            width: calc(100% - 280px);
+            overflow-x: hidden;
         }
 
         /* Generic grid container to stretch responsibly */
@@ -226,6 +267,7 @@
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
+            overflow-x: hidden;
         }
 
         /* Cards */
@@ -361,6 +403,23 @@
             transform: translateX(4px);
         }
 
+        /* Fix dropdown positioning on mobile */
+        @media (max-width: 991.98px) {
+            .dropdown-menu {
+                position: fixed !important;
+                top: auto !important;
+                left: auto !important;
+                right: 1rem !important;
+                margin-top: 0.5rem;
+                max-width: 250px;
+                z-index: 1060;
+            }
+            
+            .navbar-nav .dropdown {
+                position: static;
+            }
+        }
+
         /* Responsive Design */
         @media (max-width: 1199.98px) {
             .right-sidebar {
@@ -375,6 +434,9 @@
 
             .sidebar {
                 margin-left: -280px;
+                top: 0;
+                height: 100vh;
+                z-index: 1050;
             }
 
             .sidebar.show {
@@ -383,7 +445,9 @@
 
             .main-content {
                 margin-left: 0;
+                width: 100%;
                 padding: 1rem;
+                overflow-x: hidden;
             }
 
             .footer {
@@ -402,6 +466,8 @@
         @media (max-width: 576px) {
             .main-content {
                 padding: 0.5rem;
+                width: 100%;
+                overflow-x: hidden;
             }
 
             .navbar-brand {
@@ -414,6 +480,16 @@
                 width: 50px;
                 height: 50px;
                 font-size: 1.2rem;
+            }
+
+            .sidebar {
+                top: 0;
+                height: 100vh;
+                margin-left: -280px;
+            }
+
+            .sidebar.show {
+                margin-left: 0;
             }
         }
 
@@ -980,6 +1056,34 @@
         // Initialize notification manager when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             window.notificationManager = new NotificationManager();
+            
+            // Fix dropdown positioning on mobile
+            const dropdowns = document.querySelectorAll('.dropdown-toggle');
+            dropdowns.forEach(dropdown => {
+                dropdown.addEventListener('click', function(e) {
+                    if (window.innerWidth <= 991.98) {
+                        const dropdownMenu = this.nextElementSibling;
+                        if (dropdownMenu && dropdownMenu.classList.contains('dropdown-menu')) {
+                            // Position dropdown properly on mobile
+                            const rect = this.getBoundingClientRect();
+                            const spaceBelow = window.innerHeight - rect.bottom;
+                            const spaceAbove = rect.top;
+                            
+                            if (spaceBelow < 200 && spaceAbove > spaceBelow) {
+                                dropdownMenu.style.top = 'auto';
+                                dropdownMenu.style.bottom = '100%';
+                                dropdownMenu.style.marginTop = '0';
+                                dropdownMenu.style.marginBottom = '0.5rem';
+                            } else {
+                                dropdownMenu.style.top = '100%';
+                                dropdownMenu.style.bottom = 'auto';
+                                dropdownMenu.style.marginTop = '0.5rem';
+                                dropdownMenu.style.marginBottom = '0';
+                            }
+                        }
+                    }
+                });
+            });
         });
     </script>
     {% endif %}

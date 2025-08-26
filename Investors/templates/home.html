@@ -11,11 +11,18 @@
         max-width: 100%;
         margin: 0 auto;
         padding: 0;
+        overflow-x: hidden;
     }
     /* On desktop with right sidebar, keep posts from going under it */
     @media (min-width: 1200px) {
-        body:not(.rs-collapsed) .feed-container { max-width: calc(100% - 320px); }
-        body.rs-collapsed .feed-container { max-width: 100%; }
+        body:not(.rs-collapsed) .feed-container { 
+            max-width: calc(100% - 320px); 
+            overflow-x: hidden;
+        }
+        body.rs-collapsed .feed-container { 
+            max-width: 100%; 
+            overflow-x: hidden;
+        }
     }
 
     .post-form-card {
@@ -25,6 +32,8 @@
         box-shadow: var(--cf-card-shadow);
         margin-bottom: 2rem;
         overflow: hidden;
+        width: 100%;
+        max-width: 100%;
     }
 
     .post-form-header {
@@ -53,6 +62,8 @@
         margin-bottom: 2rem;
         overflow: hidden;
         transition: all 0.3s ease;
+        width: 100%;
+        max-width: 100%;
     }
 
     .post-card:hover {
@@ -316,6 +327,15 @@
         .feed-container {
             max-width: 100%;
             padding: 0 0.5rem;
+            overflow-x: hidden;
+        }
+
+        .post-card,
+        .post-form-card {
+            width: 100%;
+            max-width: 100%;
+            margin-left: 0;
+            margin-right: 0;
         }
 
         .media-gallery-grid {
@@ -333,6 +353,29 @@
 
         .media-secondary-item {
             height: 120px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .feed-container {
+            padding: 0 0.25rem;
+        }
+        
+        .post-card,
+        .post-form-card {
+            border-radius: 12px;
+        }
+        
+        .post-header {
+            padding: 1rem 1rem 0;
+        }
+        
+        .post-body {
+            padding: 0.75rem 1rem;
+        }
+        
+        .post-footer {
+            padding: 0.5rem 1rem 1rem;
         }
     }
 
@@ -375,6 +418,9 @@
         height: calc(100vh - 76px);
         padding: 2rem 1rem;
         transition: transform 0.25s ease, opacity 0.25s ease;
+        z-index: 1045;
+        
+        
     }
     .right-sidebar.collapsed { transform: translateX(110%); opacity: 0; pointer-events: none; }
 
