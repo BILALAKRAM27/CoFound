@@ -2,6 +2,9 @@
 {% load profile_filters %}
 
 {% block title %}Messages - CoFound{% endblock %}
+{% block extra_head %}
+  <meta name="current-user-id" content="{{ request.user.id }}">
+{% endblock %}
 
 {% block styles %}
 <style>
@@ -117,6 +120,41 @@
     line-height: 1.2;
     box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
   }
+  
+  .recent-item .last-message-preview {
+    color: #6b7280;
+    font-size: 0.8rem;
+    margin-top: 2px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+  }
+  
+  .recent-item .last-message-preview .bi-check2 {
+    color: #2563eb;
+    margin-right: 4px;
+  }
+  
+  .recent-item .last-message-time {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 11px;
+    color: #9ca3af;
+  }
+  
+  .recent-item.has-unread .last-message-time {
+    top: 32px;
+  }
+  
+  /* Privacy shield icon */
+  .privacy-shield {
+    color: #6b7280;
+    margin-left: 4px;
+    font-size: 12px;
+  }
 
   /* Main chat area */
   .chat-main {
@@ -138,7 +176,7 @@
     align-items: center;
     gap: 0.75rem;
     flex-shrink: 0;
-    background: #fafbfc;
+    background: transparent;
     border-radius: 12px 12px 0 0;
   }
 
@@ -270,7 +308,7 @@
     flex-direction: column;
     gap: 0.5rem;
     flex-shrink: 0;
-    background: #fafbfc;
+    background: transparent;
     position: relative;
     border-radius: 0 0 12px 12px;
   }
@@ -280,7 +318,7 @@
     align-items: center;
     gap: 8px;
     padding: 0.5rem;
-    background: #f1f5f9;
+    background: var(--cf-sidebar-bg);
     border-radius: 8px;
     border: 1px solid #e2e8f0;
   }
@@ -351,7 +389,7 @@
 
   #chatAttach {
     border: 1px solid #e2e8f0;
-    background: #ffffff;
+    background: var(--cf-sidebar-bg);
     color: #6b7280;
   }
 
@@ -450,15 +488,23 @@
 
 {% block content %}
 <div class="content-container">
+  <!-- Hidden input for total unread count -->
+  <input type="hidden" id="totalUnreadCount" value="{{ total_unread_count|default:0 }}">
+  
   <div class="chat-container">
     <div class="chat-sidebar">
-      <div class="input-group">
-        <input id="chatSearch" type="text" class="form-control search-input-chat" placeholder="Search users to message...">
-        <button class="btn btn-outline-secondary" id="chatSearchBtn"><i class="bi bi-search"></i></button>
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="position-relative flex-grow-1">
+          <input type="text" id="chatSearch" class="form-control search-input-chat" placeholder="Search users...">
+          <button id="chatSearchBtn" class="btn btn-outline-secondary position-absolute end-0 top-0 h-100" style="border-left: none;">
+            <i class="bi bi-search"></i>
+          </button>
+        </div>
       </div>
       <div id="searchResults" class="recents mt-2" style="display:none;"></div>
       <div class="mt-2 small text-muted fw-semibold">Recent Conversations</div>
       <div id="recentList" class="recents">
+        
         {% for u in recents %}
         <div class="recent-item" data-user-id="{{ u.id }}">
           {% if u|get_profile_image %}
@@ -468,12 +514,37 @@
             <div class="fw-semibold">
               {{ u.get_full_name|default:u.email }}
               {% if u.message_privacy == 'private' %}
-                <i class="bi bi-shield-lock text-muted ms-2" title="Private messages"></i>
+                <i class="bi bi-shield-lock privacy-shield" title="Private messages"></i>
               {% endif %}
             </div>
             <div class="small text-muted">{{ u.role|title }}</div>
+            <!-- Simplified last message preview -->
+            {% for user_id, last_msg in last_messages.items %}
+              {% if user_id == u.id and last_msg and last_msg.content %}
+                <div class="last-message-preview">
+                  {% if last_msg.sender == request.user %}
+                    <i class="bi bi-check2"></i> 
+                  {% endif %}
+                  {{ last_msg.content|truncatechars:50 }}
+                </div>
+              {% endif %}
+            {% endfor %}
           </div>
-          <span class="unread-badge" style="display:none;">0</span>
+          <!-- Simplified unread counter -->
+          {% for user_id, count in unread_counts.items %}
+            {% if user_id == u.id and count > 0 %}
+              <span class="unread-badge">{{ count }}</span>
+            {% endif %}
+          {% endfor %}
+          {% if unread_counts|get_item:u.id == 0 or not unread_counts|get_item:u.id %}
+            <span class="unread-badge" style="display:none;">0</span>
+          {% endif %}
+          <!-- Simplified last message time -->
+          {% for user_id, time in last_message_times.items %}
+            {% if user_id == u.id %}
+              <div class="last-message-time">{{ time|timesince }}</div>
+            {% endif %}
+          {% endfor %}
         </div>
         {% empty %}
         <div class="text-muted text-center py-4">
@@ -529,6 +600,7 @@
   let previewType = null;
   let previewUrl = null;
   let unreadCounts = {}; // Track unread counts per user
+  let lastMessageTimes = {}; // Track last message times
   let recentUsers = Array.from(recents.querySelectorAll('.recent-item')).map(item => ({
     id: item.dataset.userId,
     name: item.querySelector('.fw-semibold').textContent.trim().toLowerCase(),
@@ -537,6 +609,48 @@
   const currentUserId = document.querySelector('meta[name="current-user-id"]')?.content || window.currentUserId;
   window.currentUserId = currentUserId;
   let socketListeners = [];
+  
+  // Get total unread count for navbar updates
+  const totalUnreadCount = parseInt(document.getElementById('totalUnreadCount').value) || 0;
+  
+  // Initialize unread counts from template data
+  {% if unread_counts %}
+    {% for user_id, count in unread_counts.items %}
+      unreadCounts['{{ user_id }}'] = {{ count }};
+    {% endfor %}
+  {% endif %}
+  
+  // Initialize last message times from template data
+  {% if last_message_times %}
+    {% for user_id, time in last_message_times.items %}
+      lastMessageTimes['{{ user_id }}'] = '{{ time|date:"c" }}';
+    {% endfor %}
+  {% endif %}
+  
+  // --- Navbar message counter management ---
+  function updateNavbarMessageCounter(count) {
+    const messageCounter = document.getElementById('messageCounter');
+    if (messageCounter) {
+      if (count > 0) {
+        messageCounter.textContent = count > 99 ? '99+' : count;
+        messageCounter.style.display = 'inline';
+      } else {
+        messageCounter.style.display = 'none';
+      }
+    }
+  }
+  
+  // Initialize navbar counter
+  updateNavbarMessageCounter(totalUnreadCount);
+  
+  // --- Refresh navbar counter ---
+  function refreshNavbarCounter() {
+    const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + (count || 0), 0);
+    updateNavbarMessageCounter(totalUnread);
+  }
+  
+  // Refresh navbar counter every 30 seconds to stay in sync
+  setInterval(refreshNavbarCounter, 30000);
 
   // --- Enhanced search functionality ---
   function renderSearch(results) {
@@ -564,13 +678,20 @@
     const item = recents.querySelector(`.recent-item[data-user-id="${userId}"]`);
     if (item) {
       const badge = item.querySelector('.unread-badge');
+      const oldCount = unreadCounts[userId] || 0;
       unreadCounts[userId] = count;
+      
       if (count > 0) {
         badge.textContent = count > 99 ? '99+' : count;
         badge.style.display = 'block';
+        item.classList.add('has-unread');
       } else {
         badge.style.display = 'none';
+        item.classList.remove('has-unread');
       }
+      
+      // Update navbar counter
+      refreshNavbarCounter();
     }
   }
 
@@ -582,6 +703,42 @@
       const currentCount = unreadCounts[senderId] || 0;
       setUnreadBadge(senderId, increment ? currentCount + 1 : currentCount);
     }
+  }
+
+  // --- Sort recent chats by last message time ---
+  function sortRecentChats() {
+    const items = Array.from(recents.querySelectorAll('.recent-item'));
+    items.sort((a, b) => {
+      const timeA = lastMessageTimes[a.dataset.userId] ? new Date(lastMessageTimes[a.dataset.userId]) : new Date(0);
+      const timeB = lastMessageTimes[b.dataset.userId] ? new Date(lastMessageTimes[b.dataset.userId]) : new Date(0);
+      return timeB - timeA; // Most recent first
+    });
+    
+    // Re-append in sorted order
+    items.forEach(item => recents.appendChild(item));
+  }
+
+  // --- Format time for display ---
+  function formatMessageTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    
+    // Check if it's today
+    if (date.toDateString() === now.toDateString()) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // Check if it's this week
+    const diffTime = now - date;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 7) {
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      return days[date.getDay()];
+    }
+    
+    // Older than a week
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   }
 
   // --- Sidebar: Contact selection ---
@@ -1175,6 +1332,45 @@
   });
   
   observer.observe(chatHeader, { childList: true });
+  
+  // Sort recent chats on initial load
+  setTimeout(sortRecentChats, 100);
+  
+  // Initialize the messaging system
+  function initializeMessagingSystem() {
+    // Initialize unread counts display
+    Object.keys(unreadCounts).forEach(userId => {
+      const count = unreadCounts[userId];
+      if (count > 0) {
+        setUnreadBadge(userId, count);
+      }
+    });
+    
+    // Initialize navbar counter
+    refreshNavbarCounter();
+    
+    // Sort recent chats by timestamp
+    sortRecentChats();
+    
+    // Set up periodic sync
+    setInterval(refreshNavbarCounter, 30000);
+    
+    // Add has-unread class to items with unread messages
+    Object.keys(unreadCounts).forEach(userId => {
+      const count = unreadCounts[userId];
+      if (count > 0) {
+        const item = recents.querySelector(`[data-user-id="${userId}"]`);
+        if (item) {
+          item.classList.add('has-unread');
+        }
+      }
+    });
+  }
+
+  // --- Initialize on page load ---
+  document.addEventListener('DOMContentLoaded', function() {
+    initializeMessagingSystem();
+  });
   
 })();
 </script>

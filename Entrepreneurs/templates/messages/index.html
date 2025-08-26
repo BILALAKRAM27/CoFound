@@ -121,6 +121,41 @@
     line-height: 1.2;
     box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
   }
+  
+  .recent-item .last-message-preview {
+    color: #6b7280;
+    font-size: 0.8rem;
+    margin-top: 2px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+  }
+  
+  .recent-item .last-message-preview .bi-check2 {
+    color: #2563eb;
+    margin-right: 4px;
+  }
+
+  .recent-item .last-message-time {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 11px;
+    color: #9ca3af;
+  }
+
+  .recent-item.has-unread .last-message-time {
+    top: 32px;
+  }
+
+  /* Privacy shield icon */
+  .privacy-shield {
+    color: #6b7280;
+    margin-left: 4px;
+    font-size: 12px;
+  }
 
   /* Main chat area */
   .chat-main {
@@ -192,10 +227,10 @@
     border-radius: 3px;
   }
 
-  /* Message bubbles with proper alignment */
+  /* Message bubbles with proper alignment and timestamp space */
   .bubble {
     max-width: 75%;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 1rem 1.5rem 1rem; /* Extra bottom padding for timestamp */
     border-radius: 18px;
     position: relative;
     word-wrap: break-word;
@@ -203,7 +238,7 @@
     line-height: 1.4;
     font-size: 14px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    margin-bottom: 4px;
+    margin-bottom: 8px; /* More space for timestamp */
   }
 
   /* Sender (outgoing messages - right side) */
@@ -225,24 +260,43 @@
     border-bottom-left-radius: 6px;
   }
 
-  /* Message status indicators */
+  /* Enhanced message status indicators - positioned properly */
   .message-status {
     position: absolute;
-    bottom: -18px;
-    right: 4px;
-    font-size: 11px;
+    bottom: 4px;
+    font-size: 10px;
     display: flex;
     align-items: center;
-    gap: 2px;
-    opacity: 0.7;
+    gap: 3px;
+    opacity: 0.8;
+    line-height: 1;
   }
 
   .bubble.sender .message-status {
-    color: #64748b;
+    right: 8px;
+    color: rgba(255, 255, 255, 0.7);
   }
 
   .bubble.receiver .message-status {
+    left: 8px;
     color: #64748b;
+  }
+
+  .message-status .msg-time {
+    font-size: 10px;
+    font-weight: 400;
+  }
+
+  .message-status .read-tick {
+    font-size: 12px;
+  }
+
+  .message-status .read-tick.read {
+    color: #2563eb;
+  }
+
+  .bubble.sender .message-status .read-tick.read {
+    color: #93c5fd;
   }
 
   /* Media content in messages */
@@ -277,6 +331,36 @@
     background: #fafbfc;
     position: relative;
     border-radius: 0 0 12px 12px;
+  }
+
+  /* Privacy message styling */
+  .privacy-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    background: #fef3cd;
+    border: 1px solid #f6d55c;
+    border-radius: 8px;
+    margin: 1rem;
+  }
+
+  .privacy-message i {
+    font-size: 2rem;
+    color: #d97706;
+    margin-bottom: 0.5rem;
+  }
+
+  .privacy-message h6 {
+    color: #92400e;
+    margin-bottom: 0.5rem;
+  }
+
+  .privacy-message p {
+    color: #a16207;
+    margin: 0;
   }
 
   .chat-input-preview {
@@ -407,7 +491,7 @@
     
     .bubble {
       max-width: 95%;
-      padding: 0.6rem 0.8rem;
+      padding: 0.6rem 0.8rem 1.3rem 0.8rem;
     }
     
     .chat-input button {
@@ -454,6 +538,9 @@
 
 {% block content %}
 <div class="content-container">
+  <!-- Hidden input for total unread count -->
+  <input type="hidden" id="totalUnreadCount" value="{{ total_unread_count|default:0 }}">
+  
   <div class="chat-container">
     <div class="chat-sidebar">
       <div class="input-group">
@@ -464,7 +551,7 @@
       <div class="mt-2 small text-muted fw-semibold">Recent Conversations</div>
       <div id="recentList" class="recents">
         {% for u in recents %}
-        <div class="recent-item" data-user-id="{{ u.id }}">
+        <div class="recent-item {% if unread_counts and unread_counts|get_item:u.id > 0 %}has-unread{% endif %}" data-user-id="{{ u.id }}">
           {% if u|get_profile_image %}
             <img src="data:image/jpeg;base64,{{ u|get_profile_image|b64encode_blob }}" class="avatar">
           {% else %}<i class="bi bi-person-circle fs-4 avatar"></i>{% endif %}
@@ -472,15 +559,26 @@
             <div class="fw-semibold">
               {{ u.get_full_name|default:u.email }}
               {% if u.message_privacy == 'private' %}
-                <i class="bi bi-shield-lock text-muted ms-2" title="Private messages"></i>
+                <i class="bi bi-shield-lock privacy-shield" title="Private messages"></i>
               {% endif %}
             </div>
             <div class="small text-muted">{{ u.role|title }}</div>
+            {% if last_messages and last_messages|get_item:u.id %}
+              <div class="last-message-preview">
+                {% if last_messages|get_item:u.id.sender == request.user %}
+                  <i class="bi bi-check2"></i> 
+                {% endif %}
+                {{ last_messages|get_item:u.id.content|truncatechars:50 }}
+              </div>
+            {% endif %}
           </div>
-          {% if unread_counts and unread_counts.u.id|default:0 > 0 %}
-            <span class="unread-badge">{{ unread_counts.u.id }}</span>
+          {% if unread_counts and unread_counts|get_item:u.id > 0 %}
+            <span class="unread-badge">{{ unread_counts|get_item:u.id }}</span>
           {% else %}
             <span class="unread-badge" style="display:none;">0</span>
+          {% endif %}
+          {% if last_message_times and last_message_times|get_item:u.id %}
+            <div class="last-message-time">{{ last_message_times|get_item:u.id|timesince }}</div>
           {% endif %}
         </div>
         {% empty %}
@@ -501,13 +599,13 @@
         </div>
       </div>
       <div id="chatMessages" class="chat-messages"></div>
-      <div class="chat-input">
+      <div class="chat-input" id="chatInputArea">
         <div id="chatInputPreview" class="chat-input-preview" style="display:none;"></div>
         <div class="input-group-chat">
           <input id="chatInput" type="text" class="form-control" placeholder="Type a message..." autocomplete="on">
-        <input id="chatFile" type="file" style="display:none;" multiple>
-        <button id="chatAttach" class="btn btn-outline-secondary" title="Attach file"><i class="bi bi-paperclip"></i></button>
-        <button id="chatSend" class="btn btn-primary"><i class="bi bi-send"></i></button>
+          <input id="chatFile" type="file" style="display:none;" multiple>
+          <button id="chatAttach" class="btn btn-outline-secondary" title="Attach file"><i class="bi bi-paperclip"></i></button>
+          <button id="chatSend" class="btn btn-primary"><i class="bi bi-send"></i></button>
         </div>
       </div>
     </div>
@@ -529,6 +627,7 @@
   const fileInput = document.getElementById('chatFile');
   const chatHeader = document.getElementById('chatHeader');
   const chatInputPreview = document.getElementById('chatInputPreview');
+  const chatInputArea = document.getElementById('chatInputArea');
   let currentPeerId = null;
   let currentPeerData = null;
   let socket = null;
@@ -537,15 +636,117 @@
   let previewType = null;
   let previewUrl = null;
   let unreadCounts = {}; // Track unread counts per user
+  let lastMessageTimes = {}; // Track last message times
   let recentUsers = Array.from(recents.querySelectorAll('.recent-item')).map(item => ({
     id: item.dataset.userId,
     name: item.querySelector('.fw-semibold').textContent.trim().toLowerCase(),
     el: item
   }));
+  
   // Always get currentUserId from meta tag and ensure it's a string
   const currentUserId = String(document.querySelector('meta[name="current-user-id"]').content);
   window.currentUserId = currentUserId;
   let socketListeners = [];
+  
+  // Get total unread count for navbar updates
+  const totalUnreadCount = parseInt(document.getElementById('totalUnreadCount').value) || 0;
+  
+  // Initialize unread counts from template data
+  {% if unread_counts %}
+    {% for user_id, count in unread_counts.items %}
+      unreadCounts['{{ user_id }}'] = {{ count }};
+    {% endfor %}
+  {% endif %}
+  
+  // Initialize last message times from template data
+  {% if last_message_times %}
+    {% for user_id, time in last_message_times.items %}
+      lastMessageTimes['{{ user_id }}'] = '{{ time|date:"c" }}';
+    {% endfor %}
+  {% endif %}
+  
+  // --- Navbar message counter management ---
+  function updateNavbarMessageCounter(count) {
+    const messageCounter = document.getElementById('messageCounter');
+    if (messageCounter) {
+      if (count > 0) {
+        messageCounter.textContent = count > 99 ? '99+' : count;
+        messageCounter.style.display = 'inline';
+      } else {
+        messageCounter.style.display = 'none';
+      }
+    }
+  }
+  
+  // Initialize navbar counter
+  updateNavbarMessageCounter(totalUnreadCount);
+  
+  // --- Refresh navbar counter ---
+  function refreshNavbarCounter() {
+    const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + (count || 0), 0);
+    updateNavbarMessageCounter(totalUnread);
+  }
+  
+  // Refresh navbar counter every 30 seconds to stay in sync
+  setInterval(refreshNavbarCounter, 30000);
+  
+  // Also sync with actual DOM state every 10 seconds
+  setInterval(syncNavbarCounter, 10000);
+
+  // --- Real-time message updates ---
+  function handleNewMessage(message) {
+    // Update recent chats list
+    if (String(message.sender) !== String(currentUserId)) {
+      const senderId = message.sender;
+      const senderData = {
+        name: message.sender_name || 'User',
+        role: 'User',
+        lastMessage: message.content || 'Sent a message',
+        timestamp: message.timestamp
+      };
+      updateRecentChatsList(senderId, senderData);
+      
+      // Update unread count
+      if (String(message.sender) === String(currentPeerId)) {
+        setUnreadBadge(currentPeerId, 0);
+      } else {
+        updateUnreadCount(message.sender);
+      }
+    } else {
+      // Message from current user - update recent chat list
+      updateRecentChatsList(currentPeerId, {
+        name: currentPeerData.name,
+        role: currentPeerData.role,
+        lastMessage: message.content || 'Sent a message',
+        timestamp: message.timestamp
+      });
+    }
+  }
+
+  // --- Enhanced real-time updates with navbar counter sync ---
+  function handleMessageUpdate(message, isRead = false) {
+    if (String(message.sender) !== String(currentUserId)) {
+      // Message from another user
+      const senderId = message.sender;
+      
+      if (isRead && String(senderId) === String(currentPeerId)) {
+        // Message was read in current chat
+        updateNavbarCounterOnRead(senderId);
+      } else if (!isRead) {
+        // New unread message
+        updateUnreadCount(senderId);
+      }
+      
+      // Update recent chats list
+      const senderData = {
+        name: message.sender_name || 'User',
+        role: 'User',
+        lastMessage: message.content || 'Sent a message',
+        timestamp: message.timestamp
+      };
+      updateRecentChatsList(senderId, senderData);
+    }
+  }
 
   // --- Enhanced search functionality ---
   function renderSearch(results) {
@@ -556,7 +757,7 @@
           <div class="fw-semibold">
             <a href="${user.profile_url}" target="_blank" style="text-decoration:none;color:inherit;">
               ${user.name}
-              ${user.is_private ? '<i class="bi bi-shield-lock text-muted ms-2" title="Private messages"></i>' : ''}
+              ${user.is_private ? '<i class="bi bi-shield-lock privacy-shield" title="Private messages"></i>' : ''}
             </a>
           </div>
           <div class="small text-muted">${user.role || 'User'}</div>
@@ -573,13 +774,20 @@
     const item = recents.querySelector(`.recent-item[data-user-id="${userId}"]`);
     if (item) {
       const badge = item.querySelector('.unread-badge');
+      const oldCount = unreadCounts[userId] || 0;
       unreadCounts[userId] = count;
+      
       if (count > 0) {
         badge.textContent = count > 99 ? '99+' : count;
         badge.style.display = 'block';
+        item.classList.add('has-unread');
       } else {
         badge.style.display = 'none';
+        item.classList.remove('has-unread');
       }
+      
+      // Update navbar counter
+      refreshNavbarCounter();
     }
   }
 
@@ -598,6 +806,123 @@
     Array.from(recents.querySelectorAll('.recent-item')).forEach(item => {
       item.classList.toggle('selected', item.dataset.userId == userId);
     });
+  }
+
+  // --- Sort recent chats by last message time ---
+  function sortRecentChats() {
+    const items = Array.from(recents.querySelectorAll('.recent-item'));
+    items.sort((a, b) => {
+      const timeA = lastMessageTimes[a.dataset.userId] ? new Date(lastMessageTimes[a.dataset.userId]) : new Date(0);
+      const timeB = lastMessageTimes[b.dataset.userId] ? new Date(lastMessageTimes[b.dataset.userId]) : new Date(0);
+      return timeB - timeA; // Most recent first
+    });
+    
+    // Re-append in sorted order
+    items.forEach(item => recents.appendChild(item));
+  }
+
+  // --- Format time for display ---
+  function formatMessageTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    
+    // Check if it's today
+    if (date.toDateString() === now.toDateString()) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // Check if it's this week
+    const diffTime = now - date;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 7) {
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      return days[date.getDay()];
+    }
+    
+    // Older than a week
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+
+  // --- Check if user can message (privacy check) ---
+  function canMessageUser(userData) {
+    if (!userData.is_private) return true;
+    
+    // Check if there's an existing connection/follow relationship
+    // This would typically be determined by backend, but we can check if user is in recent chats
+    const recentItem = recents.querySelector(`[data-user-id="${userData.id}"]`);
+    if (recentItem) {
+      // User is in recent chats, which means there's some connection
+      return true;
+    }
+    
+    // Check if user is in search results (might be a new connection)
+    const searchItem = document.getElementById('searchResults').querySelector(`[data-user-id="${userData.id}"]`);
+    if (searchItem) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  // --- Show privacy restriction UI ---
+  function showPrivacyRestriction() {
+    chatInputArea.innerHTML = `
+      <div class="privacy-message">
+        <i class="bi bi-shield-lock"></i>
+        <h6>This user's messages are private</h6>
+        <p>You need to be connected with this user to send messages.</p>
+        <div class="mt-3">
+          <button class="btn btn-outline-primary btn-sm" onclick="showNormalInput()">
+            <i class="bi bi-person-plus"></i> Try to Connect
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // --- Restore normal input UI ---
+  function showNormalInput() {
+    chatInputArea.innerHTML = `
+      <div id="chatInputPreview" class="chat-input-preview" style="display:none;"></div>
+      <div class="input-group-chat">
+        <input id="chatInput" type="text" class="form-control" placeholder="Type a message..." autocomplete="on">
+        <input id="chatFile" type="file" style="display:none;" multiple>
+        <button id="chatAttach" class="btn btn-outline-secondary" title="Attach file"><i class="bi bi-paperclip"></i></button>
+        <button id="chatSend" class="btn btn-primary"><i class="bi bi-send"></i></button>
+      </div>
+    `;
+    
+    // Re-establish references
+    const newInputEl = document.getElementById('chatInput');
+    const newSendBtn = document.getElementById('chatSend');
+    const newAttachBtn = document.getElementById('chatAttach');
+    const newFileInput = document.getElementById('chatFile');
+    const newChatInputPreview = document.getElementById('chatInputPreview');
+    
+    // Re-establish event listeners
+    if (newSendBtn) newSendBtn.addEventListener('click', sendMessage);
+    if (newInputEl) {
+      newInputEl.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+    }
+    if (newAttachBtn) newAttachBtn.addEventListener('click', () => newFileInput.click());
+    if (newFileInput) {
+      newFileInput.addEventListener('change', function(){
+        if (newFileInput.files.length) {
+          showPreview(newFileInput.files[0]);
+        } else {
+          clearPreview();
+        }
+      });
+    }
+    // Show the input area and preview
+    chatInputArea.style.display = 'flex';
+    chatInputPreview.style.display = 'flex';
   }
 
   // --- Sidebar: Dynamic search ---
@@ -629,10 +954,10 @@
     const profileUrl = role === 'investor' ? `/investor/profile/${userId}/` : `/entrepreneur/profile/${userId}/`;
     
     // Check if user has private messages by looking for the lock icon
-    const isPrivate = item.querySelector('.bi-shield-lock') !== null;
+    const isPrivate = item.querySelector('.privacy-shield') !== null;
     
     openChat(userId, {
-      name: item.querySelector('.fw-semibold').textContent.replace('🔒', '').trim(),
+      name: item.querySelector('.fw-semibold').textContent.replace(/\s*🔒/, '').trim(),
       avatar: item.querySelector('img') ? item.querySelector('img').src : null,
       role: item.querySelector('.small.text-muted').textContent,
       profile_url: profileUrl,
@@ -650,10 +975,10 @@
     const profileUrl = role === 'investor' ? `/investor/profile/${userId}/` : `/entrepreneur/profile/${userId}/`;
     
     // Check if user has private messages from search results
-    const isPrivate = item.querySelector('.bi-shield-lock') !== null;
+    const isPrivate = item.querySelector('.privacy-shield') !== null;
     
     openChat(userId, {
-      name: item.querySelector('.fw-semibold').textContent.replace('🔒', '').trim(),
+      name: item.querySelector('.fw-semibold').textContent.replace(/\s*🔒/, '').trim(),
       avatar: item.querySelector('img') ? item.querySelector('img').src : null,
       role: item.querySelector('.small.text-muted').textContent,
       profile_url: profileUrl,
@@ -678,6 +1003,48 @@
     }
     socketListeners.forEach(fn => fn && fn());
     socketListeners = [];
+  }
+
+  // --- Update last message preview in recent chats ---
+  function updateLastMessagePreview(userId, messageContent, isFromMe = false, timestamp = null) {
+    const recentItem = recents.querySelector(`[data-user-id="${userId}"]`);
+    if (recentItem) {
+      const lastMessagePreview = recentItem.querySelector('.last-message-preview');
+      if (lastMessagePreview) {
+        const icon = isFromMe ? '<i class="bi bi-check2"></i> ' : '';
+        lastMessagePreview.innerHTML = icon + (messageContent || '');
+      }
+      
+      // Update timestamp
+      if (timestamp) {
+        lastMessageTimes[userId] = timestamp;
+        const timeEl = recentItem.querySelector('.last-message-time');
+        if (timeEl) {
+          timeEl.textContent = formatMessageTime(timestamp);
+        } else {
+          // Create time element if it doesn't exist
+          const timeDiv = document.createElement('div');
+          timeDiv.className = 'last-message-time';
+          timeDiv.textContent = formatMessageTime(timestamp);
+          recentItem.appendChild(timeDiv);
+        }
+      }
+      
+      // Move to top of list and re-sort
+      setTimeout(sortRecentChats, 100);
+    }
+  }
+
+  // --- Update navbar counter when messages are marked as read ---
+  function updateNavbarCounterOnRead(userId) {
+    // Update the unread count for this user
+    if (unreadCounts[userId] && unreadCounts[userId] > 0) {
+      unreadCounts[userId] = 0;
+      setUnreadBadge(userId, 0);
+      
+      // Update navbar counter
+      refreshNavbarCounter();
+    }
   }
 
   function openChat(peerId, peerData) {
@@ -707,43 +1074,51 @@
       </div>
     `;
     
+    // Check privacy and show appropriate input UI
+    if (peerData.is_private && !canMessageUser(peerData)) {
+      showPrivacyRestriction();
+    } else {
+      showNormalInput();
+    }
+    
     // Highlight selected contact
     selectContact(peerId);
     
     // Connect WebSocket with error handling
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
     try {
-    socket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${peerId}/`);
-    
-    socket.onopen = function() {
+      socket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${peerId}/`);
+      
+      socket.onopen = function() {
         console.log('WebSocket connection established');
-    };
-    
-    socket.onmessage = function(e){
+      };
+      
+      socket.onmessage = function(e){
         try {
-      const data = JSON.parse(e.data);
-      if (data.type === 'chat_message') {
-        const existingMessage = messagesEl.querySelector(`[data-message-id="${data.message.id}"]`);
-        if (!existingMessage) {
-          renderMessage(data.message);
-              if (String(data.message.sender) !== String(currentUserId)) {
-                if (String(data.message.sender) === String(peerId)) {
-                  setUnreadBadge(peerId, 0);
+          const data = JSON.parse(e.data);
+          if (data.type === 'chat_message') {
+            const existingMessage = messagesEl.querySelector(`[data-message-id="${data.message.id}"]`);
+            if (!existingMessage) {
+              renderMessage(data.message);
+              
+              // Handle new message updates with enhanced logic
+              handleMessageUpdate(data.message, false);
+            }
+          } else if (data.type === 'read_receipt') {
+            updateReadReceipts(data.message_ids, data.reader_id);
+            
+            // Update navbar counter when messages are read
+            if (data.reader_id == currentUserId) {
+              refreshNavbarCounter();
+            }
+          } else if (data.type === 'error') {
+            // Handle server-side errors
+            if (data.error && data.error.includes('privacy')) {
+              showPrivacyError('Message blocked due to privacy settings.');
             } else {
-                  updateUnreadCount(data.message.sender);
+              showPrivacyError('Error sending message: ' + (data.error || 'Unknown error'));
             }
           }
-        }
-      } else if (data.type === 'read_receipt') {
-        updateReadReceipts(data.message_ids, data.reader_id);
-      } else if (data.type === 'error') {
-        // Handle server-side errors
-        if (data.error && data.error.includes('privacy')) {
-          showPrivacyError('Message blocked due to privacy settings.');
-        } else {
-          showPrivacyError('Error sending message: ' + (data.error || 'Unknown error'));
-        }
-      }
         } catch (err) {
           console.error('Error processing WebSocket message:', err);
         }
@@ -773,7 +1148,7 @@
     }
     
     // Fetch existing messages
-    const currentUserRole = '{{ user.role }}' || 'investor';
+    const currentUserRole = '{{ user.role }}' || 'entrepreneur';
     const endpoint = currentUserRole === 'investor' ? `/investor/messages/${peerId}/` : `/entrepreneur/messages/${peerId}/`;
     fetch(endpoint, {
         headers: {
@@ -798,6 +1173,13 @@
         }
         
         setUnreadBadge(peerId, 0);
+        
+        // Update last message preview for this user
+        const lastMessage = d.messages && d.messages.length > 0 ? d.messages[d.messages.length - 1] : null;
+        if (lastMessage) {
+          const isFromMe = String(lastMessage.sender) === String(currentUserId);
+          updateLastMessagePreview(peerId, lastMessage.content, isFromMe, lastMessage.timestamp);
+        }
         
         // Restore unread counts for other conversations
         Object.keys(unreadCounts).forEach(userId => {
@@ -828,6 +1210,9 @@
     previewFile = file;
     previewType = null;
     previewUrl = null;
+    const chatInputPreview = document.getElementById('chatInputPreview');
+    if (!chatInputPreview) return;
+    
     chatInputPreview.innerHTML = '';
     
     if (!file) { 
@@ -871,20 +1256,16 @@
     previewFile = null; 
     previewType = null; 
     previewUrl = null;
-    chatInputPreview.innerHTML = '';
-    chatInputPreview.style.display = 'none';
-    fileInput.value = '';
-  }
-  
-  fileInput.addEventListener('change', function(){
-    if (fileInput.files.length) {
-      showPreview(fileInput.files[0]);
-    } else {
-      clearPreview();
+    const chatInputPreview = document.getElementById('chatInputPreview');
+    if (chatInputPreview) {
+      chatInputPreview.innerHTML = '';
+      chatInputPreview.style.display = 'none';
     }
-  });
+    const fileInput = document.getElementById('chatFile');
+    if (fileInput) fileInput.value = '';
+  }
 
-  // --- Chat message rendering with proper alignment ---
+  // --- Chat message rendering with enhanced timestamps and read receipts ---
   function renderMessage(m) {
     // Prevent duplicate messages
     if (m.id && messagesEl.querySelector(`[data-message-id="${m.id}"]`)) return;
@@ -897,6 +1278,7 @@
     if (m.id) {
       bubble.setAttribute('data-message-id', m.id);
     }
+    
     // Handle different message types
     if (m.message_type === 'image' && m.file_base64) {
       bubble.innerHTML = `<img src="data:${m.file_type || 'image/jpeg'};base64,${m.file_base64}" alt="Image" style="max-width:250px;max-height:250px;display:block;border-radius:8px;">`;
@@ -907,9 +1289,11 @@
     } else {
       bubble.textContent = m.content || '';
     }
-    // Add status indicator for sent messages
+    
+    // Enhanced timestamp and read receipt display
     const statusDiv = document.createElement('div');
     statusDiv.className = 'message-status';
+    
     // Timestamp formatting
     const ts = m.timestamp ? new Date(m.timestamp) : null;
     let timeString = '';
@@ -920,21 +1304,30 @@
         timeString = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       } else {
         // Not today: show date and time
-        timeString = ts.toLocaleDateString() + ' ' + ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        timeString = ts.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       }
     }
-    // WhatsApp-like read receipts
+    
+    // Enhanced WhatsApp-like read receipts
     if (isMe) {
       if (m.is_read) {
-        statusDiv.innerHTML = `<span style="color:#2563eb;"><i class="bi bi-check2-all"></i></span> <span class="msg-time">${timeString}</span>`;
+        statusDiv.innerHTML = `
+          <span class="msg-time">${timeString}</span>
+          <span class="read-tick read"><i class="bi bi-check2-all"></i></span>
+        `;
       } else {
-        statusDiv.innerHTML = `<i class="bi bi-check"></i> <span class="msg-time">${timeString}</span>`;
+        statusDiv.innerHTML = `
+          <span class="msg-time">${timeString}</span>
+          <span class="read-tick"><i class="bi bi-check2"></i></span>
+        `;
       }
     } else {
       statusDiv.innerHTML = `<span class="msg-time">${timeString}</span>`;
     }
+    
     bubble.appendChild(statusDiv);
     messagesEl.appendChild(bubble);
+    
     // Auto-scroll to bottom with smooth behavior
     requestAnimationFrame(() => {
       messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -949,22 +1342,30 @@
     myMessages.forEach(bubble => {
       const statusDiv = bubble.querySelector('.message-status');
       if (statusDiv) {
-        statusDiv.innerHTML = '<i class="bi bi-check2-all text-primary"></i>';
+        const timeEl = statusDiv.querySelector('.msg-time');
+        const timeText = timeEl ? timeEl.textContent : '';
+        statusDiv.innerHTML = `
+          <span class="msg-time">${timeText}</span>
+          <span class="read-tick read"><i class="bi bi-check2-all"></i></span>
+        `;
       }
     });
   }
 
-    // --- Send message functionality ---
+  // --- Send message functionality ---
   function sendMessage() {
     if (!currentPeerId || !socket || socket.readyState !== WebSocket.OPEN) {
       console.warn('Cannot send message: no connection');
       return;
     }
     
+    const inputEl = document.getElementById('chatInput');
+    if (!inputEl) return; // Input might be hidden due to privacy
+    
     // Frontend privacy validation
     if (currentPeerData && currentPeerData.is_private) {
       // Check if we have a connection with this user
-      const hasConnection = checkUserConnection(currentPeerId);
+      const hasConnection = canMessageUser(currentPeerData);
       if (!hasConnection) {
         showPrivacyError('This user has private messages. You need to be connected to send messages.');
         return;
@@ -978,23 +1379,27 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         try {
-        const base64 = e.target.result.split(',')[1];
-        const messageData = {
-          action: 'send_message',
+          const base64 = e.target.result.split(',')[1];
+          const messageData = {
+            action: 'send_message',
             content: text || '',
-          message_type: previewType,
-          file_data: base64,
-          file_name: file.name,
-          file_type: file.type,
-          file_size: file.size
-        };
-        socket.send(JSON.stringify(messageData));
-        clearPreview();
-        inputEl.value = '';
-        
-        // Update recent chats list to include this user if not already present
-        updateRecentChatsList(currentPeerId, currentPeerData);
-      } catch (error) {
+            message_type: previewType,
+            file_data: base64,
+            file_name: file.name,
+            file_type: file.type,
+            file_size: file.size
+          };
+          socket.send(JSON.stringify(messageData));
+          clearPreview();
+          inputEl.value = '';
+          
+          // Update recent chats list to include this user if not already present
+          updateRecentChatsList(currentPeerId, {
+            ...currentPeerData,
+            lastMessage: text || 'Sent a file',
+            timestamp: new Date().toISOString()
+          });
+        } catch (error) {
           console.error('Error sending file:', error);
         }
       };
@@ -1009,7 +1414,11 @@
         inputEl.value = '';
         
         // Update recent chats list to include this user if not already present
-        updateRecentChatsList(currentPeerId, currentPeerData);
+        updateRecentChatsList(currentPeerId, {
+          ...currentPeerData,
+          lastMessage: text,
+          timestamp: new Date().toISOString()
+        });
       } catch (error) {
         console.error('Error sending message:', error);
       }
@@ -1017,13 +1426,6 @@
   }
 
   // --- Privacy validation helpers ---
-  function checkUserConnection(userId) {
-    // Check if current user follows the target user or vice versa
-    // This is a simplified check - in a real app, you'd want to fetch this from the server
-    const followingItem = recents.querySelector(`[data-user-id="${userId}"]`);
-    return followingItem !== null; // If they're in recent chats, there's likely a connection
-  }
-  
   function showPrivacyError(message) {
     // Show privacy error message
     const errorDiv = document.createElement('div');
@@ -1045,7 +1447,7 @@
     }, 5000);
   }
   
-  // --- Update recent chats list without page reload ---
+  // --- Update recent chats list with new message ---
   function updateRecentChatsList(userId, userData) {
     // Check if user is already in recent list
     const existingItem = recents.querySelector(`[data-user-id="${userId}"]`);
@@ -1061,10 +1463,17 @@
       newItem.innerHTML = `
         ${userData.avatar ? `<a href="${profileUrl}" target="_blank"><img src="${userData.avatar}" class="avatar"></a>` : `<a href="${profileUrl}" target="_blank"><i class="bi bi-person-circle fs-4 avatar"></i></a>`}
         <div class="flex-grow-1">
-          <div class="fw-semibold"><a href="${profileUrl}" target="_blank" style="text-decoration:none;color:inherit;">${userData.name}</a></div>
+          <div class="fw-semibold">
+            <a href="${profileUrl}" target="_blank" style="text-decoration:none;color:inherit;">${userData.name}</a>
+            ${userData.is_private ? '<i class="bi bi-shield-lock privacy-shield" title="Private messages"></i>' : ''}
+          </div>
           <div class="small text-muted">${userData.role}</div>
+          <div class="last-message-preview">
+            ${userData.lastMessage ? '<i class="bi bi-check2"></i> ' + userData.lastMessage : ''}
+          </div>
         </div>
         <span class="unread-badge" style="display:none;">0</span>
+        <div class="last-message-time">${userData.timestamp ? formatMessageTime(userData.timestamp) : ''}</div>
       `;
       
       // Add click event listener to the new item
@@ -1088,24 +1497,15 @@
         name: userData.name.toLowerCase(),
         el: newItem
       });
+    } else {
+      // Update existing item
+      updateLastMessagePreview(userId, userData.lastMessage, String(userId) === String(currentUserId), userData.timestamp);
     }
+    
+    // Sort chats by timestamp
+    setTimeout(sortRecentChats, 100);
   }
 
-  // --- Event listeners ---
-  // Send message event listeners
-  sendBtn.addEventListener('click', sendMessage);
-  inputEl.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-  
-  attachBtn.addEventListener('click', () => fileInput.click());
-
-  // --- Cleanup on page unload ---
-  window.addEventListener('beforeunload', cleanupSocket);
-  
   // --- Initialize empty state ---
   function showEmptyState() {
     chatHeader.innerHTML = `
@@ -1117,6 +1517,9 @@
     `;
     messagesEl.innerHTML = '';
   }
+  
+  // --- Cleanup on page unload ---
+  window.addEventListener('beforeunload', cleanupSocket);
   
   // Check if we should open a specific chat from URL parameters
   const urlParams = new URLSearchParams(window.location.search);
@@ -1130,10 +1533,10 @@
       const userId = openChatId;
       const role = recentItem.querySelector('.small.text-muted').textContent.toLowerCase();
       const profileUrl = role === 'investor' ? `/investor/profile/${userId}/` : `/entrepreneur/profile/${userId}/`;
-      const isPrivate = recentItem.querySelector('.bi-shield-lock') !== null;
+      const isPrivate = recentItem.querySelector('.privacy-shield') !== null;
       
       openChat(userId, {
-        name: recentItem.querySelector('.fw-semibold').textContent.replace('🔒', '').trim(),
+        name: recentItem.querySelector('.fw-semibold').textContent.replace(/\s*🔒/, '').trim(),
         avatar: recentItem.querySelector('img') ? recentItem.querySelector('img').src : null,
         role: recentItem.querySelector('.small.text-muted').textContent,
         profile_url: profileUrl,
@@ -1189,12 +1592,21 @@
   const observer = new MutationObserver(function(mutations) {
     mutations.forEach(function(mutation) {
       if (mutation.target === chatHeader && currentPeerId) {
-        setTimeout(() => inputEl.focus(), 100);
+        const inputEl = document.getElementById('chatInput');
+        if (inputEl) {
+          setTimeout(() => inputEl.focus(), 100);
+        }
       }
     });
   });
   
   observer.observe(chatHeader, { childList: true });
+  
+  // Sort recent chats on initial load
+  setTimeout(sortRecentChats, 100);
+  
+  // Initialize the messaging system
+  initializeMessagingSystem();
   
 })();
 </script>

@@ -540,15 +540,45 @@ def messages_page(request):
     for f in Favorite.objects.filter(target_user=request.user).select_related('user'):
         recent_users.add(f.user)
     
-    # Limit and sort
-    recent_list = sorted(recent_users, key=lambda u: (u.get_full_name() or u.email))[:25]
+    # Get last message and unread count for each user
+    recent_users_with_data = []
+    total_unread_count = 0
     
-    # Unread message count for each recent user
-    unread_counts = {}
-    for u in recent_list:
-        unread_counts[u.id] = Message.objects.filter(sender=u, receiver=request.user, is_read=False).count()
+    for u in recent_users:
+        # Get last message between current user and this user
+        last_message = Message.objects.filter(
+            (Q(sender=request.user) & Q(receiver=u)) |
+            (Q(sender=u) & Q(receiver=request.user))
+        ).order_by('-timestamp').first()
+        
+        # Get unread count from this user
+        unread_count = Message.objects.filter(sender=u, receiver=request.user, is_read=False).count()
+        total_unread_count += unread_count
+        
+        if last_message:
+            recent_users_with_data.append({
+                'user': u,
+                'last_message': last_message,
+                'unread_count': unread_count,
+                'last_message_time': last_message.timestamp
+            })
+    
+    # Sort by most recent message timestamp
+    recent_users_with_data.sort(key=lambda x: x['last_message_time'], reverse=True)
+    
+    # Limit to 25 users
+    recent_list = [item['user'] for item in recent_users_with_data[:25]]
+    unread_counts = {item['user'].id: item['unread_count'] for item in recent_users_with_data[:25]}
+    last_messages = {item['user'].id: item['last_message'] for item in recent_users_with_data[:25]}
+    last_message_times = {item['user'].id: item['last_message_time'] for item in recent_users_with_data[:25]}
 
-    return render(request, 'messages/index.html', { 'recents': recent_list, 'unread_counts': unread_counts })
+    return render(request, 'messages/index.html', { 
+        'recents': recent_list, 
+        'unread_counts': unread_counts,
+        'last_messages': last_messages,
+        'last_message_times': last_message_times,
+        'total_unread_count': total_unread_count
+    })
 
 
 @login_required

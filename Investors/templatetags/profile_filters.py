@@ -50,3 +50,14 @@ def connection_status(viewer, target):
         return 'none'
     except Exception:
         return 'none'
+
+@register.filter
+def get_item(dictionary, key):
+    """
+    Template filter to get a dictionary value by key.
+    Usage: {{ dictionary|get_item:key }}
+    """
+    try:
+        return dictionary.get(key)
+    except (AttributeError, TypeError):
+        return None
