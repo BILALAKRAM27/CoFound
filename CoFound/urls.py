@@ -16,12 +16,21 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from Investors.views import index, home
+from CoFound.views import favicon_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('favicon.ico', favicon_view, name='favicon'),  # Explicit favicon handling
     path('', index, name='index'),  # Landing page
     path('home/', home, name='home'),  # Common home page
     path('entrepreneur/', include('Entrepreneurs.urls', namespace='entrepreneurs')),
     path('investor/', include('Investors.urls', namespace='investors')),
 ]
+
+# Serve static files during development
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.BASE_DIR / 'static')

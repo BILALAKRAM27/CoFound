@@ -667,6 +667,18 @@
 
   // --- Enhanced search functionality ---
   function renderSearch(results) {
+    if (results.length === 0) {
+      document.getElementById('searchResults').innerHTML = `
+        <div class="text-center text-muted py-4">
+          <i class="bi bi-search fs-1 opacity-25"></i>
+          <div class="mt-2">No users found</div>
+          <div class="small">Try searching with a different name or email</div>
+        </div>
+      `;
+      document.getElementById('searchResults').style.display = 'block';
+      return;
+    }
+    
     const searchResultsHtml = results.map(user => {
       let privacyHtml = '';
       if (user.is_private && !user.can_message) {
@@ -689,7 +701,7 @@
       `;
     }).join('');
     document.getElementById('searchResults').innerHTML = searchResultsHtml;
-    document.getElementById('searchResults').style.display = results.length ? 'block' : 'none';
+    document.getElementById('searchResults').style.display = 'block';
   }
 
   // --- Sidebar: Unread badge logic ---
@@ -769,22 +781,30 @@
 
   // --- Sidebar: Dynamic search ---
   searchInput.addEventListener('input', function() {
-    const q = this.value.trim().toLowerCase();
-    recentUsers.forEach(u => {
-      u.el.style.display = (!q || u.name.includes(q)) ? 'block' : 'none';
-    });
-    if (q.length > 0) {
-      // Determine the correct search endpoint based on current user's role
-      const currentUserRole = '{{ user.role }}' || 'investor';
-      const searchEndpoint = currentUserRole === 'investor' ? '/investor/messages/search/' : '/entrepreneur/messages/search/';
-      
-      fetch(`${searchEndpoint}?q=${encodeURIComponent(q)}`)
-        .then(r=>r.json())
-        .then(d=> renderSearch(d.results || []))
-        .catch(() => renderSearch([]));
-    } else {
+    const q = this.value.trim();
+    
+    if (q.length === 0) {
+      // Show all recent users when search is empty
+      recentUsers.forEach(u => {
+        u.el.style.display = 'block';
+      });
       results.style.display = 'none';
+      return;
     }
+    
+    // Hide recent users when searching
+    recentUsers.forEach(u => {
+      u.el.style.display = 'none';
+    });
+    
+    // Use server-side search for all users
+    const currentUserRole = '{{ user.role }}' || 'investor';
+    const searchEndpoint = currentUserRole === 'investor' ? '/investor/messages/search/' : '/entrepreneur/messages/search/';
+    
+    fetch(`${searchEndpoint}?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(d => renderSearch(d.results || []))
+      .catch(() => renderSearch([]));
   });
 
   // --- Sidebar: Click to open chat ---
