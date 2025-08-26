@@ -53,58 +53,44 @@ def message_settings(request):
 def messages_page(request):
     # Recent chats = users you've exchanged messages with OR you follow
     recent_users = set()
-    # Users you've messaged (sent or received)
     from Entrepreneurs.models import Message, Favorite
     msg_users = set()
-    # Get all messages where user is sender or receiver
     messages = Message.objects.filter(Q(sender=request.user) | Q(receiver=request.user)).distinct()
-    
-    # Extract unique user IDs from sender and receiver fields
     for msg in messages:
         if msg.sender != request.user:
             msg_users.add(msg.sender.id)
         if msg.receiver != request.user:
             msg_users.add(msg.receiver.id)
-    
-    # Add users to recent_users set, respecting privacy settings
     for uid in msg_users:
         try:
             u = User.objects.get(id=uid)
-            # For private users, only show if there's a connection
-            if u.message_privacy == 'public':
+            is_connected = (request.user.favorites.filter(target_user=u).exists() or
+                            request.user.favorited_by.filter(user=u).exists())
+            if u.message_privacy == 'public' or is_connected:
                 recent_users.add(u)
-            else:
-                # Check if there's any connection (following or followed)
-                is_connected = (request.user.favorites.filter(target_user=u).exists() or
-                               request.user.favorited_by.filter(user=u).exists())
-                if is_connected:
-                    recent_users.add(u)
         except User.DoesNotExist:
             pass
-    
-    # Add users you follow (favorites)
     for f in Favorite.objects.filter(user=request.user).select_related('target_user'):
-        recent_users.add(f.target_user)
-    
-    # Add users who follow you
+        u = f.target_user
+        is_connected = (request.user.favorites.filter(target_user=u).exists() or
+                        request.user.favorited_by.filter(user=u).exists())
+        if u.message_privacy == 'public' or is_connected:
+            recent_users.add(u)
     for f in Favorite.objects.filter(target_user=request.user).select_related('user'):
-        recent_users.add(f.user)
-    
-    # Get last message and unread count for each user
+        u = f.user
+        is_connected = (request.user.favorites.filter(target_user=u).exists() or
+                        request.user.favorited_by.filter(user=u).exists())
+        if u.message_privacy == 'public' or is_connected:
+            recent_users.add(u)
     recent_users_with_data = []
     total_unread_count = 0
-    
     for u in recent_users:
-        # Get last message between current user and this user
         last_message = Message.objects.filter(
             (Q(sender=request.user) & Q(receiver=u)) |
             (Q(sender=u) & Q(receiver=request.user))
         ).order_by('-timestamp').first()
-        
-        # Get unread count from this user
         unread_count = Message.objects.filter(sender=u, receiver=request.user, is_read=False).count()
         total_unread_count += unread_count
-        
         if last_message:
             recent_users_with_data.append({
                 'user': u,
@@ -112,23 +98,17 @@ def messages_page(request):
                 'unread_count': unread_count,
                 'last_message_time': last_message.timestamp
             })
-    
-    # Sort by most recent message timestamp
     recent_users_with_data.sort(key=lambda x: x['last_message_time'], reverse=True)
-    
-    # Limit to 25 users
     recent_list = [item['user'] for item in recent_users_with_data[:25]]
     unread_counts = {item['user'].id: item['unread_count'] for item in recent_users_with_data[:25]}
     last_messages = {item['user'].id: item['last_message'] for item in recent_users_with_data[:25]}
     last_message_times = {item['user'].id: item['last_message_time'] for item in recent_users_with_data[:25]}
-
-    return render(request, 'messages/index.html', { 
-        'recents': recent_list, 
+    return render(request, 'messages/index.html', {
+        'recents': recent_list,
         'unread_counts': unread_counts,
         'last_messages': last_messages,
         'last_message_times': last_message_times,
-        'total_unread_count': total_unread_count,
-        'debug': True  # Enable debug output
+        'total_unread_count': total_unread_count
     })
 
 @login_required
@@ -137,29 +117,11 @@ def message_search(request):
     q = request.GET.get('q', '').strip()
     if not q:
         return JsonResponse({ 'results': [] })
-    # Who is allowed to appear?
-    # public users OR private users who have any connection with current user
-    allowed_ids = set(User.objects.filter(message_privacy='public').values_list('id', flat=True))
-    
-    # Private users who follow current user OR are followed by current user
-    private_friend_ids = set()
-    # Users I follow
-    following_ids = set(Favorite.objects.filter(user=request.user).values_list('target_user_id', flat=True))
-    # Users who follow me
-    follower_ids = set(Favorite.objects.filter(target_user=request.user).values_list('user_id', flat=True))
-    
-    # Add private users who have any connection
-    private_users = User.objects.filter(message_privacy='private')
-    for private_user in private_users:
-        if (private_user.id in following_ids or private_user.id in follower_ids):
-            private_friend_ids.add(private_user.id)
-    
-    allowed_ids.update(private_friend_ids)
-    allowed_ids.discard(request.user.id)
-
-    qs = User.objects.filter(id__in=list(allowed_ids)).filter(
-        Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q)
-    ).select_related('entrepreneur_profile', 'investor_profile')[:20]
+    # All users except self
+    qs = User.objects.exclude(id=request.user.id)
+    if q:
+        qs = qs.filter(Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q))
+    qs = qs.select_related('entrepreneur_profile', 'investor_profile')[:20]
 
     def img64(u):
         try:
@@ -179,14 +141,20 @@ def message_search(request):
         else:
             return f"/entrepreneur/profile/{u.id}/"
 
-    results = [{
-        'id': u.id,
-        'name': u.get_full_name() or u.email,
-        'role': u.role,
-        'avatar': img64(u),
-        'profile_url': profile_url(u),
-        'is_private': u.message_privacy == 'private'
-    } for u in qs]
+    results = []
+    for u in qs:
+        is_connected = (request.user.favorites.filter(target_user=u).exists() or
+                        request.user.favorited_by.filter(user=u).exists())
+        can_message = (u.message_privacy == 'public') or is_connected
+        results.append({
+            'id': u.id,
+            'name': u.get_full_name() or u.email,
+            'role': u.role,
+            'avatar': img64(u),
+            'profile_url': profile_url(u),
+            'is_private': u.message_privacy == 'private',
+            'can_message': can_message,
+        })
     return JsonResponse({ 'results': results })
 
 

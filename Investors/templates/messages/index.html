@@ -185,19 +185,32 @@
     height: 40px;
     border-radius: 50%;
     object-fit: cover;
-    background: #f3f4f6;
-    border: 2px solid #e5e7eb;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
     flex-shrink: 0;
+  }
+
+  .chat-header-avatar img {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   .chat-header .avatar-placeholder {
     font-size: 1.5rem;
-    color: #9ca3af;
+    color: var(--cf-text-secondary);
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
     height: 100%;
+    background: transparent !important;
+  }
+
+  .chat-header .fw-semibold,
+  .chat-header .fw-semibold.text-dark {
+    color: var(--cf-text-primary) !important;
   }
 
   /* Messages area with proper scrolling */
@@ -654,21 +667,27 @@
 
   // --- Enhanced search functionality ---
   function renderSearch(results) {
-    const searchResultsHtml = results.map(user => `
-      <div class="recent-item" data-user-id="${user.id}">
-        ${user.avatar ? `<a href="${user.profile_url}" target="_blank"><img src="${user.avatar}" class="avatar"></a>` : `<a href="${user.profile_url}" target="_blank"><i class="bi bi-person-circle fs-4 avatar"></i></a>`}
-        <div class="flex-grow-1">
-          <div class="fw-semibold">
-            <a href="${user.profile_url}" target="_blank" style="text-decoration:none;color:inherit;">
-              ${user.name}
-              ${user.is_private ? '<i class="bi bi-shield-lock text-muted ms-2" title="Private messages"></i>' : ''}
-            </a>
+    const searchResultsHtml = results.map(user => {
+      let privacyHtml = '';
+      if (user.is_private && !user.can_message) {
+        privacyHtml = `<div class="privacy-message mt-2"><i class="bi bi-shield-lock"></i><h6>This user has set messages to private</h6><p>Follow them to send a message.</p></div>`;
+      }
+      return `
+        <div class="recent-item" data-user-id="${user.id}" data-can-message="${user.can_message}" data-is-private="${user.is_private}">
+          ${user.avatar ? `<a href="${user.profile_url}" target="_blank"><img src="${user.avatar}" class="avatar"></a>` : `<a href="${user.profile_url}" target="_blank"><i class="bi bi-person-circle fs-4 avatar"></i></a>`}
+          <div class="flex-grow-1">
+            <div class="fw-semibold">
+              <a href="${user.profile_url}" target="_blank" style="text-decoration:none;color:inherit;">
+                ${user.name}
+                ${user.is_private ? '<i class="bi bi-shield-lock privacy-shield" title="Private messages"></i>' : ''}
+              </a>
+            </div>
+            <div class="small text-muted">${user.role || 'User'}</div>
+            ${privacyHtml}
           </div>
-          <div class="small text-muted">${user.role || 'User'}</div>
         </div>
-      </div>
-    `).join('');
-    
+      `;
+    }).join('');
     document.getElementById('searchResults').innerHTML = searchResultsHtml;
     document.getElementById('searchResults').style.display = results.length ? 'block' : 'none';
   }
@@ -794,18 +813,19 @@
     const item = e.target.closest('.recent-item');
     if (!item) return;
     const userId = item.dataset.userId;
-    const role = item.querySelector('.small.text-muted').textContent.toLowerCase();
-    const profileUrl = role === 'investor' ? `/investor/profile/${userId}/` : `/entrepreneur/profile/${userId}/`;
-    
-    // Check if user has private messages from search results
-    const isPrivate = item.querySelector('.bi-shield-lock') !== null;
-    
+    const canMessage = item.dataset.canMessage === 'true';
+    const isPrivate = item.dataset.isPrivate === 'true';
+    const name = item.querySelector('.fw-semibold').textContent.trim();
+    const avatar = item.querySelector('img') ? item.querySelector('img').src : null;
+    const role = item.querySelector('.small.text-muted').textContent;
+    const profileUrl = item.querySelector('a') ? item.querySelector('a').href : '';
     openChat(userId, {
-      name: item.querySelector('.fw-semibold').textContent.replace('🔒', '').trim(),
-      avatar: item.querySelector('img') ? item.querySelector('img').src : null,
-      role: item.querySelector('.small.text-muted').textContent,
+      name,
+      avatar,
+      role,
       profile_url: profileUrl,
-      is_private: isPrivate
+      is_private: isPrivate,
+      can_message: canMessage
     });
     selectContact(userId);
     results.style.display = 'none';
