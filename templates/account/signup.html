@@ -1,0 +1,66 @@
+{% extends "allauth/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Sign Up" %} - CoFound{% endblock %}
+
+{% block content %}
+<h1>{% trans "Sign Up" %}</h1>
+
+<p>{% blocktrans %}Already have an account? Then please <a href="{{ login_url }}">sign in</a>.{% endblocktrans %}</p>
+
+<form class="signup" id="signup_form" method="post" action="{% url 'account_signup' %}">
+    {% csrf_token %}
+    
+    {% if form.errors %}
+        <div class="alert alert-error">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+                <small class="form-text">{{ field.help_text }}</small>
+            {% endif %}
+        </div>
+    {% endfor %}
+    
+    {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+    {% endif %}
+    
+    <button type="submit" class="btn btn-primary">
+        <span class="spinner" style="display: none;"></span>
+        {% trans "Sign Up" %}
+    </button>
+</form>
+
+<script>
+// Add loading state to button
+document.querySelector('form').addEventListener('submit', function() {
+    const button = this.querySelector('button[type="submit"]');
+    const spinner = button.querySelector('.spinner');
+    const originalText = button.textContent;
+    
+    button.disabled = true;
+    spinner.style.display = 'inline-block';
+    button.textContent = '{% trans "Creating Account..." %}';
+    
+    // Re-enable after 5 seconds in case of error
+    setTimeout(function() {
+        button.disabled = false;
+        spinner.style.display = 'none';
+        button.textContent = originalText;
+    }, 5000);
+});
+</script>
+{% endblock %}

@@ -164,3 +164,61 @@ class InvestmentCommitment(models.Model):
 
     def __str__(self):
         return f"{self.investor.get_full_name()} committed ${self.amount} to {self.funding_round.round_name}"
+
+
+class Meeting(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('confirmed', 'Confirmed'),
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='investor_organized_meetings')
+    participant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='investor_participating_meetings')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    date = models.DateField()
+    time = models.TimeField()
+    duration = models.PositiveIntegerField(help_text='Duration in minutes', default=60)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    location = models.CharField(max_length=500, blank=True, help_text='Meeting location or video call link')
+    meeting_type = models.CharField(max_length=50, choices=[
+        ('in_person', 'In Person'),
+        ('video_call', 'Video Call'),
+        ('phone_call', 'Phone Call'),
+    ], default='video_call')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-date', '-time']
+        unique_together = ['organizer', 'participant', 'date', 'time']
+    
+    def __str__(self):
+        return f"{self.title} - {self.organizer} & {self.participant} on {self.date}"
+    
+    @property
+    def datetime(self):
+        """Return combined date and time as datetime"""
+        from django.utils import timezone
+        return timezone.make_aware(
+            timezone.datetime.combine(self.date, self.time)
+        )
+    
+    @property
+    def end_datetime(self):
+        """Return meeting end time"""
+        from datetime import timedelta
+        return self.datetime + timedelta(minutes=self.duration)
+    
+    def is_upcoming(self):
+        """Check if meeting is in the future"""
+        from django.utils import timezone
+        return self.datetime > timezone.now()
+    
+    def is_today(self):
+        """Check if meeting is today"""
+        from django.utils import timezone
+        today = timezone.now().date()
+        return self.date == today

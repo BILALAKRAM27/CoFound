@@ -9,7 +9,7 @@
                 notification.style.cssText = 'top: 90px; right: 20px; z-index: 1060; min-width: 300px;';
                 notification.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
                 document.body.appendChild(notification);
-                setTimeout(() => { if (notification && notification.parentNode) notification.remove(); }, 5000);
+                setTimeout(() => { if (notification && notification.parentNode) notification.remove(); }, 3000);
             } catch (e) {
                 console && console.warn && console.warn('Notification:', message);
             }

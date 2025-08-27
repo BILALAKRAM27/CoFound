@@ -24,7 +24,9 @@
                             <i class="bi bi-person-circle fs-1 me-3"></i>
                         {% endif %}
                         <div>
-                            <h6 class="mb-0">{{ user.get_full_name|default:user.email }}</h6>
+                            {% if user.is_authenticated %}
+                                <h6 class="mb-0">{{ user.get_full_name|default:user.email }}</h6>
+                            {% endif %}
                             <small class="text-muted">
                                 Posting as 
                                 {% if user.role == 'entrepreneur' %}

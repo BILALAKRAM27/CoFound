@@ -90,6 +90,8 @@
                                                 <i class="bi bi-graph-up text-primary"></i>
                                             {% elif notification.notification_type == 'message' %}
                                                 <i class="bi bi-envelope-fill text-info"></i>
+                                            {% elif notification.notification_type == 'meeting' %}
+                                                <i class="bi bi-calendar-event text-warning"></i>
                                             {% else %}
                                                 <i class="bi bi-bell-fill text-secondary"></i>
                                             {% endif %}
@@ -156,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function markNotificationAsRead(notificationId) {
-        const currentUserRole = '{{ user.role }}' || 'investor';
+        const currentUserRole = '{% if user.is_authenticated %}{{ user.role }}{% endif %}' || 'investor';
         const markReadUrl = currentUserRole === 'investor' ? '{% url "investors:mark_notification_read" %}' : '{% url "entrepreneurs:mark_notification_read" %}';
         fetch(markReadUrl, {
             method: 'POST',
@@ -193,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function markAllNotificationsAsRead() {
-        const currentUserRole = '{{ user.role }}' || 'investor';
+        const currentUserRole = '{% if user.is_authenticated %}{{ user.role }}{% endif %}' || 'investor';
         const markAllReadUrl = currentUserRole === 'investor' ? '{% url "investors:mark_all_notifications_read" %}' : '{% url "entrepreneurs:mark_all_notifications_read" %}';
         fetch(markAllReadUrl, {
             method: 'POST',
@@ -248,7 +250,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!relatedObjectId) return;
         
         let redirectUrl = '';
-        const currentUserRole = '{{ user.role }}' || 'investor';
+        const currentUserRole = '{% if user.is_authenticated %}{{ user.role }}{% endif %}' || 'investor';
         
         switch (notificationType) {
             case 'follow':
@@ -284,6 +286,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Redirect to the messages page with the specific conversation
                 const messagesUrl = currentUserRole === 'investor' ? '/investor/messages/' : '/entrepreneur/messages/';
                 redirectUrl = `${messagesUrl}?open_chat=${relatedObjectId}`;
+                break;
+            case 'meeting':
+                // Redirect to the meetings list where pending requests are shown
+                // If we have a meeting ID, we can potentially redirect to a specific meeting view
+                const meetingsUrl = currentUserRole === 'investor' ? '/entrepreneur/meetings/' : '/entrepreneur/meetings/';
+                redirectUrl = meetingsUrl;
                 break;
             default:
                 return;
@@ -373,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // Mark as read: update background for theme
     function markNotificationAsRead(notificationId, itemDiv) {
-        const currentUserRole = '{{ user.role }}' || 'investor';
+        const currentUserRole = '{% if user.is_authenticated %}{{ user.role }}{% endif %}' || 'investor';
         const markReadUrl = currentUserRole === 'investor' ? '{% url "investors:mark_notification_read" %}' : '{% url "entrepreneurs:mark_notification_read" %}';
         fetch(markReadUrl, {
             method: 'POST',

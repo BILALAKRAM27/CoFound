@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load profile_filters %}
+
+{% block title %}{{ profile_user.get_full_name|default:profile_user.email }} - CoFound{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Profile Header -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            {% if profile_user|get_profile_image %}
+                                <img src="data:image/jpeg;base64,{{ profile_user|get_profile_image|b64encode_blob }}" 
+                                     class="rounded-circle mb-3" width="120" height="120" alt="Profile Image">
+                            {% else %}
+                                <i class="bi bi-person-circle display-1 text-muted mb-3"></i>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <h3 class="mb-2">{{ profile_user.get_full_name|default:profile_user.email }}</h3>
+                            <p class="text-muted mb-2">
+                                <i class="fa fa-briefcase me-1"></i>{{ profile_user.role|title }}
+                                {% if profile.company_name %}
+                                    at {{ profile.company_name }}
+                                {% endif %}
+                            </p>
+                            {% if profile.location %}
+                                <p class="text-muted mb-2">
+                                    <i class="fa fa-map-marker me-1"></i>{{ profile.location }}
+                                </p>
+                            {% endif %}
+                            {% if profile.industries %}
+                                <p class="text-muted mb-2">
+                                    <i class="fa fa-tags me-1"></i>{{ profile.industries }}
+                                </p>
+                            {% endif %}
+                            {% if profile.startup_description %}
+                                <p class="mb-3">{{ profile.startup_description }}</p>
+                            {% endif %}
+                            
+                            <!-- Action Buttons -->
+                            {% if not is_self %}
+                                {% with status=user|connection_status:profile_user %}
+                                    <button class="{% if status == 'accepted' %}following-btn{% else %}follow-btn{% endif %} connect-toggle me-2" data-target-id="{{ profile_user.id }}">
+                                        {% if status == 'accepted' %}<i class="fa fa-check" aria-hidden="true"></i> Following{% else %}<i class="fa fa-plus" aria-hidden="true"></i> Follow{% endif %}
+                                    </button>
+                                {% endwith %}
+                                <!-- Message Button -->
+                                <button class="btn btn-outline-secondary me-2" onclick="openMessageChat('{{ profile_user.id }}', '{{ profile_user.role }}')">
+                                    <i class="fa fa-commenting me-1"></i>Message
+                                </button>
+                                <!-- Schedule Meeting Button -->
+                                <a href="{% if user.is_authenticated and user.role == 'entrepreneur' %}{% url 'entrepreneurs:schedule_meeting' profile_user.id %}{% else %}{% url 'investors:schedule_meeting' profile_user.id %}{% endif %}" class="btn btn-primary">
+                                    <i class="fa fa-calendar-plus me-1"></i>Schedule Meeting
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Details -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0"><i class="fa fa-info-circle me-2"></i>Profile Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Team Size:</strong> {{ profile.team_size|default:'N/A' }}</p>
+                            <p><strong>Funding Raised:</strong> {{ profile.funding_raised|default:'N/A' }}</p>
+                            <p><strong>Revenue:</strong> {{ profile.revenue|default:'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Valuation:</strong> {{ profile.valuation|default:'N/A' }}</p>
+                            <p><strong>Profile Views:</strong> {{ profile.profile_views|default:0 }}</p>
+                            <p><strong>Member Since:</strong> {{ profile_user.date_joined|date:"M Y" }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if profile.website or profile.linkedin_url %}
+                        <div class="mt-3">
+                            {% if profile.website %}
+                                <a href="{{ profile.website }}" target="_blank" class="me-2">
+                                    <i class="fa fa-globe me-1 text-info"></i>Website
+                                </a>
+                            {% endif %}
+                            {% if profile.linkedin_url %}
+                                <a href="{{ profile.linkedin_url }}" target="_blank">
+                                    <i class="fa fa-linkedin-square me-1 text-primary"></i>LinkedIn
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    {% if profile.pitch_deck_url %}
+                        <div class="mt-3">
+                            <a href="{{ profile.pitch_deck_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                <i class="fa fa-file-pdf-o me-1"></i>View Pitch Deck
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Posts Section -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0"><i class="fa fa-newspaper-o me-2"></i>Posts by {{ profile_user.get_full_name|default:profile_user.email }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="feed-container">
+                        {% for post in posts %}
+                            {% include 'post_card.html' with post=post user=user %}
+                        {% empty %}
+                            <div class="text-center my-5">
+                                <i class="fa fa-newspaper-o fa-2x text-muted"></i>
+                                <h5 class="mt-3">No posts yet</h5>
+                                <p class="text-muted">Be the first to share something with the community!</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0"><i class="fa fa-users me-2"></i>Connections</h5>
+                </div>
+                <div class="card-body text-center">
+                    <a href="{% if profile_user.role == 'entrepreneur' %}{% url 'entrepreneurs:user_network' profile_user.id %}{% else %}{% url 'investors:user_network' profile_user.id %}{% endif %}" class="btn btn-outline-accent btn-lg">
+                        <i class="fa fa-users me-1"></i>View Network
+                    </a>
+                </div>
+            </div>
+            
+            {% if not is_self %}
+                <div class="card shadow-sm">
+                    <div class="card-header bg-transparent border-0">
+                        <h5 class="mb-0"><i class="fa fa-calendar me-2"></i>Schedule Meeting</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <a href="{% if user.is_authenticated and user.role == 'entrepreneur' %}{% url 'entrepreneurs:schedule_meeting' profile_user.id %}{% else %}{% url 'investors:schedule_meeting' profile_user.id %}{% endif %}" class="btn btn-primary btn-lg">
+                            <i class="fa fa-calendar-plus me-1"></i>Schedule Meeting
+                        </a>
+                        <p class="text-muted small mt-2">Set up a meeting to discuss potential collaboration</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function openMessageChat(userId, userRole) {
+    // Redirect to the messages page with the user ID as a parameter
+    // This will open the chat with the specific user
+    const currentUserRole = '{% if user.is_authenticated %}{{ user.role }}{% endif %}'; // Get current user's role
+    
+    if (currentUserRole === 'investor') {
+        // Current user is investor, redirect to investor messages page
+        window.location.href = `/investor/messages/?open_chat=${userId}`;
+    } else {
+        // Current user is entrepreneur, redirect to entrepreneur messages page
+        window.location.href = `/entrepreneur/messages/?open_chat=${userId}`;
+    }
+}
+</script>
+{% endblock %}

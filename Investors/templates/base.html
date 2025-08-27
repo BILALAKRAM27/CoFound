@@ -714,7 +714,7 @@
 
     {% block styles %}{% endblock %}
 </head>
-<body data-user-role="{{ user.role }}" class="theme-transition">
+<body data-user-role="{% if user.is_authenticated %}{{ user.role }}{% endif %}" class="theme-transition">
     <!-- Include Navbar -->
     {% include 'partials/navbar.html' %}
 

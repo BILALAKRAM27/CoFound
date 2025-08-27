@@ -26,6 +26,10 @@ urlpatterns = [
     path('favicon.ico', favicon_view, name='favicon'),  # Explicit favicon handling
     path('', index, name='index'),  # Landing page
     path('home/', home, name='home'),  # Common home page
+    
+    # OAuth Authentication URLs
+    path('accounts/', include('allauth.urls')),
+    
     path('entrepreneur/', include('Entrepreneurs.urls', namespace='entrepreneurs')),
     path('investor/', include('Investors.urls', namespace='investors')),
 ]

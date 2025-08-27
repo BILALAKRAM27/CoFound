@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-gdp2z1&ojq26x1w9zn4e7)_0cn5@86s$s%#67!j_gz7n#+f2m0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['testserver', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -37,6 +37,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    
+    # OAuth Authentication
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.linkedin_oauth2',
+    'allauth.socialaccount.providers.twitter_oauth2',
+    'allauth.socialaccount.providers.apple',
+    
+    # Project Apps
     'Entrepreneurs',
     'Investors',
     'rest_framework',
@@ -50,8 +62,87 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# OAuth Authentication Settings
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+SITE_ID = 1
+
+# Allauth Settings
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # Set to 'mandatory' if you want email verification
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_USERNAME_BLACKLIST = []
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_SUBJECT_PREFIX = '[CoFound] '
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http'  # Change to 'https' in production
+
+# Social Account Settings
+SOCIALACCOUNT_AUTO_SIGNUP = False
+SOCIALACCOUNT_EMAIL_REQUIRED = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+
+# Custom Allauth Adapters for No-Username User Model
+ACCOUNT_ADAPTER = 'Entrepreneurs.adapters.NoUsernameAccountAdapter'
+SOCIALACCOUNT_ADAPTER = 'Entrepreneurs.adapters.NoUsernameSocialAccountAdapter'
+ACCOUNT_FORMS = {
+    'signup': 'Entrepreneurs.adapters.NoUsernameSignupForm',
+}
+SOCIALACCOUNT_FORMS = {
+    'signup': 'Entrepreneurs.adapters.NoUsernameSocialSignupForm',
+}
+
+# OAuth Provider Settings
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+    },
+    'linkedin_oauth2': {
+        'SCOPE': [
+            'r_liteprofile',
+            'r_emailaddress',
+        ],
+        'PROFILE_FIELDS': [
+            'id',
+            'first-name',
+            'last-name',
+            'email-address',
+            'picture-url',
+            'public-profile-url',
+        ],
+    },
+    'twitter_oauth2': {
+        'SCOPE': [
+            'tweet.read',
+            'users.read',
+        ],
+        'AUTH_PARAMS': {
+            'response_type': 'code',
+        },
+    },
+    'apple': {
+        'SCOPE': [
+            'name',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'response_mode': 'form_post',
+        },
+    },
+}
 
 ROOT_URLCONF = 'CoFound.urls'
 

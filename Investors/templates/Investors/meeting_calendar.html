@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Meeting Calendar - CoFound{% endblock %}
+
+{% block styles %}
+<style>
+.calendar-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.calendar-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.calendar-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.calendar-nav button {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.calendar-nav button:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: #e9ecef;
+}
+
+.calendar-day-header {
+    background: #f8f9fa;
+    padding: 0.75rem;
+    text-align: center;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.calendar-day {
+    background: white;
+    min-height: 120px;
+    padding: 0.5rem;
+    position: relative;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.calendar-day:hover {
+    background: #f8f9fa;
+}
+
+.calendar-day.today {
+    background: #e3f2fd;
+    border: 2px solid #2196f3;
+}
+
+.calendar-day.other-month {
+    background: #f8f9fa;
+    color: #adb5bd;
+}
+
+.calendar-day-number {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.calendar-day.other-month .calendar-day-number {
+    color: #adb5bd;
+}
+
+.meeting-indicator {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #28a745;
+}
+
+.meeting-item {
+    background: #e3f2fd;
+    border-left: 3px solid #2196f3;
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0.25rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.meeting-item:hover {
+    background: #bbdefb;
+    transform: translateX(2px);
+}
+
+.meeting-item.confirmed {
+    background: #e8f5e8;
+    border-left-color: #4caf50;
+}
+
+.meeting-item.pending {
+    background: #fff3e0;
+    border-left-color: #ff9800;
+}
+
+.meeting-item.rejected {
+    background: #ffebee;
+    border-left-color: #f44336;
+}
+
+.meeting-item.cancelled {
+    background: #f5f5f5;
+    border-left-color: #9e9e9e;
+}
+
+.meeting-time {
+    font-weight: 600;
+    color: #1976d2;
+}
+
+.meeting-title {
+    color: #424242;
+    font-weight: 500;
+}
+
+.meeting-participant {
+    color: #666;
+    font-size: 0.7rem;
+}
+
+.calendar-legend {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.legend-color.confirmed { background: #4caf50; }
+.legend-color.pending { background: #ff9800; }
+.legend-color.rejected { background: #f44336; }
+.legend-color.cancelled { background: #9e9e9e; }
+
+@media (max-width: 768px) {
+    .calendar-grid {
+        grid-template-columns: repeat(7, 1fr);
+    }
+    
+    .calendar-day {
+        min-height: 80px;
+        padding: 0.25rem;
+    }
+    
+    .meeting-item {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.3rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-calendar3 me-2"></i>Meeting Calendar</h2>
+                <div>
+                    <a href="{% url 'investors:meetings' %}" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-list me-2"></i>List View
+                    </a>
+                    <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-search me-2"></i>Find People
+                    </a>
+                </div>
+            </div>
+
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <div class="calendar-nav">
+                        <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-outline-light">
+                            <i class="bi bi-chevron-left"></i> Previous
+                        </a>
+                        <h3 class="mb-0">{{ month_name }} {{ year }}</h3>
+                        <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-outline-light">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="calendar-grid">
+                    <!-- Day headers -->
+                    <div class="calendar-day-header">Sun</div>
+                    <div class="calendar-day-header">Mon</div>
+                    <div class="calendar-day-header">Tue</div>
+                    <div class="calendar-day-header">Wed</div>
+                    <div class="calendar-day-header">Thu</div>
+                    <div class="calendar-day-header">Fri</div>
+                    <div class="calendar-day-header">Sat</div>
+
+                    <!-- Calendar days -->
+                    {% for week in calendar %}
+                        {% for day in week %}
+                            {% if day == 0 %}
+                                <div class="calendar-day other-month"></div>
+                            {% else %}
+                                {% with date_key=year|stringformat:"04d"|add:"-"|add:month|stringformat:"02d"|add:"-"|add:day|stringformat:"02d" %}
+                                <div class="calendar-day {% if date_key == today|date:'Y-m-d' %}today{% endif %}">
+                                    <div class="calendar-day-number">{{ day }}</div>
+                                    
+                                    {% if date_key in meetings_by_date %}
+                                        {% for meeting in meetings_by_date|get_item:date_key %}
+                                            <div class="meeting-item {{ meeting.status }}" 
+                                                 title="{{ meeting.title }} - {{ meeting.time|time:'g:i A' }} - {{ meeting.duration }}min">
+                                                <div class="meeting-time">{{ meeting.time|time:'g:i A' }}</div>
+                                                <div class="meeting-title">{{ meeting.title|truncatechars:20 }}</div>
+                                                <div class="meeting-participant">
+                                                    {% if meeting.organizer == request.user %}
+                                                        with {{ meeting.participant.get_full_name|truncatechars:15 }}
+                                                    {% else %}
+                                                        with {{ meeting.organizer.get_full_name|truncatechars:15 }}
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                {% endwith %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <div class="legend-color confirmed"></div>
+                        <span>Confirmed</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color pending"></div>
+                        <span>Pending</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color rejected"></div>
+                        <span>Rejected</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color cancelled"></div>
+                        <span>Cancelled</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

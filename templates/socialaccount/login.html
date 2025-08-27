@@ -1,0 +1,57 @@
+{% extends "allauth/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Sign In Via" %} {{ provider.name }} - CoFound{% endblock %}
+
+{% block content %}
+<div class="oauth-provider {{ provider.id }}">
+    <div class="oauth-provider-icon">
+        {% if provider.id == 'linkedin_oauth2' %}
+            <i class="bi bi-linkedin"></i>
+        {% elif provider.id == 'google' %}
+            <i class="bi bi-google"></i>
+        {% elif provider.id == 'twitter_oauth2' %}
+            <i class="bi bi-twitter-x"></i>
+        {% elif provider.id == 'apple' %}
+            <i class="bi bi-apple"></i>
+        {% else %}
+            <i class="bi bi-person-circle"></i>
+        {% endif %}
+    </div>
+</div>
+
+<h1>{% trans "Sign In Via" %} {{ provider.name }}</h1>
+
+<p>{% blocktrans with provider.name as provider %}You are about to sign in using a third-party account from {{ provider }}.{% endblocktrans %}</p>
+
+<form method="post">
+    {% csrf_token %}
+    {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+    {% endif %}
+    <button type="submit" class="btn btn-primary">
+        <span class="spinner" style="display: none;"></span>
+        {% trans "Continue" %}
+    </button>
+</form>
+
+<script>
+// Add loading state to button
+document.querySelector('form').addEventListener('submit', function() {
+    const button = this.querySelector('button[type="submit"]');
+    const spinner = button.querySelector('.spinner');
+    const originalText = button.textContent;
+    
+    button.disabled = true;
+    spinner.style.display = 'inline-block';
+    button.textContent = '{% trans "Connecting..." %}';
+    
+    // Re-enable after 5 seconds in case of error
+    setTimeout(function() {
+        button.disabled = false;
+        spinner.style.display = 'none';
+        button.textContent = originalText;
+    }, 5000);
+});
+</script>
+{% endblock %}

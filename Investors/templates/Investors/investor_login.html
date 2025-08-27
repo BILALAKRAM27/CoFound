@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
@@ -37,7 +38,7 @@
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            background: linear-gradient(135deg, var(--cf-primary) 0%, #2563eb 100%);
             min-height: 100vh;
             position: relative;
             overflow-x: hidden;
@@ -81,17 +82,7 @@
             backdrop-filter: blur(10px);
         }
 
-        .login-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
-            border-radius: 20px 20px 0 0;
-        }
-
+        
         .login-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
@@ -366,14 +357,51 @@
         [data-bs-theme="dark"] .register-link {
             border-color: var(--cf-sidebar-border);
         }
+        .brand-section {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .brand-logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+            border-radius: 20px;
+            margin-bottom: 1rem;
+            box-shadow: var(--cf-card-shadow);
+        }
+
+        .brand-logo i {
+            font-size: 2rem;
+            color: white;
+        }
+
+        .brand-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--cf-text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .brand-subtitle {
+            font-size: 0.95rem;
+            color: var(--cf-text-secondary);
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="login-card">
             <div class="brand-section">
-                <a href="#" class="brand-logo">CoFound</a>
-                <p class="brand-tagline">Connecting ideas with capital</p>
+                <div class="brand-logo">
+                    <img src="{% static 'Investors/assests/startup.png' %}" style="width: 30px; height: 30px;" alt="CoFound" class="navbar-logo">
+                </div>
+                <h1 class="brand-title">CoFound</h1>
+                <p class="brand-subtitle">Investor Login</p>
             </div>
 
             <!-- Django Messages -->
@@ -461,9 +489,7 @@
                     Log In
                 </button>
 
-                <div class="forgot-password">
-                    <a href="#" id="forgotPassword">Forgot your password?</a>
-                </div>
+                
             </form>
 
             <div class="register-link">

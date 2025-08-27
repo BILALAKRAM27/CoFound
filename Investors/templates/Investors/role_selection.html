@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Choose Your Role - CoFound{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h2 class="mb-0">
+                        <i class="bi bi-person-badge me-3"></i>
+                        Welcome to CoFound!
+                    </h2>
+                    <p class="mb-0 mt-2 opacity-75">Please select your role to continue</p>
+                </div>
+                
+                <div class="card-body p-5">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row g-4">
+                            <!-- Entrepreneur Role -->
+                            <div class="col-md-6">
+                                <div class="role-option text-center p-4 border rounded h-100" 
+                                     onclick="selectRole('entrepreneur')" 
+                                     style="cursor: pointer; transition: all 0.3s ease;">
+                                    <div class="mb-3">
+                                        <i class="bi bi-lightbulb display-4 text-warning"></i>
+                                    </div>
+                                    <h4 class="text-primary mb-3">Entrepreneur</h4>
+                                    <p class="text-muted mb-3">
+                                        You have innovative ideas and want to build the next big thing. 
+                                        Connect with investors, find co-founders, and grow your startup.
+                                    </p>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="role" 
+                                               id="entrepreneur" value="entrepreneur" required>
+                                        <label class="form-check-label fw-bold" for="entrepreneur">
+                                            I'm an Entrepreneur
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Investor Role -->
+                            <div class="col-md-6">
+                                <div class="role-option text-center p-4 border rounded h-100" 
+                                     onclick="selectRole('investor')" 
+                                     style="cursor: pointer; transition: all 0.3s ease;">
+                                    <div class="mb-3">
+                                        <i class="bi bi-graph-up-arrow display-4 text-success"></i>
+                                    </div>
+                                    <h4 class="text-success mb-3">Investor</h4>
+                                    <p class="text-muted mb-3">
+                                        You have capital and want to invest in promising startups. 
+                                        Discover innovative companies and build your portfolio.
+                                    </p>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="role" 
+                                               id="investor" value="investor" required>
+                                        <label class="form-check-label fw-bold" for="investor">
+                                            I'm an Investor
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-5">
+                            <button type="submit" class="btn btn-primary btn-lg px-5" id="continueBtn" disabled>
+                                <i class="bi bi-arrow-right me-2"></i>
+                                Continue
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <p class="text-muted">
+                    <i class="bi bi-info-circle me-2"></i>
+                    You can change your role later in your profile settings
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.role-option:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    border-color: var(--bs-primary) !important;
+}
+
+.role-option.selected {
+    background-color: var(--bs-primary);
+    color: white;
+    border-color: var(--bs-primary) !important;
+}
+
+.role-option.selected .text-muted {
+    color: rgba(255,255,255,0.8) !important;
+}
+
+.role-option.selected .text-primary,
+.role-option.selected .text-success {
+    color: white !important;
+}
+</style>
+
+<script>
+function selectRole(role) {
+    // Remove previous selection
+    document.querySelectorAll('.role-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    // Select new role
+    const selectedOption = document.querySelector(`[onclick="selectRole('${role}')"]`);
+    selectedOption.classList.add('selected');
+    
+    // Check the radio button
+    document.getElementById(role).checked = true;
+    
+    // Enable continue button
+    document.getElementById('continueBtn').disabled = false;
+    
+    // Add visual feedback
+    document.querySelectorAll('.role-option').forEach(option => {
+        if (option !== selectedOption) {
+            option.style.opacity = '0.6';
+        } else {
+            option.style.opacity = '1';
+        }
+    });
+}
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const selectedRole = document.querySelector('input[name="role"]:checked');
+    if (!selectedRole) {
+        e.preventDefault();
+        alert('Please select a role to continue.');
+    }
+});
+</script>
+{% endblock %}

@@ -1,6 +1,6 @@
 from django.db import models
 from django.db.models import Q
-from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.contrib.auth.models import AbstractUser, Group, Permission, BaseUserManager
 from rest_framework import serializers
 from django.conf import settings
 
@@ -75,6 +75,28 @@ INDUSTRY_CHOICES = [
 # -----------------------------
 # Core / Accounts / Shared
 # -----------------------------
+class UserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('role', 'entrepreneur')  # Default role for superuser
+        
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+        
+        return self.create_user(email, password, **extra_fields)
+
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('investor', 'Investor'),
@@ -85,7 +107,10 @@ class User(AbstractUser):
     username = None
     email = models.EmailField(unique=True)
 
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='entrepreneur')
+    
+    objects = UserManager()
+    
     MESSAGE_PRIVACY_CHOICES = [
         ('public', 'Public'),
         ('private', 'Private'),
@@ -114,7 +139,7 @@ class User(AbstractUser):
     )
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['role', 'first_name', 'last_name']
+    REQUIRED_FIELDS = ['first_name', 'last_name']
 
     def __str__(self):
         full = self.get_full_name().strip()
@@ -471,3 +496,61 @@ class MessageSerializer(serializers.ModelSerializer):
             import base64
             return base64.b64encode(obj.file_data).decode('utf-8')
         return None
+
+
+class Meeting(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('confirmed', 'Confirmed'),
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='organized_meetings')
+    participant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='participating_meetings')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    date = models.DateField()
+    time = models.TimeField()
+    duration = models.PositiveIntegerField(help_text='Duration in minutes', default=60)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    location = models.CharField(max_length=500, blank=True, help_text='Meeting location or video call link')
+    meeting_type = models.CharField(max_length=50, choices=[
+        ('in_person', 'In Person'),
+        ('video_call', 'Video Call'),
+        ('phone_call', 'Phone Call'),
+    ], default='video_call')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-date', '-time']
+        unique_together = ['organizer', 'participant', 'date', 'time']
+    
+    def __str__(self):
+        return f"{self.title} - {self.organizer} & {self.participant} on {self.date}"
+    
+    @property
+    def datetime(self):
+        """Return combined date and time as datetime"""
+        from django.utils import timezone
+        return timezone.make_aware(
+            timezone.datetime.combine(self.date, self.time)
+        )
+    
+    @property
+    def end_datetime(self):
+        """Return meeting end time"""
+        from datetime import timedelta
+        return self.datetime + timedelta(minutes=self.duration)
+    
+    def is_upcoming(self):
+        """Check if meeting is in the future"""
+        from django.utils import timezone
+        return self.datetime > timezone.now()
+    
+    def is_today(self):
+        """Check if meeting is today"""
+        from django.utils import timezone
+        today = timezone.now().date()
+        return self.date == today

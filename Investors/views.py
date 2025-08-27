@@ -25,6 +25,10 @@ from django.db.models import Sum
 from decimal import Decimal
 from .services import NotificationService
 from django.db import models
+from .forms import MeetingRequestForm
+from .models import Meeting
+from allauth.account.signals import user_signed_up
+from django.dispatch import receiver
 
 # Utility to add percent_raised to rounds
 def annotate_percent_raised(rounds):
@@ -1518,5 +1522,327 @@ def user_network(request, user_id):
         'network_hidden': False,
     }
     return render(request, 'user_network.html', context)
+
+@login_required
+def schedule_meeting(request, user_id):
+    """Schedule a meeting with another user"""
+    try:
+        target_user = User.objects.get(id=user_id)
+        if target_user == request.user:
+            messages.error(request, "You cannot schedule a meeting with yourself.")
+            return redirect('investors:profile', user_id=user_id)
+    except User.DoesNotExist:
+        messages.error(request, "User not found.")
+        return redirect('home')
+    
+    if request.method == 'POST':
+        form = MeetingRequestForm(request.POST)
+        if form.is_valid():
+            meeting = form.save(commit=False)
+            meeting.organizer = request.user
+            meeting.participant = target_user
+            
+            # Check for time conflicts
+            from django.db.models import Q
+            from datetime import timedelta
+            
+            meeting_start = meeting.datetime
+            meeting_end = meeting.end_datetime
+            
+            # Check if there are any overlapping meetings for either user
+            conflicting_meetings = Meeting.objects.filter(
+                Q(organizer__in=[request.user, target_user]) | 
+                Q(participant__in=[request.user, target_user])
+            ).filter(
+                Q(status='confirmed') | Q(status='pending')
+            ).filter(
+                Q(date=meeting.date) &
+                Q(
+                    Q(time__lt=meeting_end.time()) &
+                    Q(time__gte=meeting_start.time())
+                )
+            )
+            
+            if conflicting_meetings.exists():
+                messages.error(request, "There's a time conflict with an existing meeting.")
+            else:
+                meeting.save()
+                
+                # Create notification for the participant
+                Notification.objects.create(
+                    user=target_user,
+                    sender=request.user,
+                    notification_type='meeting',
+                    title=f'Meeting Request from {request.user.get_full_name()}',
+                    message=f'{request.user.get_full_name()} wants to meet with you on {meeting.date.strftime("%B %d")} at {meeting.time.strftime("%I:%M %p")}. Click to view and respond.',
+                    related_object_id=meeting.id,
+                    related_object_type='meeting'
+                )
+                
+                messages.success(request, f"Meeting request sent to {target_user.get_full_name()}!")
+                return redirect('investors:meetings')
+    else:
+        form = MeetingRequestForm()
+    
+    context = {
+        'form': form,
+        'target_user': target_user,
+    }
+    return render(request, 'Investors/schedule_meeting.html', context)
+
+@login_required
+def meetings_list(request):
+    """Display user's meetings (organized and participating)"""
+    from django.utils import timezone
+    today = timezone.now().date()
+    
+    # Get all meetings where user is organizer or participant
+    all_meetings = Meeting.objects.filter(
+        Q(organizer=request.user) | Q(participant=request.user)
+    ).select_related('organizer', 'participant').order_by('date', 'time')
+    
+    # Separate meetings by status
+    upcoming_meetings = all_meetings.filter(
+        Q(date__gte=today) & Q(status='confirmed')
+    )
+    
+    pending_meetings = all_meetings.filter(status='pending')
+    
+    # For pending meetings, show incoming requests first
+    incoming_requests = pending_meetings.filter(participant=request.user)
+    outgoing_requests = pending_meetings.filter(organizer=request.user)
+    
+    past_meetings = all_meetings.filter(
+        Q(date__lt=today) | Q(status__in=['rejected', 'cancelled'])
+    )
+    
+    context = {
+        'upcoming_meetings': upcoming_meetings,
+        'incoming_requests': incoming_requests,
+        'outgoing_requests': outgoing_requests,
+        'past_meetings': past_meetings,
+        'today': today,
+    }
+    return render(request, 'Investors/meetings_list.html', context)
+
+@login_required
+def respond_to_meeting(request, meeting_id, action):
+    """Accept or reject a meeting request"""
+    try:
+        # First, get the meeting regardless of status to show details
+        meeting = Meeting.objects.get(id=meeting_id)
+        
+        # Check if user is the participant
+        if meeting.participant != request.user:
+            messages.error(request, "You can only respond to meeting requests sent to you.")
+            return redirect('investors:meetings')
+        
+        # Check if meeting is still pending
+        if meeting.status != 'pending':
+            messages.warning(request, f"This meeting is already {meeting.status}. No action needed.")
+            return redirect('investors:meetings')
+            
+    except Meeting.DoesNotExist:
+        messages.error(request, "Meeting request not found.")
+        return redirect('investors:meetings')
+    
+    if action == 'accept':
+        meeting.status = 'confirmed'
+        meeting.save()
+        
+        # Create notification for organizer
+        Notification.objects.create(
+            user=meeting.organizer,
+            sender=request.user,
+            notification_type='meeting',
+            title=f'Meeting Accepted by {request.user.get_full_name()}',
+            message=f'{request.user.get_full_name()} accepted your meeting request for {meeting.title} on {meeting.date.strftime("%B %d")}.',
+            related_object_id=meeting.id,
+            related_object_type='meeting'
+        )
+        
+        messages.success(request, "Meeting accepted!")
+        
+    elif action == 'reject':
+        meeting.status = 'rejected'
+        meeting.save()
+        
+        # Create notification for organizer
+        Notification.objects.create(
+            user=meeting.organizer,
+            sender=request.user,
+            notification_type='meeting',
+            title=f'Meeting Declined by {request.user.get_full_name()}',
+            message=f'{request.user.get_full_name()} declined your meeting request for {meeting.title} on {meeting.date.strftime("%B %d")}.',
+            related_object_id=meeting.id,
+            related_object_type='meeting'
+        )
+        
+        messages.info(request, "Meeting declined.")
+    
+    return redirect('investors:meetings')
+
+@login_required
+def cancel_meeting(request, meeting_id):
+    """Cancel a confirmed meeting"""
+    try:
+        meeting = Meeting.objects.get(
+            id=meeting_id, 
+            organizer=request.user, 
+            status='confirmed'
+        )
+    except Meeting.DoesNotExist:
+        messages.error(request, "Meeting not found or you cannot cancel it.")
+        return redirect('investors:meetings')
+    
+    if request.method == 'POST':
+        meeting.status = 'cancelled'
+        meeting.save()
+        
+        # Create notification for participant
+        Notification.objects.create(
+            user=meeting.participant,
+            sender=request.user,
+            notification_type='meeting',
+            title=f'Meeting Cancelled by {request.user.get_full_name()}',
+            message=f'{request.user.get_full_name()} cancelled the meeting "{meeting.title}" scheduled for {meeting.date.strftime("%B %d")}.',
+            related_object_id=meeting.id,
+            related_object_type='meeting'
+        )
+        
+        messages.success(request, "Meeting cancelled successfully.")
+        return redirect('investors:meetings')
+    
+    context = {'meeting': meeting}
+    return render(request, 'Investors/cancel_meeting_confirm.html', context)
+
+@login_required
+def meeting_calendar(request):
+    """Display meetings in a calendar view"""
+    from django.utils import timezone
+    from datetime import datetime, timedelta
+    import calendar
+    
+    # Get current month
+    now = timezone.now()
+    year = request.GET.get('year', now.year)
+    month = request.GET.get('month', now.month)
+    
+    try:
+        year, month = int(year), int(month)
+    except ValueError:
+        year, month = now.year, now.month
+    
+    # Create calendar
+    cal = calendar.monthcalendar(year, month)
+    
+    # Get meetings for this month
+    start_date = datetime(year, month, 1).date()
+    if month == 12:
+        end_date = datetime(year + 1, 1, 1).date()
+    else:
+        end_date = datetime(year, month + 1, 1).date()
+    
+    meetings = Meeting.objects.filter(
+        Q(organizer=request.user) | Q(participant=request.user)
+    ).filter(
+        date__gte=start_date,
+        date__lt=end_date
+    ).select_related('organizer', 'participant')
+    
+    # Organize meetings by date
+    meetings_by_date = {}
+    for meeting in meetings:
+        date_key = meeting.date.isoformat()
+        if date_key not in meetings_by_date:
+            meetings_by_date[date_key] = []
+        meetings_by_date[date_key].append(meeting)
+    
+    # Navigation
+    prev_month = month - 1 if month > 1 else 12
+    prev_year = year if month > 1 else year - 1
+    next_month = month + 1 if month < 12 else 1
+    next_year = year if month < 12 else year + 1
+    
+    context = {
+        'calendar': cal,
+        'year': year,
+        'month': month,
+        'month_name': calendar.month_name[month],
+        'meetings_by_date': meetings_by_date,
+        'prev_month': prev_month,
+        'prev_year': prev_year,
+        'next_month': next_month,
+        'next_year': next_year,
+        'today': now.date(),
+    }
+    return render(request, 'Investors/meeting_calendar.html', context)
+
+# OAuth Signal Handler
+@receiver(user_signed_up)
+def handle_investor_oauth_signup(sender, request, user, **kwargs):
+    """Handle OAuth signup for investors"""
+    try:
+        if user.role == 'investor':
+            # Create investor profile if it doesn't exist
+            InvestorProfile.objects.get_or_create(user=user)
+        elif user.role == 'entrepreneur':
+            # Create entrepreneur profile if it doesn't exist
+            from Entrepreneurs.models import EntrepreneurProfile
+            EntrepreneurProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    'company_stage': 'idea',
+                    'team_size': '1',
+                    'funding_raised': 'no_funding'
+                }
+            )
+    except Exception as e:
+        # Log the error but don't break the registration process
+        print(f"Error in Investor OAuth signal handler: {e}")
+        pass
+
+def oauth_callback(request):
+    """Handle OAuth callback and role selection for new investors"""
+    if request.user.is_authenticated:
+        # User is already authenticated, redirect to appropriate dashboard
+        if request.user.role == 'entrepreneur':
+            return redirect('entrepreneurs:dashboard')
+        elif request.user.role == 'investor':
+            return redirect('investors:dashboard')
+        else:
+            # User has no role, redirect to role selection
+            return redirect('investors:role_selection')
+    
+    # If not authenticated, redirect to login
+    return redirect('investors:login')
+
+def role_selection(request):
+    """Allow OAuth users to select their role"""
+    if request.method == 'POST':
+        role = request.POST.get('role')
+        if role in ['entrepreneur', 'investor']:
+            request.user.role = role
+            request.user.save()
+            
+            # Create appropriate profile
+            if role == 'entrepreneur':
+                from Entrepreneurs.models import EntrepreneurProfile
+                EntrepreneurProfile.objects.get_or_create(
+                    user=request.user,
+                    defaults={
+                        'company_stage': 'idea',
+                        'team_size': '1',
+                        'funding_raised': 'no_funding'
+                    }
+                )
+                messages.success(request, 'Welcome to CoFound as an Entrepreneur!')
+                return redirect('entrepreneurs:dashboard')
+            else:
+                InvestorProfile.objects.get_or_create(user=request.user)
+                messages.success(request, 'Welcome to CoFound as an Investor!')
+                return redirect('investors:dashboard')
+    
+    return render(request, 'Investors/role_selection.html')
 
 

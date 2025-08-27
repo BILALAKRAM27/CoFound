@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Meetings - CoFound{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-calendar-event me-2"></i>My Meetings</h2>
+                <a href="{% url 'investors:meeting_calendar' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-calendar3 me-2"></i>Calendar View
+                </a>
+            </div>
+
+            <!-- Incoming Meeting Requests -->
+            {% if incoming_requests %}
+            <div class="card mb-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock me-2"></i>Pending Requests ({{ incoming_requests.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for meeting in incoming_requests %}
+                    <div class="meeting-item border rounded p-3 mb-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">{{ meeting.title }}</h6>
+                                <p class="text-muted mb-1">{{ meeting.description|truncatechars:100 }}</p>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-calendar me-1"></i>{{ meeting.date|date:"M d, Y" }}
+                                    </span>
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-clock me-1"></i>{{ meeting.time|time:"g:i A" }}
+                                    </span>
+                                    <span class="badge bg-primary">{{ meeting.duration }} min</span>
+                                    <span class="badge bg-warning">{{ meeting.meeting_type|title }}</span>
+                                </div>
+                                <small class="text-muted">
+                                    From: <strong>{{ meeting.organizer.get_full_name }}</strong> 
+                                    ({{ meeting.organizer.role|title }})
+                                </small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'investors:respond_to_meeting' meeting.id 'accept' %}" 
+                                       class="btn btn-success btn-sm">
+                                        <i class="bi bi-check-lg me-1"></i>Accept
+                                    </a>
+                                    <a href="{% url 'investors:respond_to_meeting' meeting.id 'reject' %}" 
+                                       class="btn btn-danger btn-sm">
+                                        <i class="bi bi-x-lg me-1"></i>Decline
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Outgoing Meeting Requests -->
+            {% if outgoing_requests %}
+            <div class="card mb-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-hourglass-split me-2"></i>Sent Requests ({{ outgoing_requests.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for meeting in outgoing_requests %}
+                    <div class="meeting-item border rounded p-3 mb-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">{{ meeting.title }}</h6>
+                                <p class="text-muted mb-1">{{ meeting.description|truncatechars:100 }}</p>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-calendar me-1"></i>{{ meeting.date|date:"M d, Y" }}
+                                    </span>
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-clock me-1"></i>{{ meeting.time|time:"g:i A" }}
+                                    </span>
+                                    <span class="badge bg-primary">{{ meeting.duration }} min</span>
+                                    <span class="badge bg-warning">{{ meeting.meeting_type|title }}</span>
+                                </div>
+                                <small class="text-muted">
+                                    To: <strong>{{ meeting.participant.get_full_name }}</strong> 
+                                    ({{ meeting.participant.role|title }})
+                                </small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <span class="badge bg-warning">Waiting for response</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Upcoming Confirmed Meetings -->
+            {% if upcoming_meetings %}
+            <div class="card mb-4 border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calendar-check me-2"></i>Upcoming Meetings ({{ upcoming_meetings.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for meeting in upcoming_meetings %}
+                    <div class="meeting-item border rounded p-3 mb-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">{{ meeting.title }}</h6>
+                                <p class="text-muted mb-1">{{ meeting.description|truncatechars:100 }}</p>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-calendar me-1"></i>{{ meeting.date|date:"M d, Y" }}
+                                    </span>
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-clock me-1"></i>{{ meeting.time|time:"g:i A" }}
+                                    </span>
+                                    <span class="badge bg-primary">{{ meeting.duration }} min</span>
+                                    <span class="badge bg-success">{{ meeting.meeting_type|title }}</span>
+                                </div>
+                                {% if meeting.location %}
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-geo-alt me-1"></i>{{ meeting.location }}
+                                    </small>
+                                </div>
+                                {% endif %}
+                                <small class="text-muted">
+                                    {% if meeting.organizer == request.user %}
+                                        With: <strong>{{ meeting.participant.get_full_name }}</strong>
+                                    {% else %}
+                                        With: <strong>{{ meeting.organizer.get_full_name }}</strong>
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                {% if meeting.organizer == request.user and meeting.status in 'pending,confirmed' %}
+                                <a href="{% url 'investors:cancel_meeting' meeting.id %}" 
+                                   class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-x-circle me-1"></i>Cancel
+                                </a>
+                                {% endif %}
+                                {% if meeting.is_today %}
+                                <span class="badge bg-danger">Today!</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Past Meetings -->
+            {% if past_meetings %}
+            <div class="card border-secondary">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calendar-x me-2"></i>Past Meetings ({{ past_meetings.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for meeting in past_meetings %}
+                    <div class="meeting-item border rounded p-3 mb-3 opacity-75">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">{{ meeting.title }}</h6>
+                                <p class="text-muted mb-1">{{ meeting.description|truncatechars:100 }}</p>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-calendar me-1"></i>{{ meeting.date|date:"M d, Y" }}
+                                    </span>
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-clock me-1"></i>{{ meeting.time|time:"g:i A" }}
+                                    </span>
+                                    <span class="badge bg-{% if meeting.status == 'rejected' %}danger{% elif meeting.status == 'cancelled' %}warning{% else %}secondary{% endif %}">
+                                        {{ meeting.status|title }}
+                                    </span>
+                                </div>
+                                <small class="text-muted">
+                                    {% if meeting.organizer == request.user %}
+                                        With: <strong>{{ meeting.participant.get_full_name }}</strong>
+                                    {% else %}
+                                        With: <strong>{{ meeting.organizer.get_full_name }}</strong>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- No Meetings Message -->
+            {% if not incoming_requests and not outgoing_requests and not upcoming_meetings and not past_meetings %}
+            <div class="text-center py-5">
+                <i class="bi bi-calendar-event display-1 text-muted"></i>
+                <h4 class="text-muted mt-3">No meetings yet</h4>
+                <p class="text-muted">Start scheduling meetings with other users to connect and collaborate.</p>
+                <a href="{% url 'home' %}" class="btn btn-primary">
+                    <i class="bi bi-search me-2"></i>Find People to Meet
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

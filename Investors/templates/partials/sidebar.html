@@ -15,7 +15,9 @@
         {% else %}
             <i class="bi bi-person-circle fs-1 text-white mb-3 d-block"></i>
         {% endif %}
-        <h6 class="mb-1">{{ user.get_full_name|default:user.email }}</h6>
+        {% if user.is_authenticated %}
+            <h6 class="mb-1">{{ user.get_full_name|default:user.email }}</h6>
+        {% endif %}
         <small class="opacity-75">
             {% if user.role == 'entrepreneur' %}
                 {% if user.entrepreneur_profile.company_name %}

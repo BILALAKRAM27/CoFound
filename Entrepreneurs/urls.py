@@ -54,3 +54,18 @@ urlpatterns += [
     path('notifications/unread-count/', views.get_unread_count, name='get_unread_count'),
     path('notifications/data/', views.get_notifications_data, name='get_notifications_data'),
 ]
+
+# Meeting URLs
+urlpatterns += [
+    path('schedule-meeting/<int:user_id>/', views.schedule_meeting, name='schedule_meeting'),
+    path('meetings/', views.meetings_list, name='meetings'),
+    path('meetings/calendar/', views.meeting_calendar, name='meeting_calendar'),
+    path('meetings/<int:meeting_id>/<str:action>/', views.respond_to_meeting, name='respond_to_meeting'),
+    path('meetings/<int:meeting_id>/cancel/', views.cancel_meeting, name='cancel_meeting'),
+]
+
+# OAuth Authentication URLs
+urlpatterns += [
+    path('oauth/callback/', views.oauth_callback, name='oauth_callback'),
+    path('role-selection/', views.role_selection, name='role_selection'),
+]

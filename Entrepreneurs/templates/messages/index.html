@@ -969,7 +969,7 @@
     });
     
     // Use server-side search for all users
-    const currentUserRole = '{{ user.role }}' || 'entrepreneur';
+    const currentUserRole = '{% if user.is_authenticated %}{{ user.role }}{% endif %}' || 'entrepreneur';
     const searchEndpoint = currentUserRole === 'investor' ? '/investor/messages/search/' : '/entrepreneur/messages/search/';
     
     fetch(`${searchEndpoint}?q=${encodeURIComponent(q)}`)
@@ -1182,7 +1182,7 @@
     }
     
     // Fetch existing messages
-    const currentUserRole = '{{ user.role }}' || 'entrepreneur';
+    const currentUserRole = '{% if user.is_authenticated %}{{ user.role }}{% endif %}' || 'entrepreneur';
     const endpoint = currentUserRole === 'investor' ? `/investor/messages/${peerId}/` : `/entrepreneur/messages/${peerId}/`;
     fetch(endpoint, {
         headers: {
@@ -1582,7 +1582,7 @@
       window.history.replaceState({}, document.title, window.location.pathname);
     } else {
       // User not in recent chats, search for them
-      const currentUserRole = '{{ user.role }}' || 'entrepreneur';
+      const currentUserRole = '{% if user.is_authenticated %}{{ user.role }}{% endif %}' || 'entrepreneur';
       const searchEndpoint = currentUserRole === 'investor' ? `/investor/messages/search/` : `/entrepreneur/messages/search/`;
       fetch(`${searchEndpoint}?q=${openChatId}`)
         .then(r => r.json())

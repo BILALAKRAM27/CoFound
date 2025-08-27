@@ -41,7 +41,7 @@
                             <div class="col-md-6 col-lg-4 mb-3">
                                 <div class="card h-100">
                                     <div class="card-body text-center">
-                                        <a href="{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' user.id %}{% else %}{% url 'investors:profile_detail' user.id %}{% endif %}">
+                                        <a href="{% if user.is_authenticated and user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' user.id %}{% else %}{% url 'investors:profile_detail' user.id %}{% endif %}">
                                             {% if user|get_profile_image %}
                                                 <img src="data:image/jpeg;base64,{{ user|get_profile_image|b64encode_blob }}" class="rounded-circle mb-2" width="60" height="60">
                                             {% else %}
@@ -49,15 +49,15 @@
                                             {% endif %}
                                         </a>
                                         <h6 class="card-title mb-1">
-                                            <a href="{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' user.id %}{% else %}{% url 'investors:profile_detail' user.id %}{% endif %}" class="text-decoration-none">
-                                                {{ user.get_full_name|default:user.email }}
+                                            <a href="{% if user.is_authenticated and user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' user.id %}{% else %}{% url 'investors:profile_detail' user.id %}{% endif %}" class="text-decoration-none">
+                                                {% if user.is_authenticated %}{{ user.get_full_name|default:user.email }}{% endif %}
                                             </a>
                                         </h6>
-                                        <p class="text-muted small mb-2">{{ user.role|title }}</p>
-                                        {% if user.role == 'entrepreneur' and user.entrepreneur_profile.company_name %}
-                                            <p class="text-muted small mb-2">{{ user.entrepreneur_profile.company_name }}</p>
-                                        {% elif user.role == 'investor' and user.investor_profile.firm_name %}
-                                            <p class="text-muted small mb-2">{{ user.investor_profile.firm_name }}</p>
+                                        <p class="text-muted small mb-2">{% if user.is_authenticated %}{{ user.role|title }}{% endif %}</p>
+                                        {% if user.is_authenticated and user.role == 'entrepreneur' and user.entrepreneur_profile.company_name %}
+                                            <p class="text-muted small mb-0">{{ user.entrepreneur_profile.company_name }}</p>
+                                        {% elif user.is_authenticated and user.role == 'investor' and user.investor_profile.firm_name %}
+                                            <p class="text-muted small mb-0">{{ user.investor_profile.firm_name }}</p>
                                         {% endif %}
                                         {% if user != request.user %}
                                             {% with status=request.user|connection_status:user %}
@@ -99,7 +99,7 @@
                             <div class="col-md-6 col-lg-4 mb-3">
                                 <div class="card h-100">
                                     <div class="card-body text-center">
-                                        <a href="{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' user.id %}{% else %}{% url 'investors:profile_detail' user.id %}{% endif %}">
+                                        <a href="{% if user.is_authenticated and user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' user.id %}{% else %}{% url 'investors:profile_detail' user.id %}{% endif %}">
                                             {% if user|get_profile_image %}
                                                 <img src="data:image/jpeg;base64,{{ user|get_profile_image|b64encode_blob }}" class="rounded-circle mb-2" width="60" height="60">
                                             {% else %}
@@ -107,15 +107,15 @@
                                             {% endif %}
                                         </a>
                                         <h6 class="card-title mb-1">
-                                            <a href="{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' user.id %}{% else %}{% url 'investors:profile_detail' user.id %}{% endif %}" class="text-decoration-none">
-                                                {{ user.get_full_name|default:user.email }}
+                                            <a href="{% if user.is_authenticated and user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile_detail' user.id %}{% else %}{% url 'investors:profile_detail' user.id %}{% endif %}" class="text-decoration-none">
+                                                {% if user.is_authenticated %}{{ user.get_full_name|default:user.email }}{% endif %}
                                             </a>
                                         </h6>
-                                        <p class="text-muted small mb-2">{{ user.role|title }}</p>
-                                        {% if user.role == 'entrepreneur' and user.entrepreneur_profile.company_name %}
-                                            <p class="text-muted small mb-2">{{ user.entrepreneur_profile.company_name }}</p>
-                                        {% elif user.role == 'investor' and user.investor_profile.firm_name %}
-                                            <p class="text-muted small mb-2">{{ user.investor_profile.firm_name }}</p>
+                                        <p class="text-muted small mb-2">{% if user.is_authenticated %}{{ user.role|title }}{% endif %}</p>
+                                        {% if user.is_authenticated and user.role == 'entrepreneur' and user.entrepreneur_profile.company_name %}
+                                            <p class="text-muted small mb-0">{{ user.entrepreneur_profile.company_name }}</p>
+                                        {% elif user.is_authenticated and user.role == 'investor' and user.investor_profile.firm_name %}
+                                            <p class="text-muted small mb-0">{{ user.investor_profile.firm_name }}</p>
                                         {% endif %}
                                         {% if user != request.user %}
                                             {% with status=request.user|connection_status:user %}

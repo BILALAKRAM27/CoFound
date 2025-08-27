@@ -1,0 +1,288 @@
+/* OAuth Pages Styling for CoFound */
+
+:root {
+    --cf-primary: #1e3a8a;
+    --cf-secondary: #0ea5e9;
+    --cf-accent: #f59e0b;
+    --cf-success: #10b981;
+    --cf-sidebar-bg: #f8fafc;
+    --cf-sidebar-border: #e2e8f0;
+    --cf-text-primary: #1f2937;
+    --cf-text-secondary: #6b7280;
+    --cf-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Global styles for OAuth pages */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    color: var(--cf-text-primary);
+}
+
+/* Container styling */
+.container {
+    max-width: 500px;
+    margin: 2rem auto;
+    padding: 2rem;
+}
+
+/* Card styling */
+.card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    box-shadow: var(--cf-card-shadow);
+    border: none;
+    padding: 2.5rem;
+    backdrop-filter: blur(10px);
+}
+
+/* Header styling */
+h1 {
+    color: var(--cf-primary);
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 1rem;
+    letter-spacing: -0.025em;
+}
+
+/* Description text */
+p {
+    color: var(--cf-text-secondary);
+    text-align: center;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+/* Button styling */
+.btn {
+    display: inline-block;
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--cf-primary) 0%, #1e40af 100%);
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px -3px rgba(30, 58, 138, 0.4);
+}
+
+.btn-secondary {
+    background: #f8fafc;
+    color: var(--cf-text-primary);
+    border: 2px solid #e2e8f0;
+}
+
+.btn-secondary:hover {
+    background: #f1f5f9;
+    border-color: var(--cf-secondary);
+    color: var(--cf-secondary);
+}
+
+/* Menu styling */
+.menu {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+}
+
+.menu h2 {
+    color: var(--cf-text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.menu a {
+    display: block;
+    padding: 0.75rem 1rem;
+    margin: 0.5rem 0;
+    color: var(--cf-primary);
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+    font-weight: 500;
+}
+
+.menu a:hover {
+    background: var(--cf-sidebar-bg);
+    color: var(--cf-secondary);
+    transform: translateX(4px);
+}
+
+/* Form styling */
+form {
+    margin-top: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--cf-text-primary);
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.2s ease-in-out;
+    background: white;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+    outline: none;
+    border-color: var(--cf-secondary);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+/* Alert styling */
+.alert {
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    border: none;
+    font-weight: 500;
+}
+
+.alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+    border-left: 4px solid var(--cf-success);
+}
+
+.alert-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #991b1b;
+    border-left: 4px solid #ef4444;
+}
+
+.alert-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #92400e;
+    border-left: 4px solid var(--cf-accent);
+}
+
+/* Loading spinner */
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 0.5rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .container {
+        margin: 1rem;
+        padding: 1rem;
+    }
+    
+    .card {
+        padding: 1.5rem;
+    }
+    
+    h1 {
+        font-size: 1.75rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+    }
+}
+
+/* OAuth provider specific styling */
+.oauth-provider {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.oauth-provider-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 1rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.oauth-provider.linkedin .oauth-provider-icon {
+    background: #0077b5;
+}
+
+.oauth-provider.google .oauth-provider-icon {
+    background: #4285f4;
+}
+
+.oauth-provider.twitter .oauth-provider-icon {
+    background: #1da1f2;
+}
+
+.oauth-provider.apple .oauth-provider-icon {
+    background: #000000;
+}
+
+/* Back to home link */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--cf-text-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    margin-top: 1rem;
+    transition: color 0.2s ease-in-out;
+}
+
+.back-link:hover {
+    color: var(--cf-primary);
+}
+
+.back-link::before {
+    content: "←";
+    margin-right: 0.5rem;
+    font-weight: bold;
+}

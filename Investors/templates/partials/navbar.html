@@ -60,6 +60,13 @@
                 </a>
             </li>
 
+            <!-- Meetings -->
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'entrepreneurs:meetings' %}" title="Meetings">
+                    <i class="bi bi-calendar-event fs-5"></i>
+                </a>
+            </li>
+
             <!-- Notifications -->
             <li class="nav-item">
                 <a class="nav-link position-relative" href="{% url 'investors:notifications_list' %}" title="Notifications" id="notificationLink">
@@ -88,12 +95,12 @@
                     {% endif %}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile' %}{% else %}{% url 'investors:profile' %}{% endif %}">
+                    <li><a class="dropdown-item" href="{% if user.is_authenticated and user.role == 'entrepreneur' %}{% url 'entrepreneurs:profile' %}{% else %}{% url 'investors:profile' %}{% endif %}">
                         <i class="bi bi-person me-2"></i>My Profile
                     </a></li>
                     <li><a class="dropdown-item" href="{% url 'investors:message_settings' %}?next={{ request.path }}"><i class="bi bi-gear me-2"></i>Settings</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:logout' %}{% else %}{% url 'investors:logout' %}{% endif %}">
+                    <li><a class="dropdown-item" href="{% if user.is_authenticated and user.role == 'entrepreneur' %}{% url 'entrepreneurs:logout' %}{% else %}{% url 'investors:logout' %}{% endif %}">
                         <i class="bi bi-box-arrow-right me-2"></i>Logout
                     </a></li>
                 </ul>
@@ -494,7 +501,7 @@ document.addEventListener('DOMContentLoaded', function() {
         seeAllButton.addEventListener('click', function(e) {
             e.preventDefault();
             if (currentQuery) {
-                window.location.href = `{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:search_results_page' %}{% else %}{% url 'investors:search_results_page' %}{% endif %}?q=${encodeURIComponent(currentQuery)}`;
+                window.location.href = `{% if user.is_authenticated and user.role == 'entrepreneur' %}{% url 'entrepreneurs:search_results_page' %}{% else %}{% url 'investors:search_results_page' %}{% endif %}?q=${encodeURIComponent(currentQuery)}`;
             }
         });
     }
@@ -503,13 +510,13 @@ document.addEventListener('DOMContentLoaded', function() {
         mobileSeeAllButton.addEventListener('click', function(e) {
             e.preventDefault();
             if (currentQuery) {
-                window.location.href = `{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:search_results_page' %}{% else %}{% url 'investors:search_results_page' %}{% endif %}?q=${encodeURIComponent(currentQuery)}`;
+                window.location.href = `{% if user.is_authenticated and user.role == 'entrepreneur' %}{% url 'entrepreneurs:search_results_page' %}{% else %}{% url 'investors:search_results_page' %}{% endif %}?q=${encodeURIComponent(currentQuery)}`;
             }
         });
     }
     
     function performSearch(query, resultsList, resultsFooter, seeAllBtn) {
-        const searchUrl = `{% if user.role == 'entrepreneur' %}{% url 'entrepreneurs:search_users' %}{% else %}{% url 'investors:search_users' %}{% endif %}?q=${encodeURIComponent(query)}`;
+        const searchUrl = `{% if user.is_authenticated and user.role == 'entrepreneur' %}{% url 'entrepreneurs:search_users' %}{% else %}{% url 'investors:search_users' %}{% endif %}?q=${encodeURIComponent(query)}`;
         
         console.log('Performing search for:', query);
         console.log('Search URL:', searchUrl);

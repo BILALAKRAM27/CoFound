@@ -74,3 +74,18 @@ urlpatterns += [
     path('search/results/', views.search_results_page, name='search_results_page'),
     path('portfolio-analytics/', views.portfolio_analytics, name='portfolio_analytics'),
 ]
+
+# Meeting URLs
+urlpatterns += [
+    path('schedule-meeting/<int:user_id>/', views.schedule_meeting, name='schedule_meeting'),
+    path('meetings/', views.meetings_list, name='meetings'),
+    path('meetings/calendar/', views.meeting_calendar, name='meeting_calendar'),
+    path('meetings/<int:meeting_id>/<str:action>/', views.respond_to_meeting, name='respond_to_meeting'),
+    path('meetings/<int:meeting_id>/cancel/', views.cancel_meeting, name='cancel_meeting'),
+]
+
+# OAuth Authentication URLs
+urlpatterns += [
+    path('oauth/callback/', views.oauth_callback, name='oauth_callback'),
+    path('role-selection/', views.role_selection, name='role_selection'),
+]

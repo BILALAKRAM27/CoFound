@@ -25,6 +25,14 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.db import models
+from .forms import MeetingRequestForm
+from .models import Meeting, Notification
+
+# OAuth Authentication
+from allauth.socialaccount.models import SocialAccount
+from allauth.account.signals import user_signed_up
+from django.dispatch import receiver
+from django.contrib.auth import get_user_model
 
 # --- Django Channels Consumer for Messaging (placeholder, to be moved to consumers.py) ---
 
@@ -85,7 +93,74 @@ def entrepreneur_login(request):
 def entrepreneur_logout(request):
     logout(request)
     messages.success(request, 'You have been logged out successfully.')
-    return redirect('index')  # Redirect to landing page
+    return redirect('entrepreneurs:login')
+
+# OAuth Signal Handler
+@receiver(user_signed_up)
+def handle_oauth_signup(sender, request, user, **kwargs):
+    """Handle OAuth signup to set user role and create profile"""
+    try:
+        if user.role == 'entrepreneur':
+            # Create entrepreneur profile if it doesn't exist
+            EntrepreneurProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    'company_stage': 'idea',
+                    'team_size': '1',
+                    'funding_raised': 'no_funding'
+                }
+            )
+        elif user.role == 'investor':
+            # Create investor profile if it doesn't exist
+            from Investors.models import InvestorProfile
+            InvestorProfile.objects.get_or_create(user=user)
+    except Exception as e:
+        # Log the error but don't break the registration process
+        print(f"Error in OAuth signal handler: {e}")
+        pass
+
+def oauth_callback(request):
+    """Handle OAuth callback and role selection for new users"""
+    if request.user.is_authenticated:
+        # User is already authenticated, redirect to appropriate dashboard
+        if request.user.role == 'entrepreneur':
+            return redirect('entrepreneurs:dashboard')
+        elif request.user.role == 'investor':
+            return redirect('investors:dashboard')
+        else:
+            # User has no role, redirect to role selection
+            return redirect('entrepreneurs:role_selection')
+    
+    # If not authenticated, redirect to login
+    return redirect('entrepreneurs:login')
+
+def role_selection(request):
+    """Allow OAuth users to select their role"""
+    if request.method == 'POST':
+        role = request.POST.get('role')
+        if role in ['entrepreneur', 'investor']:
+            request.user.role = role
+            request.user.save()
+            
+            # Create appropriate profile
+            if role == 'entrepreneur':
+                EntrepreneurProfile.objects.get_or_create(
+                    user=request.user,
+                    defaults={
+                        'company_stage': 'idea',
+                        'team_size': '1',
+                        'funding_raised': 'no_funding'
+                    }
+                )
+                messages.success(request, 'Welcome to CoFound as an Entrepreneur!')
+                return redirect('entrepreneurs:dashboard')
+            else:
+                from Investors.models import InvestorProfile
+                InvestorProfile.objects.get_or_create(user=request.user)
+                messages.success(request, 'Welcome to CoFound as an Investor!')
+                return redirect('investors:dashboard')
+    
+    return render(request, 'Entrepreneurs/role_selection.html')
 
 
 @login_required
@@ -1004,3 +1079,221 @@ def user_network(request, user_id):
         'network_hidden': False,
     }
     return render(request, 'user_network.html', context)
+
+@login_required
+def schedule_meeting(request, user_id):
+    """Schedule a meeting with another user"""
+    try:
+        target_user = User.objects.get(id=user_id)
+        if target_user == request.user:
+            messages.error(request, "You cannot schedule a meeting with yourself.")
+            return redirect('entrepreneurs:profile', user_id=user_id)
+    except User.DoesNotExist:
+        messages.error(request, "User not found.")
+        return redirect('home')
+    
+    if request.method == 'POST':
+        form = MeetingRequestForm(request.POST)
+        if form.is_valid():
+            meeting = form.save(commit=False)
+            meeting.organizer = request.user
+            meeting.participant = target_user
+            
+            # Check for time conflicts
+            from django.db.models import Q
+            from datetime import timedelta
+            
+            meeting_start = meeting.datetime
+            meeting_end = meeting.end_datetime
+            
+            # Check if there are any overlapping meetings for either user
+            conflicting_meetings = Meeting.objects.filter(
+                Q(organizer__in=[request.user, target_user]) | 
+                Q(participant__in=[request.user, target_user])
+            ).filter(
+                Q(status='confirmed') | Q(status='pending')
+            ).filter(
+                Q(date=meeting.date) &
+                Q(
+                    Q(time__lt=meeting_end.time()) &
+                    Q(time__gte=meeting_start.time())
+                )
+            )
+            
+            if conflicting_meetings.exists():
+                messages.error(request, "There's a time conflict with an existing meeting.")
+            else:
+                meeting.save()
+                
+                # Create notification for the participant
+                Notification.objects.create(
+                    user=target_user,
+                    sender=request.user,
+                    notification_type='meeting',
+                    title=f'Meeting Request from {request.user.get_full_name()}',
+                    message=f'{request.user.get_full_name()} wants to meet with you on {meeting.date.strftime("%B %d")} at {meeting.time.strftime("%I:%M %p")}. Click to view and respond.',
+                    related_object_id=meeting.id,
+                    related_object_type='meeting'
+                )
+                
+                messages.success(request, f"Meeting request sent to {target_user.get_full_name()}!")
+                return redirect('entrepreneurs:meetings')
+    else:
+        form = MeetingRequestForm()
+    
+    context = {
+        'form': form,
+        'target_user': target_user,
+    }
+    return render(request, 'Entrepreneurs/schedule_meeting.html', context)
+
+@login_required
+def meetings_list(request):
+    """Display user's meetings (organized and participating)"""
+    from django.utils import timezone
+    today = timezone.now().date()
+    
+    # Get all meetings where user is organizer or participant
+    all_meetings = Meeting.objects.filter(
+        Q(organizer=request.user) | Q(participant=request.user)
+    ).select_related('organizer', 'participant').order_by('date', 'time')
+    
+    # Separate meetings by status
+    upcoming_meetings = all_meetings.filter(
+        Q(date__gte=today) & Q(status='confirmed')
+    )
+    
+    pending_meetings = all_meetings.filter(status='pending')
+    
+    # For pending meetings, show incoming requests first
+    incoming_requests = pending_meetings.filter(participant=request.user)
+    outgoing_requests = pending_meetings.filter(organizer=request.user)
+    
+    past_meetings = all_meetings.filter(
+        Q(date__lt=today) | Q(status__in=['rejected', 'cancelled'])
+    )
+    
+    context = {
+        'upcoming_meetings': upcoming_meetings,
+        'incoming_requests': incoming_requests,
+        'outgoing_requests': outgoing_requests,
+        'past_meetings': past_meetings,
+        'today': today,
+    }
+    return render(request, 'Entrepreneurs/meetings_list.html', context)
+
+@login_required
+def respond_to_meeting(request, meeting_id, action):
+    """Accept or reject a meeting request"""
+    try:
+        # First, get the meeting regardless of status to show details
+        meeting = Meeting.objects.get(id=meeting_id)
+        
+        # Check if user is the participant
+        if meeting.participant != request.user:
+            messages.error(request, "You can only respond to meeting requests sent to you.")
+            return redirect('entrepreneurs:meetings')
+        
+        # Check if meeting is still pending
+        if meeting.status != 'pending':
+            messages.warning(request, f"This meeting is already {meeting.status}. No action needed.")
+            return redirect('entrepreneurs:meetings')
+            
+    except Meeting.DoesNotExist:
+        messages.error(request, "Meeting request not found.")
+        return redirect('entrepreneurs:meetings')
+    
+    if action == 'accept':
+        meeting.status = 'confirmed'
+        meeting.save()
+        
+        # Create notification for organizer
+        Notification.objects.create(
+            user=meeting.organizer,
+            sender=request.user,
+            notification_type='meeting',
+            title=f'Meeting Accepted by {request.user.get_full_name()}',
+            message=f'{request.user.get_full_name()} accepted your meeting request for {meeting.title} on {meeting.date.strftime("%B %d")}.',
+            related_object_id=meeting.id,
+            related_object_type='meeting'
+        )
+        
+        messages.success(request, "Meeting accepted!")
+        
+    elif action == 'reject':
+        meeting.status = 'rejected'
+        meeting.save()
+        
+        # Create notification for organizer
+        Notification.objects.create(
+            user=meeting.organizer,
+            sender=request.user,
+            notification_type='meeting',
+            title=f'Meeting Declined by {request.user.get_full_name()}',
+            message=f'{request.user.get_full_name()} declined your meeting request for {meeting.title} on {meeting.date.strftime("%B %d")}.',
+            related_object_id=meeting.id,
+            related_object_type='meeting'
+        )
+        
+        messages.info(request, "Meeting declined.")
+    
+    return redirect('entrepreneurs:meetings')
+
+@login_required
+def cancel_meeting(request, meeting_id):
+    """Cancel a meeting (pending or confirmed)"""
+    try:
+        # Allow cancellation of both pending and confirmed meetings
+        meeting = Meeting.objects.get(
+            id=meeting_id, 
+            organizer=request.user, 
+            status__in=['pending', 'confirmed']
+        )
+    except Meeting.DoesNotExist:
+        messages.error(request, "Meeting not found or you cannot cancel it.")
+        return redirect('entrepreneurs:meetings')
+    
+    if request.method == 'POST':
+        meeting.status = 'cancelled'
+        meeting.save()
+        
+        # Create notification for participant
+        Notification.objects.create(
+            user=meeting.participant,
+            sender=request.user,
+            notification_type='meeting',
+            title=f'Meeting Cancelled by {request.user.get_full_name()}',
+            message=f'{request.user.get_full_name()} cancelled the meeting "{meeting.title}" scheduled for {meeting.date.strftime("%B %d")}.',
+            related_object_id=meeting.id,
+            related_object_type='meeting'
+        )
+        
+        messages.success(request, "Meeting cancelled successfully.")
+        return redirect('entrepreneurs:meetings')
+    
+    context = {'meeting': meeting}
+    return render(request, 'Entrepreneurs/cancel_meeting_confirm.html', context)
+
+@login_required
+def meeting_calendar(request):
+    """Display meetings in a list view (calendar functionality removed)"""
+    from django.utils import timezone
+    
+    # Get all meetings for the current user
+    meetings = Meeting.objects.filter(
+        Q(organizer=request.user) | Q(participant=request.user)
+    ).order_by('date', 'time')
+    
+    # Organize meetings by date for display
+    meetings_by_date = {}
+    for meeting in meetings:
+        date_key = meeting.date.strftime('%Y-%m-%d')
+        if date_key not in meetings_by_date:
+            meetings_by_date[date_key] = []
+        meetings_by_date[date_key].append(meeting)
+    
+    context = {
+        'meetings_by_date': meetings_by_date,
+    }
+    
+    return render(request, 'Entrepreneurs/meeting_calendar.html', context)

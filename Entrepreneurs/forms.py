@@ -2,7 +2,7 @@ from django import forms
 from .models import (
     User, EntrepreneurProfile, Startup, StartupDocument,
     Review, CollaborationRequest, Message, Notification,
-    Favorite, ActivityLog, Post, Comment, PostMedia
+    Favorite, ActivityLog, Post, Comment, PostMedia, Meeting
 )
 
 # Message Settings Form
@@ -453,3 +453,32 @@ class CommentForm(forms.ModelForm):
     class Meta:
         model = Comment
         fields = ['content']
+
+
+class MeetingRequestForm(forms.ModelForm):
+    class Meta:
+        model = Meeting
+        fields = ['title', 'description', 'date', 'time', 'duration', 'location', 'meeting_type']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Meeting Title'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Meeting Description'}),
+            'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'duration': forms.Select(attrs={'class': 'form-control'}, choices=[
+                (15, '15 minutes'),
+                (30, '30 minutes'),
+                (45, '45 minutes'),
+                (60, '1 hour'),
+                (90, '1.5 hours'),
+                (120, '2 hours'),
+            ]),
+            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Meeting location or video call link'}),
+            'meeting_type': forms.Select(attrs={'class': 'form-control'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set minimum date to today
+        from django.utils import timezone
+        today = timezone.now().date()
+        self.fields['date'].widget.attrs['min'] = today.isoformat()

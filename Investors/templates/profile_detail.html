@@ -164,6 +164,10 @@
                                 <button class="btn btn-outline-secondary" onclick="openMessageChat('{{ profile_user.id }}', '{{ profile_user.role }}')">
                                     <i class="fa fa-commenting me-1"></i>Message
                                 </button>
+                                <!-- Schedule Meeting Button -->
+                                <a href="{% if user.is_authenticated and user.role == 'entrepreneur' %}{% url 'entrepreneurs:schedule_meeting' profile_user.id %}{% else %}{% url 'investors:schedule_meeting' profile_user.id %}{% endif %}" class="btn btn-primary">
+                                    <i class="fa fa-calendar-plus me-1"></i>Schedule Meeting
+                                </a>
                             {% endif %}
                         </div>
                         <div>
@@ -199,7 +203,7 @@
 function openMessageChat(userId, userRole) {
     // Redirect to the messages page with the user ID as a parameter
     // This will open the chat with the specific user
-    const currentUserRole = '{{ user.role }}'; // Get current user's role
+    const currentUserRole = '{% if user.is_authenticated %}{{ user.role }}{% endif %}'; // Get current user's role
     
     if (currentUserRole === 'investor') {
         // Current user is investor, redirect to investor messages page

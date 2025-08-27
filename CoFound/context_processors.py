@@ -9,7 +9,8 @@ def user_profile_context(request):
     context = {}
     debug_info = {}
 
-    if request.user.is_authenticated:
+    # Check if request has user attribute and if user is authenticated
+    if hasattr(request, 'user') and request.user.is_authenticated:
         try:
             # Get profile image
             if request.user.role == 'entrepreneur':
@@ -80,7 +81,7 @@ def user_profile_context(request):
         context['sidebar_connections_count'] = 0
         context['sidebar_posts_count'] = 0
         context['sidebar_profile_views'] = 0
-        debug_info['profile_image_type'] = 'Not authenticated'
+        debug_info['profile_image_type'] = 'Not authenticated or no user attribute'
         debug_info['profile_image_size'] = 0
 
     # Add debug info to context (remove/comment out in production)
