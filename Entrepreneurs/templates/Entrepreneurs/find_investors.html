@@ -5,40 +5,584 @@
 
 {% block content %}
 <div class="content-container">
-  <h3 class="mb-4">Find Investors</h3>
-  <div class="row g-3">
-    {% for inv in investors %}
-      <div class="col-12 col-sm-6 col-lg-4">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body d-flex gap-3">
-            <a href="{% url 'investors:profile_detail' inv.user.id %}">
-              {% if inv.user|get_profile_image %}
-                <img src="data:image/jpeg;base64,{{ inv.user|get_profile_image|b64encode_blob }}" class="rounded-circle" width="56" height="56" alt="">
-              {% else %}
-                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style="width:56px;height:56px;"><i class="bi bi-person"></i></div>
-              {% endif %}
-            </a>
-            <div class="flex-grow-1">
-              <h6 class="mb-1">
-                <a href="{% url 'investors:profile_detail' inv.user.id %}" class="text-decoration-none text-dark">{{ inv.user.get_full_name|default:inv.user.email }}</a>
-              </h6>
-              <small class="text-muted d-block">Investor • {{ inv.get_investment_stage_display|default:"Stage N/A" }}</small>
-              {% if inv.bio %}<p class="mb-2 small text-muted">{{ inv.bio|truncatechars:120 }}</p>{% endif %}
-              <div class="d-flex gap-2">
-                {% with status=user|connection_status:inv.user %}
-                  <button class="{% if status == 'accepted' %}following-btn{% else %}follow-btn{% endif %} btn-sm connect-toggle" data-target-id="{{ inv.user.id }}">
-                    {% if status == 'accepted' %}<i class="fa fa-check" aria-hidden="true"></i> Following{% else %}<i class="fa fa-plus" aria-hidden="true"></i> Follow{% endif %}
+  <!-- Enhanced Page Header -->
+  <div class="page-header mb-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+      <div>
+        <h3 class="fw-bold text-primary mb-2">
+          <i class="bi bi-people-fill me-2"></i>Find Investors
+        </h3>
+        <p class="text-muted mb-0">Connect with investors who share your vision</p>
+      </div>
+      
+      <!-- Search and Filter Controls -->
+      <div class="filter-controls d-flex flex-column flex-sm-row gap-2">
+        <div class="input-group" style="max-width: 300px;">
+          <span class="input-group-text bg-light border-end-0">
+            <i class="bi bi-search text-muted"></i>
+          </span>
+          <input type="text" class="form-control border-start-0 bg-light" placeholder="Search investors..." id="investorSearch">
+        </div>
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-funnel me-1"></i>Filter
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#">All Stages</a></li>
+            <li><a class="dropdown-item" href="#">Seed Stage</a></li>
+            <li><a class="dropdown-item" href="#">Series A</a></li>
+            <li><a class="dropdown-item" href="#">Series B+</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Investors Grid -->
+  <div class="investors-grid">
+    {% if investors %}
+      <div class="row g-4">
+        {% for inv in investors %}
+          <div class="col-12 col-sm-6 col-xl-4">
+            <div class="investor-card card h-100" data-investor-name="{{ inv.user.get_full_name|default:inv.user.email|lower }}">
+              <div class="card-body p-4">
+                <!-- Profile Section -->
+                <div class="profile-section d-flex gap-3 mb-3">
+                  <div class="profile-image-container position-relative">
+                    <a href="{% url 'investors:profile_detail' inv.user.id %}" class="profile-link">
+                      {% if inv.user|get_profile_image %}
+                        <img src="data:image/jpeg;base64,{{ inv.user|get_profile_image|b64encode_blob }}" 
+                             class="profile-image rounded-circle" 
+                             width="64" 
+                             height="64" 
+                             alt="{{ inv.user.get_full_name|default:inv.user.email }}">
+                      {% else %}
+                        <div class="profile-placeholder rounded-circle d-flex align-items-center justify-content-center">
+                          <i class="bi bi-person fs-4"></i>
+                        </div>
+                      {% endif %}
+                    </a>
+                    <div class="status-indicator online"></div>
+                  </div>
+                  
+                  <div class="profile-info flex-grow-1">
+                    <h5 class="investor-name mb-1">
+                      <a href="{% url 'investors:profile_detail' inv.user.id %}" 
+                         class="text-decoration-none profile-name-link">
+                        {{ inv.user.get_full_name|default:inv.user.email }}
+                      </a>
+                    </h5>
+                    <div class="investor-meta d-flex flex-column flex-sm-row gap-1 gap-sm-2 align-items-start align-items-sm-center">
+                      <span class="badge bg-primary-subtle text-primary rounded-pill">
+                        <i class="bi bi-briefcase me-1"></i>Investor
+                      </span>
+                      {% if inv.get_investment_stage_display %}
+                        <span class="badge bg-accent-subtle text-accent rounded-pill">
+                          {{ inv.get_investment_stage_display }}
+                        </span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bio Section -->
+                {% if inv.bio %}
+                  <div class="bio-section mb-4">
+                    <p class="bio-text text-muted mb-0">{{ inv.bio|truncatechars:120 }}</p>
+                  </div>
+                {% endif %}
+
+                <!-- Action Buttons -->
+                <div class="action-section d-flex gap-2 flex-wrap">
+                  {% with status=user|connection_status:inv.user %}
+                    <button class="btn {% if status == 'accepted' %}btn-success{% else %}btn-primary{% endif %} flex-grow-1 connect-toggle" 
+                            data-target-id="{{ inv.user.id }}"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="{% if status == 'accepted' %}You are following this investor{% else %}Follow this investor{% endif %}">
+                      {% if status == 'accepted' %}
+                        <i class="bi bi-check-circle me-1"></i>
+                        <span class="btn-text">Following</span>
+                      {% else %}
+                        <i class="bi bi-plus-circle me-1"></i>
+                        <span class="btn-text">Follow</span>
+                      {% endif %}
+                    </button>
+                  {% endwith %}
+                  
+                  <button class="btn btn-outline-primary message-btn" 
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          title="Send message">
+                    <i class="bi bi-chat-dots"></i>
+                    <span class="btn-text-mobile ms-1">Message</span>
                   </button>
-                {% endwith %}
-                <a href="#" class="btn btn-sm btn-outline-secondary"><i class="bi bi-chat-dots me-1"></i>Message</a>
+                </div>
+
+                
               </div>
             </div>
           </div>
-        </div>
+        {% endfor %}
       </div>
-    {% empty %}
-      <div class="text-muted">No investors found.</div>
-    {% endfor %}
+    {% else %}
+      <!-- Enhanced Empty State -->
+      <div class="empty-state text-center py-5">
+        <div class="empty-icon mb-4">
+          <i class="bi bi-search display-1 text-muted"></i>
+        </div>
+        <h4 class="text-muted mb-3">No investors found</h4>
+        <p class="text-muted mb-4">Try adjusting your search criteria or check back later for new investor profiles.</p>
+        <button class="btn btn-primary" onclick="document.getElementById('investorSearch').focus()">
+          <i class="bi bi-search me-1"></i>Search Again
+        </button>
+      </div>
+    {% endif %}
   </div>
 </div>
+
+<style>
+/* Enhanced Investor Card Styles */
+.investor-card {
+  border: none;
+  border-radius: 16px;
+  box-shadow: var(--cf-card-shadow);
+  transition: all 0.3s ease;
+  background-color: var(--bs-body-bg);
+  overflow: hidden;
+}
+
+.investor-card:hover {
+  box-shadow: var(--cf-card-shadow-hover);
+  transform: translateY(-4px);
+}
+
+/* Profile Section */
+.profile-image-container {
+  flex-shrink: 0;
+}
+
+.profile-image {
+  object-fit: cover;
+  border: 3px solid var(--cf-sidebar-border);
+  transition: all 0.3s ease;
+}
+
+.profile-link:hover .profile-image {
+  border-color: var(--cf-primary);
+  transform: scale(1.05);
+}
+
+.profile-placeholder {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, var(--cf-secondary), var(--cf-primary));
+  color: white;
+  border: 3px solid var(--cf-sidebar-border);
+  transition: all 0.3s ease;
+}
+
+.profile-link:hover .profile-placeholder {
+  border-color: var(--cf-primary);
+  transform: scale(1.05);
+}
+
+.status-indicator {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border: 3px solid var(--bs-body-bg);
+  border-radius: 50%;
+}
+
+.status-indicator.online {
+  background-color: var(--cf-success);
+}
+
+.status-indicator.offline {
+  background-color: var(--cf-text-secondary);
+}
+
+/* Profile Info */
+.investor-name {
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.profile-name-link {
+  color: var(--cf-text-primary);
+  transition: color 0.3s ease;
+}
+
+.profile-name-link:hover {
+  color: var(--cf-primary);
+}
+
+.investor-meta {
+  gap: 0.5rem;
+}
+
+/* Badge Styling */
+.bg-primary-subtle {
+  background-color: rgba(30, 58, 138, 0.1) !important;
+}
+
+.text-primary {
+  color: var(--cf-primary) !important;
+}
+
+.bg-accent-subtle {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}
+
+.text-accent {
+  color: var(--cf-accent) !important;
+}
+
+/* Bio Section */
+.bio-text {
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+/* Action Buttons */
+.action-section {
+  margin-top: auto;
+}
+
+.btn {
+  border-radius: 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--cf-primary), var(--cf-secondary));
+  border: none;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #1e40af, #0284c7);
+  border: none;
+}
+
+.btn-outline-primary {
+  border-color: var(--cf-primary);
+  color: var(--cf-primary);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--cf-primary);
+  border-color: var(--cf-primary);
+}
+
+.message-btn .btn-text-mobile {
+  display: none;
+}
+
+/* Additional Info Stats */
+.stat-item {
+  padding: 0.5rem;
+}
+
+.stat-number {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+/* Page Header */
+.page-header {
+  padding: 1.5rem 0;
+  border-bottom: 2px solid var(--cf-sidebar-border);
+}
+
+/* Filter Controls */
+.filter-controls {
+  min-width: fit-content;
+}
+
+.input-group-text {
+  border-color: var(--cf-sidebar-border);
+}
+
+.form-control {
+  border-color: var(--cf-sidebar-border);
+}
+
+.form-control:focus {
+  border-color: var(--cf-primary);
+  box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.25);
+}
+
+/* Empty State */
+.empty-state {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.empty-icon {
+  opacity: 0.5;
+}
+
+/* Responsive Design */
+@media (max-width: 767.98px) {
+  .content-container {
+    padding: 1rem;
+  }
+  
+  .page-header {
+    padding: 1rem 0;
+    margin-bottom: 2rem !important;
+  }
+  
+  .filter-controls {
+    width: 100%;
+  }
+  
+  .filter-controls .input-group {
+    max-width: none !important;
+  }
+  
+  .investor-card .card-body {
+    padding: 1.25rem !important;
+  }
+  
+  .profile-image,
+  .profile-placeholder {
+    width: 56px !important;
+    height: 56px !important;
+  }
+  
+  .investor-name {
+    font-size: 1rem;
+  }
+  
+  .action-section {
+    flex-direction: column;
+  }
+  
+  .action-section .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .message-btn .btn-text-mobile {
+    display: inline;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .content-container {
+    padding: 0.5rem;
+  }
+  
+  .investor-card .card-body {
+    padding: 1rem !important;
+  }
+  
+  .profile-section {
+    align-items: center;
+  }
+  
+  .investor-meta {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+}
+
+/* Dark Mode Adjustments */
+[data-bs-theme="dark"] {
+  --cf-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --cf-card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+}
+
+[data-bs-theme="dark"] .profile-image,
+[data-bs-theme="dark"] .profile-placeholder {
+  border-color: var(--cf-sidebar-border);
+}
+
+[data-bs-theme="dark"] .input-group-text,
+[data-bs-theme="dark"] .form-control {
+  background-color: var(--cf-sidebar-bg);
+  border-color: var(--cf-sidebar-border);
+  color: var(--cf-text-primary);
+}
+
+[data-bs-theme="dark"] .bg-primary-subtle {
+  background-color: rgba(14, 165, 233, 0.15) !important;
+}
+
+[data-bs-theme="dark"] .bg-accent-subtle {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+}
+
+/* Animation for loading states */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.loading .btn-text {
+  animation: pulse 1.5s infinite;
+}
+
+/* Search functionality */
+.investor-card.hidden {
+  display: none;
+}
+
+/* Tooltip styling */
+.tooltip {
+  font-size: 0.875rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Message button click: redirect to chat page
+    document.querySelectorAll('.message-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var card = btn.closest('.investor-card');
+            // Get user ID from the connect button's data-target-id attribute
+            var connectBtn = card ? card.querySelector('.connect-toggle') : null;
+            var userId = connectBtn ? connectBtn.getAttribute('data-target-id') : null;
+            if (userId) {
+                // Use the current user's role to determine the correct chat URL
+                var role = document.body.getAttribute('data-user-role') || 'entrepreneur';
+                var chatUrl = role === 'investor' ? '/investor/messages/?open_chat=' + userId : '/entrepreneur/messages/?open_chat=' + userId;
+                window.location.href = chatUrl;
+            }
+        });
+    });
+
+    // Follow/Unfollow button AJAX
+    document.querySelectorAll('.connect-toggle').forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            var targetId = button.getAttribute('data-target-id');
+            if (!targetId) return;
+            
+            // Get CSRF token
+            var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (!csrfToken) {
+                // Try to get from cookie if not in form
+                csrfToken = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+                if (csrfToken) csrfToken = csrfToken.split('=')[1];
+            } else {
+                csrfToken = csrfToken.value;
+            }
+            
+            button.disabled = true;
+            
+            fetch('/entrepreneurs/toggle-connect/' + targetId + '/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                button.disabled = false;
+                var icon = button.querySelector('i');
+                var text = button.querySelector('.btn-text');
+                if (data.connected) {
+                    button.classList.remove('btn-primary');
+                    button.classList.add('btn-success');
+                    if (icon) icon.className = 'bi bi-check-circle me-1';
+                    if (text) text.textContent = 'Following';
+                    button.title = 'You are following this investor';
+                } else {
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-primary');
+                    if (icon) icon.className = 'bi bi-plus-circle me-1';
+                    if (text) text.textContent = 'Follow';
+                    button.title = 'Follow this investor';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.disabled = false;
+            });
+        });
+    });
+
+    // Search functionality
+    const searchInput = document.getElementById('investorSearch');
+    const investorCards = document.querySelectorAll('.investor-card');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            investorCards.forEach(card => {
+                const investorName = card.dataset.investorName;
+                const bioText = card.querySelector('.bio-text')?.textContent.toLowerCase() || '';
+                
+                if (investorName.includes(searchTerm) || bioText.includes(searchTerm) || searchTerm === '') {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+            
+            // Update empty state visibility
+            const visibleCards = document.querySelectorAll('.investor-card:not(.hidden)').length;
+            const emptyState = document.querySelector('.empty-state');
+            const investorsGrid = document.querySelector('.investors-grid .row');
+            
+            if (visibleCards === 0 && searchTerm !== '' && investorsGrid) {
+                if (!document.querySelector('.search-empty-state')) {
+                    const searchEmptyDiv = document.createElement('div');
+                    searchEmptyDiv.className = 'search-empty-state text-center py-5';
+                    searchEmptyDiv.innerHTML = `
+                        <div class="empty-icon mb-4">
+                            <i class="bi bi-search display-1 text-muted"></i>
+                        </div>
+                        <h4 class="text-muted mb-3">No results found</h4>
+                        <p class="text-muted mb-4">Try different keywords or clear your search.</p>
+                        <button class="btn btn-outline-secondary" onclick="document.getElementById('investorSearch').value=''; document.getElementById('investorSearch').dispatchEvent(new Event('input'));">
+                            <i class="bi bi-x-circle me-1"></i>Clear Search
+                        </button>
+                    `;
+                    investorsGrid.style.display = 'none';
+                    document.querySelector('.investors-grid').appendChild(searchEmptyDiv);
+                }
+            } else {
+                const searchEmptyState = document.querySelector('.search-empty-state');
+                if (searchEmptyState) {
+                    searchEmptyState.remove();
+                    if (investorsGrid) investorsGrid.style.display = '';
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

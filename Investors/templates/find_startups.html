@@ -4,41 +4,543 @@
 {% block title %}Find Startups - CoFound{% endblock %}
 
 {% block content %}
+<style>
+/* CoFound Design System Styles */
+:root {
+    --cf-primary: #1e3a8a;
+    --cf-secondary: #0ea5e9;
+    --cf-accent: #f59e0b;
+    --cf-success: #10b981;
+    --cf-sidebar-bg: #f8fafc;
+    --cf-sidebar-border: #e2e8f0;
+    --cf-text-primary: #1f2937;
+    --cf-text-secondary: #6b7280;
+    --cf-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --cf-card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+[data-bs-theme="dark"] {
+    --cf-sidebar-bg: #1e293b;
+    --cf-sidebar-border: #334155;
+    --cf-text-primary: #f1f5f9;
+    --cf-text-secondary: #cbd5e1;
+    --cf-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    --cf-card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+}
+
+/* Enhanced Content Container */
+.content-container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Page Header with Enhanced Typography */
+.page-header {
+    margin-bottom: 2.5rem;
+    position: relative;
+}
+
+.page-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--cf-text-primary);
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.page-subtitle {
+    font-size: 1.125rem;
+    color: var(--cf-text-secondary);
+    font-weight: 400;
+    margin-bottom: 0;
+}
+
+/* Modern Startup Cards */
+.startup-card {
+    border: none;
+    border-radius: 16px;
+    box-shadow: var(--cf-card-shadow);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--bs-body-bg);
+    overflow: hidden;
+    height: 100%;
+    position: relative;
+}
+
+.startup-card:hover {
+    box-shadow: var(--cf-card-shadow-hover);
+    transform: translateY(-4px);
+}
+
+.startup-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--cf-primary), var(--cf-secondary), var(--cf-accent));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.startup-card:hover::before {
+    opacity: 1;
+}
+
+.card-body {
+    padding: 1.75rem;
+    position: relative;
+}
+
+/* Enhanced Profile Avatar */
+.profile-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 3px solid var(--cf-secondary);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-avatar:hover {
+    transform: scale(1.05);
+    border-color: var(--cf-primary);
+}
+
+.profile-avatar-placeholder {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-avatar-placeholder:hover {
+    transform: scale(1.05);
+}
+
+/* Enhanced Typography */
+.startup-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--cf-text-primary);
+    text-decoration: none;
+    margin-bottom: 0.25rem;
+    display: block;
+    transition: color 0.2s ease;
+}
+
+.startup-name:hover {
+    color: var(--cf-primary);
+}
+
+.startup-meta {
+    color: var(--cf-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.startup-meta::before {
+    content: '•';
+    color: var(--cf-accent);
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.startup-description {
+    color: var(--cf-text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Modern Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.follow-btn, .following-btn {
+    background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(30, 58, 138, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.follow-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(30, 58, 138, 0.3);
+    background: linear-gradient(135deg, #1e40af 0%, #0284c7 100%);
+}
+
+.following-btn {
+    background: linear-gradient(135deg, #1e40af 0%, #0284c7 100%);
+    box-shadow: 0 2px 4px rgba(30, 58, 138, 0.2);
+}
+
+.following-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(30, 58, 138, 0.3);
+    background: linear-gradient(135deg, #1e3a8a 0%, #0369a1 100%);
+}
+
+.message-btn {
+    background: transparent;
+    color: var(--cf-text-secondary);
+    border: 2px solid var(--cf-sidebar-border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+}
+
+.message-btn:hover {
+    border-color: var(--cf-primary);
+    color: var(--cf-primary);
+    background: rgba(30, 58, 138, 0.05);
+    transform: translateY(-1px);
+}
+
+/* Empty State Styling */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--cf-text-secondary);
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    color: var(--cf-sidebar-border);
+    margin-bottom: 1.5rem;
+    opacity: 0.6;
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--cf-text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.empty-state-description {
+    font-size: 1rem;
+    color: var(--cf-text-secondary);
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* Loading Animation */
+.loading-skeleton {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 991.98px) {
+    .content-container {
+        padding: 1.5rem;
+    }
+    
+    .page-title {
+        font-size: 1.875rem;
+    }
+    
+    .card-body {
+        padding: 1.25rem;
+    }
+    
+    .profile-avatar,
+    .profile-avatar-placeholder {
+        width: 56px;
+        height: 56px;
+    }
+}
+
+@media (max-width: 576px) {
+    .content-container {
+        padding: 1rem;
+    }
+    
+    .page-title {
+        font-size: 1.625rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .action-buttons {
+        justify-content: flex-start;
+        width: 100%;
+    }
+    
+    .follow-btn, .following-btn, .message-btn {
+        font-size: 0.8125rem;
+        padding: 0.4375rem 0.875rem;
+    }
+}
+
+/* Accessibility Enhancements */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus Styles for Better Accessibility */
+.startup-card:focus-within,
+.follow-btn:focus,
+.following-btn:focus,
+.message-btn:focus,
+.startup-name:focus {
+    outline: 2px solid var(--cf-primary);
+    outline-offset: 2px;
+}
+</style>
+
 <div class="content-container">
-  <h3 class="mb-4">Find Startups</h3>
-  <div class="row g-3">
-    {% for st in startups %}
-      <div class="col-12 col-sm-6 col-lg-4">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body d-flex gap-3">
-            <a href="{% url 'entrepreneurs:profile_detail' st.user.id %}">
-              {% if st.user|get_profile_image %}
-                <img src="data:image/jpeg;base64,{{ st.user|get_profile_image|b64encode_blob }}" class="rounded-circle" width="56" height="56" alt="">
-              {% else %}
-                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style="width:56px;height:56px;"><i class="bi bi-person"></i></div>
-              {% endif %}
-            </a>
-            <div class="flex-grow-1">
-              <h6 class="mb-1">
-                <a href="{% url 'entrepreneurs:profile_detail' st.user.id %}" class="text-decoration-none text-dark">{{ st.user.get_full_name|default:st.user.email }}</a>
-              </h6>
-              <small class="text-muted d-block">Startup • {{ st.company_name|default:"Company N/A" }}</small>
-              {% if st.startup_description %}<p class="mb-2 small text-muted">{{ st.startup_description|truncatechars:120 }}</p>{% endif %}
-              <div class="d-flex gap-2">
-                {% with status=user|connection_status:st.user %}
-                  <button class="{% if status == 'accepted' %}following-btn{% else %}follow-btn{% endif %} btn-sm connect-toggle" data-target-id="{{ st.user.id }}">
-                    {% if status == 'accepted' %}<i class="fa fa-check" aria-hidden="true"></i> Following{% else %}<i class="fa fa-plus" aria-hidden="true"></i> Follow{% endif %}
-                  </button>
-                {% endwith %}
-                <a href="#" class="btn btn-sm btn-outline-secondary"><i class="bi bi-chat-dots me-1"></i>Message</a>
-              </div>
+    <!-- Enhanced Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">Discover Startups</h1>
+        <p class="page-subtitle">Connect with innovative entrepreneurs and growing companies</p>
+    </div>
+
+    <!-- Startup Grid -->
+    <div class="row g-4">
+        {% for st in startups %}
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+                <article class="card startup-card">
+                    <div class="card-body">
+                        <!-- Profile Section -->
+                        <div class="d-flex align-items-start gap-3 mb-3">
+                            <a href="{% url 'entrepreneurs:profile_detail' st.user.id %}" class="flex-shrink-0">
+                                {% if st.user|get_profile_image %}
+                                    <img src="data:image/jpeg;base64,{{ st.user|get_profile_image|b64encode_blob }}" 
+                                         class="profile-avatar" 
+                                         alt="{{ st.user.get_full_name|default:st.user.email }}'s profile picture">
+                                {% else %}
+                                    <div class="profile-avatar-placeholder">
+                                        <i class="bi bi-person"></i>
+                                    </div>
+                                {% endif %}
+                            </a>
+                            
+                            <div class="flex-grow-1 min-w-0">
+                                <h2 class="startup-name">
+                                    <a href="{% url 'entrepreneurs:profile_detail' st.user.id %}" class="startup-name">
+                                        {{ st.user.get_full_name|default:st.user.email }}
+                                    </a>
+                                </h2>
+                                <div class="startup-meta">
+                                    <span>{{ st.company_name|default:"Company N/A" }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        {% if st.startup_description %}
+                            <p class="startup-description">
+                                {{ st.startup_description|truncatechars:120 }}
+                            </p>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons">
+                            {% with status=user|connection_status:st.user %}
+                                <button class="{% if status == 'accepted' %}following-btn{% else %}follow-btn{% endif %} connect-toggle" 
+                                        data-target-id="{{ st.user.id }}"
+                                        type="button"
+                                        aria-label="{% if status == 'accepted' %}Unfollow{% else %}Follow{% endif %} {{ st.user.get_full_name|default:st.user.email }}">
+                                    {% if status == 'accepted' %}
+                                        <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                                        <span>Following</span>
+                                    {% else %}
+                                        <i class="bi bi-plus-circle" aria-hidden="true"></i>
+                                        <span>Follow</span>
+                                    {% endif %}
+                                </button>
+                            {% endwith %}
+                            
+                            <a href="#" 
+                               class="message-btn"
+                               aria-label="Send message to {{ st.user.get_full_name|default:st.user.email }}">
+                                <i class="bi bi-chat-dots" aria-hidden="true"></i>
+                                <span>Message</span>
+                            </a>
+                        </div>
+                    </div>
+                </article>
             </div>
-          </div>
-        </div>
-      </div>
-    {% empty %}
-      <div class="text-muted">No startups found.</div>
-    {% endfor %}
-  </div>
+        {% empty %}
+            <!-- Enhanced Empty State -->
+            <div class="col-12">
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="bi bi-building" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="empty-state-title">No Startups Found</h3>
+                    <p class="empty-state-description">
+                        We couldn't find any startups matching your criteria. 
+                        Try adjusting your filters or check back later for new companies.
+                    </p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 </div>
+
+<script>
+// Enhanced JavaScript for smooth interactions
+document.addEventListener('DOMContentLoaded', function() {
+    // Smooth scroll behavior
+    document.documentElement.style.scrollBehavior = 'smooth';
+    
+    // Message button click: redirect to chat page
+    document.querySelectorAll('.message-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var card = btn.closest('.startup-card');
+            var userId = card ? card.querySelector('.connect-toggle')?.getAttribute('data-target-id') : null;
+            if (userId) {
+                var role = document.body.getAttribute('data-user-role') || 'investor';
+                var chatUrl = role === 'entrepreneur' ? '/entrepreneur/messages/?open_chat=' + userId : '/investor/messages/?open_chat=' + userId;
+                window.location.href = chatUrl;
+            }
+        });
+    });
+
+    // Follow/Unfollow button AJAX
+    document.querySelectorAll('.connect-toggle').forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            var targetId = button.getAttribute('data-target-id');
+            if (!targetId) return;
+            
+            // Get CSRF token
+            var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (!csrfToken) {
+                // Try to get from cookie if not in form
+                csrfToken = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+                if (csrfToken) csrfToken = csrfToken.split('=')[1];
+            } else {
+                csrfToken = csrfToken.value;
+            }
+            
+            button.disabled = true;
+            
+            fetch('/investors/toggle-connection/' + targetId + '/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                button.disabled = false;
+                var icon = button.querySelector('i');
+                var text = button.querySelector('span');
+                if (data.connected) {
+                    button.classList.remove('follow-btn');
+                    button.classList.add('following-btn');
+                    if (icon) icon.className = 'bi bi-check-circle-fill';
+                    if (text) text.textContent = 'Following';
+                    button.setAttribute('aria-label', 'Unfollow');
+                } else {
+                    button.classList.remove('following-btn');
+                    button.classList.add('follow-btn');
+                    if (icon) icon.className = 'bi bi-plus-circle';
+                    if (text) text.textContent = 'Follow';
+                    button.setAttribute('aria-label', 'Follow');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.disabled = false;
+            });
+        });
+    });
+    
+    // Lazy loading for images (if needed)
+    const images = document.querySelectorAll('img[data-src]');
+    if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    img.src = img.dataset.src;
+                    img.classList.remove('loading-skeleton');
+                    imageObserver.unobserve(img);
+                }
+            });
+        });
+        
+        images.forEach(img => imageObserver.observe(img));
+    }
+});
+</script>
 {% endblock %}

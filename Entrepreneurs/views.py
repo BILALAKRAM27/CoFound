@@ -576,14 +576,39 @@ def send_message(request):
 def messages_page(request):
     # Recent chats = users you've exchanged messages with OR you follow
     recent_users = set()
-    from .models import Message, Favorite
+    from .models import Message, Favorite, User # Ensure User is imported
+    
+    # Check if there's an open_chat parameter
+    open_chat_id = request.GET.get('open_chat')
+    open_chat_user = None
+    
+    if open_chat_id:
+        try:
+            user_id_int = int(open_chat_id) # Explicit conversion
+            open_chat_user = User.objects.get(id=user_id_int)
+            # Add the user to recent_users if they exist and are accessible
+            is_connected = (request.user.favorites.filter(target_user=open_chat_user).exists() or
+                            request.user.favorited_by.filter(user=open_chat_user).exists())
+            if open_chat_user.message_privacy == 'public' or is_connected:
+                recent_users.add(open_chat_user)
+        except (ValueError, User.DoesNotExist): # Handle both potential errors
+            # User not found or invalid ID, handled in template
+            pass
+    
     msg_users = set()
-    messages = Message.objects.filter(Q(sender=request.user) | Q(receiver=request.user)).distinct()
+    # Use select_related to pre-fetch sender and receiver to avoid N+1 queries
+    messages = Message.objects.filter(Q(sender=request.user) | Q(receiver=request.user)).select_related('sender', 'receiver').distinct()
     for msg in messages:
-        if msg.sender != request.user:
-            msg_users.add(msg.sender.id)
-        if msg.receiver != request.user:
-            msg_users.add(msg.receiver.id)
+        try:
+            # Check if sender exists and is not the current user
+            if hasattr(msg, 'sender') and msg.sender and msg.sender != request.user:
+                msg_users.add(msg.sender.id)
+            # Check if receiver exists and is not the current user
+            if hasattr(msg, 'receiver') and msg.receiver and msg.receiver != request.user:
+                msg_users.add(msg.receiver.id)
+        except User.DoesNotExist:
+            # Skip messages with deleted users
+            continue
     for uid in msg_users:
         try:
             u = User.objects.get(id=uid)
@@ -626,12 +651,14 @@ def messages_page(request):
     unread_counts = {item['user'].id: item['unread_count'] for item in recent_users_with_data[:25]}
     last_messages = {item['user'].id: item['last_message'] for item in recent_users_with_data[:25]}
     last_message_times = {item['user'].id: item['last_message_time'] for item in recent_users_with_data[:25]}
+    
     return render(request, 'messages/index.html', {
         'recents': recent_list,
         'unread_counts': unread_counts,
         'last_messages': last_messages,
         'last_message_times': last_message_times,
-        'total_unread_count': total_unread_count
+        'total_unread_count': total_unread_count,
+        'open_chat_user': open_chat_user  # Pass the user to the template
     })
 
 

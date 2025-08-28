@@ -1581,32 +1581,37 @@
       // Clear the URL parameter
       window.history.replaceState({}, document.title, window.location.pathname);
     } else {
-      // User not in recent chats, search for them
-      const currentUserRole = '{% if user.is_authenticated %}{{ user.role }}{% endif %}' || 'entrepreneur';
-      const searchEndpoint = currentUserRole === 'investor' ? `/investor/messages/search/` : `/entrepreneur/messages/search/`;
-      fetch(`${searchEndpoint}?q=${openChatId}`)
-        .then(r => r.json())
-        .then(d => {
-          const user = d.results.find(u => u.id == openChatId);
-          if (user) {
-            openChat(user.id, {
-              name: user.name,
-              avatar: user.avatar,
-              role: user.role,
-              profile_url: user.profile_url,
-              is_private: user.is_private
-            });
-            selectContact(user.id);
-            
-            // Clear the URL parameter
-            window.history.replaceState({}, document.title, window.location.pathname);
-          } else {
-            showEmptyState();
-          }
-        })
-        .catch(() => {
-          showEmptyState();
-        });
+      // Check if the user was passed from the backend
+      {% if open_chat_user %}
+        const backendUser = {
+          id: '{{ open_chat_user.id }}',
+          name: '{{ open_chat_user.get_full_name|default:open_chat_user.email|escapejs }}',
+          role: '{{ open_chat_user.role|title }}',
+          profile_url: '{% if open_chat_user.role == "investor" %}/investor/profile/{{ open_chat_user.id }}/{% else %}/entrepreneur/profile/{{ open_chat_user.id }}/{% endif %}',
+          is_private: '{{ open_chat_user.message_privacy }}' === 'private'
+        };
+        
+        openChat(backendUser.id, backendUser);
+        selectContact(backendUser.id);
+        
+        // Clear the URL parameter
+        window.history.replaceState({}, document.title, window.location.pathname);
+      {% else %}
+        // User not found, show error message
+        showEmptyState();
+        // Show a temporary error message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-warning alert-dismissible fade show';
+        errorDiv.innerHTML = `
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          User not found. The user you're trying to message may not exist or may have been deleted.
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.content-container').insertBefore(errorDiv, document.querySelector('.chat-container'));
+        
+        // Clear the URL parameter
+        window.history.replaceState({}, document.title, window.location.pathname);
+      {% endif %}
     }
   } else if (!currentPeerId) {
     // Show empty state initially if no chat is selected
