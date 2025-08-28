@@ -1365,12 +1365,30 @@ def search_users(request):
     
     results = []
     for user in users:
+        # Get profile image for the user
+        profile_image = None
+        try:
+            if user.role == 'entrepreneur':
+                profile = getattr(user, 'entrepreneur_profile', None)
+                if profile and profile.image:
+                    import base64
+                    profile_image = 'data:image/jpeg;base64,' + base64.b64encode(profile.image).decode('utf-8')
+            elif user.role == 'investor':
+                profile = getattr(user, 'investor_profile', None)
+                if profile and profile.image:
+                    import base64
+                    profile_image = 'data:image/jpeg;base64,' + base64.b64encode(profile.image).decode('utf-8')
+        except Exception as e:
+            print(f"Error getting profile image for user {user.id}: {e}")
+            profile_image = None
+        
         user_data = {
             'id': user.id,
             'name': user.get_full_name() or user.email,
             'email': user.email,
             'role': user.role,
-            'profile_url': f'/{user.role}/profile/{user.id}/' if user.role in ['investor', 'entrepreneur'] else '#'
+            'profile_url': f'/{user.role}/profile/{user.id}/' if user.role in ['investor', 'entrepreneur'] else '#',
+            'profile_image': profile_image
         }
         results.append(user_data)
     
