@@ -1,6 +1,7 @@
 from django import forms
 from Entrepreneurs.models import User
-from .models import InvestorProfile, InvestorPortfolio, InvestmentDocument, Meeting
+from .models import InvestorProfile, InvestorPortfolio, InvestmentDocument
+from Entrepreneurs.models import Meeting
 
 # Message Settings Form
 class MessageSettingsForm(forms.ModelForm):

@@ -5,122 +5,656 @@
 {% block title %}Schedule Meeting with {{ target_user.get_full_name }} - CoFound{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">
-                        <i class="bi bi-calendar-plus me-2"></i>
-                        Schedule Meeting with {{ target_user.get_full_name }}
-                    </h4>
+<div class="schedule-meeting-container">
+    <!-- Header Section -->
+    <div class="meeting-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <button onclick="history.back()" class="btn-back">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
                 </div>
-                <div class="card-body">
-                    <div class="row mb-4">
-                        <div class="col-md-3">
+                <div class="col">
+                    <h1 class="page-title">Schedule Meeting</h1>
+                    <p class="page-subtitle">Set up a meeting with {{ target_user.get_full_name }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-xl-8 col-lg-10">
+                <div class="meeting-card">
+                    <!-- User Profile Section -->
+                    <div class="user-profile-section">
+                        <div class="profile-avatar">
                             {% if target_user|get_profile_image %}
                                 <img src="data:image/jpeg;base64,{{ target_user|get_profile_image|b64encode_blob }}" 
-                                     class="img-fluid rounded-circle" alt="{{ target_user.get_full_name }}">
+                                     class="avatar-image" alt="{{ target_user.get_full_name }}">
                             {% else %}
-                                <i class="bi bi-person-circle display-1 text-muted"></i>
+                                <div class="avatar-placeholder">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
                             {% endif %}
+                            <div class="profile-status-indicator"></div>
                         </div>
-                        <div class="col-md-9">
-                            <h5>{{ target_user.get_full_name }}</h5>
-                            <p class="text-muted mb-1">{{ target_user.role|title }}</p>
-                            {% if target_user.entrepreneur_profile.company_name %}
-                                <p class="text-muted mb-0">{{ target_user.entrepreneur_profile.company_name }}</p>
-                            {% elif target_user.investor_profile.firm_name %}
-                                <p class="text-muted mb-0">{{ target_user.investor_profile.firm_name }}</p>
-                            {% endif %}
+                        <div class="profile-info">
+                            <h2 class="profile-name">{{ target_user.get_full_name }}</h2>
+                            <div class="profile-badges">
+                                <span class="role-badge">{{ target_user.role|title }}</span>
+                                {% if target_user.entrepreneur_profile.company_name %}
+                                    <span class="company-badge">{{ target_user.entrepreneur_profile.company_name }}</span>
+                                {% elif target_user.investor_profile.firm_name %}
+                                    <span class="company-badge">{{ target_user.investor_profile.firm_name }}</span>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
 
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.title.id_for_label }}" class="form-label">Meeting Title *</label>
-                                    {{ form.title }}
-                                    {% if form.title.errors %}
-                                        <div class="text-danger small">{{ form.title.errors.0 }}</div>
-                                    {% endif %}
+                    <!-- Form Section -->
+                    <div class="meeting-form-section">
+                        <form method="post" class="meeting-form">
+                            {% csrf_token %}
+                            
+                            <!-- Meeting Details Grid -->
+                            <div class="form-grid">
+                                <div class="form-group full-width">
+                                    <label for="{{ form.title.id_for_label }}" class="form-label">
+                                        <i class="bi bi-type"></i>
+                                        Meeting Title
+                                        <span class="required">*</span>
+                                    </label>
+                                    <div class="input-wrapper">
+                                        {{ form.title }}
+                                        {% if form.title.errors %}
+                                            <div class="error-message">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                {{ form.title.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.meeting_type.id_for_label }}" class="form-label">Meeting Type *</label>
-                                    {{ form.meeting_type }}
-                                    {% if form.meeting_type.errors %}
-                                        <div class="text-danger small">{{ form.meeting_type.errors.0 }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="mb-3">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
-                            {{ form.description }}
-                            {% if form.description.errors %}
-                                <div class="text-danger small">{{ form.description.errors.0 }}</div>
-                            {% endif %}
-                        </div>
+                                <div class="form-group">
+                                    <label for="{{ form.meeting_type.id_for_label }}" class="form-label">
+                                        <i class="bi bi-bookmark"></i>
+                                        Meeting Type
+                                        <span class="required">*</span>
+                                    </label>
+                                    <div class="input-wrapper">
+                                        {{ form.meeting_type }}
+                                        {% if form.meeting_type.errors %}
+                                            <div class="error-message">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                {{ form.meeting_type.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
 
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="{{ form.date.id_for_label }}" class="form-label">Date *</label>
-                                    {{ form.date }}
-                                    {% if form.date.errors %}
-                                        <div class="text-danger small">{{ form.date.errors.0 }}</div>
-                                    {% endif %}
+                                <div class="form-group">
+                                    <label for="{{ form.duration.id_for_label }}" class="form-label">
+                                        <i class="bi bi-clock"></i>
+                                        Duration
+                                        <span class="required">*</span>
+                                    </label>
+                                    <div class="input-wrapper">
+                                        {{ form.duration }}
+                                        {% if form.duration.errors %}
+                                            <div class="error-message">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                {{ form.duration.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                                        <i class="bi bi-chat-left-text"></i>
+                                        Description
+                                    </label>
+                                    <div class="input-wrapper">
+                                        {{ form.description }}
+                                        {% if form.description.errors %}
+                                            <div class="error-message">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                {{ form.description.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.date.id_for_label }}" class="form-label">
+                                        <i class="bi bi-calendar-event"></i>
+                                        Date
+                                        <span class="required">*</span>
+                                    </label>
+                                    <div class="input-wrapper">
+                                        {{ form.date }}
+                                        {% if form.date.errors %}
+                                            <div class="error-message">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                {{ form.date.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.time.id_for_label }}" class="form-label">
+                                        <i class="bi bi-clock-history"></i>
+                                        Time
+                                        <span class="required">*</span>
+                                    </label>
+                                    <div class="input-wrapper">
+                                        {{ form.time }}
+                                        {% if form.time.errors %}
+                                            <div class="error-message">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                {{ form.time.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label for="{{ form.location.id_for_label }}" class="form-label">
+                                        <i class="bi bi-geo-alt"></i>
+                                        Location/Meeting Link
+                                    </label>
+                                    <div class="input-wrapper">
+                                        {{ form.location }}
+                                        <div class="form-help">
+                                            <i class="bi bi-info-circle"></i>
+                                            For video calls, enter the meeting link. For in-person meetings, enter the location.
+                                        </div>
+                                        {% if form.location.errors %}
+                                            <div class="error-message">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                {{ form.location.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="{{ form.time.id_for_label }}" class="form-label">Time *</label>
-                                    {{ form.time }}
-                                    {% if form.time.errors %}
-                                        <div class="text-danger small">{{ form.time.errors.0 }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="{{ form.duration.id_for_label }}" class="form-label">Duration *</label>
-                                    {{ form.duration }}
-                                    {% if form.duration.errors %}
-                                        <div class="text-danger small">{{ form.duration.errors.0 }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="mb-3">
-                            <label for="{{ form.location.id_for_label }}" class="form-label">Location/Meeting Link</label>
-                            {{ form.location }}
-                            <div class="form-text">
-                                For video calls, enter the meeting link. For in-person meetings, enter the location.
+                            <!-- Action Buttons -->
+                            <div class="form-actions">
+                                <a href="{% url 'entrepreneurs:profile_detail' target_user.id %}" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left"></i>
+                                    Back to Profile
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-send"></i>
+                                    Send Meeting Request
+                                </button>
                             </div>
-                            {% if form.location.errors %}
-                                <div class="text-danger small">{{ form.location.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'entrepreneurs:profile_detail' target_user.id %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-2"></i>Back to Profile
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-send me-2"></i>Send Meeting Request
-                            </button>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+/* CSS Variables for Theme Support */
+:root {
+    --meeting-bg: #ffffff;
+    --meeting-card-bg: #ffffff;
+    --meeting-text: #1f2937;
+    --meeting-text-secondary: #6b7280;
+    --meeting-border: #e5e7eb;
+    --meeting-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --meeting-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --meeting-accent: #f8fafc;
+    --meeting-primary: #1e3a8a;
+    --meeting-secondary: #0ea5e9;
+    --meeting-success: #10b981;
+    --meeting-warning: #f59e0b;
+    --meeting-error: #ef4444;
+    --meeting-gradient: linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%);
+    --input-bg: #ffffff;
+    --input-border: #d1d5db;
+    --input-focus: #2563eb;
+}
+
+[data-bs-theme="dark"] {
+    --meeting-bg: #0f172a;
+    --meeting-card-bg: #1e293b;
+    --meeting-text: #f1f5f9;
+    --meeting-text-secondary: #cbd5e1;
+    --meeting-border: #334155;
+    --meeting-accent: #0f172a;
+    --input-bg: #334155;
+    --input-border: #475569;
+    --input-focus: #60a5fa;
+}
+
+/* Main Container */
+.schedule-meeting-container {
+    min-height: 100vh;
+    background: var(--meeting-bg);
+    padding-bottom: 3rem;
+}
+
+/* Header Section */
+.meeting-header {
+    background: var(--meeting-gradient);
+    color: white;
+    padding: 2rem 0 3rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.meeting-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.btn-back {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.btn-back:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+    color: white;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.page-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0.5rem 0 0;
+    font-weight: 300;
+}
+
+/* Main Card */
+.meeting-card {
+    background: var(--meeting-card-bg);
+    border-radius: 24px;
+    box-shadow: var(--meeting-shadow-hover);
+    overflow: hidden;
+    margin-top: -2rem;
+    position: relative;
+    border: 1px solid var(--meeting-border);
+}
+
+/* User Profile Section */
+.user-profile-section {
+    background: var(--meeting-accent);
+    padding: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    border-bottom: 1px solid var(--meeting-border);
+    position: relative;
+}
+
+.profile-avatar {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.avatar-image, .avatar-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.avatar-placeholder {
+    background: var(--meeting-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2rem;
+}
+
+.profile-status-indicator {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    background: var(--meeting-success);
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.profile-name {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--meeting-text);
+    margin: 0 0 0.75rem;
+}
+
+.profile-badges {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.role-badge, .company-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+}
+
+.role-badge {
+    background: var(--meeting-gradient);
+    color: white;
+    box-shadow: 0 2px 4px rgba(30, 58, 138, 0.3);
+}
+
+.company-badge {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--meeting-warning);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Form Section */
+.meeting-form-section {
+    padding: 2.5rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem 2rem;
+    margin-bottom: 2.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--meeting-text);
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.form-label i {
+    color: var(--meeting-primary);
+    font-size: 1.1rem;
+}
+
+.required {
+    color: var(--meeting-error);
+    font-weight: 700;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+/* Form Controls */
+.meeting-form input[type="text"],
+.meeting-form input[type="email"],
+.meeting-form input[type="date"],
+.meeting-form input[type="time"],
+.meeting-form select,
+.meeting-form textarea {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border: 2px solid var(--input-border);
+    border-radius: 12px;
+    background: var(--input-bg);
+    color: var(--meeting-text);
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.meeting-form input:focus,
+.meeting-form select:focus,
+.meeting-form textarea:focus {
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    transform: translateY(-1px);
+}
+
+.meeting-form textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.form-help {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--meeting-text-secondary);
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
+.form-help i {
+    color: var(--meeting-secondary);
+    font-size: 1rem;
+}
+
+.error-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--meeting-error);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    font-weight: 500;
+}
+
+.error-message i {
+    font-size: 1rem;
+}
+
+/* Action Buttons */
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--meeting-border);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 2rem;
+    font-weight: 600;
+    font-size: 1rem;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    min-width: 160px;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: var(--meeting-gradient);
+    color: white;
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(30, 58, 138, 0.4);
+    color: white;
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--meeting-text-secondary);
+    border: 2px solid var(--meeting-border);
+}
+
+.btn-secondary:hover {
+    background: var(--meeting-accent);
+    border-color: var(--meeting-primary);
+    color: var(--meeting-primary);
+    transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .meeting-header {
+        padding: 1.5rem 0 2rem;
+    }
+    
+    .page-title {
+        font-size: 2rem;
+    }
+    
+    .user-profile-section {
+        flex-direction: column;
+        text-align: center;
+        padding: 2rem 1.5rem;
+        gap: 1.5rem;
+    }
+    
+    .profile-name {
+        font-size: 1.5rem;
+    }
+    
+    .meeting-form-section {
+        padding: 2rem 1.5rem;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .form-actions {
+        flex-direction: column-reverse;
+        gap: 1rem;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .meeting-header {
+        padding: 1rem 0 1.5rem;
+    }
+    
+    .page-title {
+        font-size: 1.75rem;
+    }
+    
+    .user-profile-section {
+        padding: 1.5rem 1rem;
+    }
+    
+    .avatar-image, .avatar-placeholder {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .meeting-form-section {
+        padding: 1.5rem 1rem;
+    }
+    
+    .meeting-card {
+        margin-top: -1rem;
+        border-radius: 16px;
+    }
+}
+
+/* Animation for form loading */
+.meeting-form {
+    animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Focus states for better accessibility */
+.btn:focus,
+.btn-back:focus {
+    outline: 2px solid var(--input-focus);
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .meeting-card {
+        border-width: 2px;
+    }
+    
+    .btn {
+        border-width: 2px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+</style>
 {% endblock %}

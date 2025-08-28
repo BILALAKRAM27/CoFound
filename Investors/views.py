@@ -26,7 +26,7 @@ from decimal import Decimal
 from .services import NotificationService
 from django.db import models
 from .forms import MeetingRequestForm
-from .models import Meeting
+from Entrepreneurs.models import Meeting
 from allauth.account.signals import user_signed_up
 from django.dispatch import receiver
 
@@ -1580,7 +1580,7 @@ def schedule_meeting(request, user_id):
                 )
                 
                 messages.success(request, f"Meeting request sent to {target_user.get_full_name()}!")
-                return redirect('investors:meetings')
+                return redirect('entrepreneurs:meetings')
     else:
         form = MeetingRequestForm()
     
