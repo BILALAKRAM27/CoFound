@@ -70,6 +70,15 @@
     font-weight: 400;
     margin-bottom: 0;
 }
+[data-bs-theme="dark"] .bg-accent-subtle {
+  background-color: rgba(255, 162, 0, 0.15) !important;
+}
+.bg-accent-subtle {
+  background-color: rgba(255, 162, 0, 0.1) !important;
+}
+.text-accent {
+  color: var(--cf-accent) !important;
+}
 
 /* Modern Startup Cards */
 .startup-card {
@@ -80,6 +89,7 @@
     background: var(--bs-body-bg);
     overflow: hidden;
     height: 100%;
+    width: 270px;
     position: relative;
 }
 
@@ -243,8 +253,8 @@
 }
 
 .message-btn:hover {
-    border-color: var(--cf-primary);
-    color: var(--cf-primary);
+    border-color: var(--cf-text-secondary);
+    color: var(--cf-text-secondary);
     background: rgba(30, 58, 138, 0.05);
     transform: translateY(-1px);
 }
@@ -389,21 +399,36 @@
                                         {{ st.user.get_full_name|default:st.user.email }}
                                     </a>
                                 </h2>
-                                <div class="startup-meta">
-                                    <span>{{ st.company_name|default:"Company N/A" }}</span>
-                                </div>
+                                <span class="badge bg-info-subtle text-info rounded-pill">
+                                    <i class="fa fa-building-o" aria-hidden="true"></i> {{ st.company_name|default:"Company N/A" }}
+                                  </span>
+                                {% if st.company_stage %}
+                        <span class="badge bg-accent-subtle text-accent rounded-pill">
+                          <i class="fa fa-credit-card-alt" aria-hidden="true"></i> {{ st.company_stage }}
+                        </span>
+                      {% endif %}
+                      
+                                {% if st.industries %}
+                        <span class="badge bg-success-subtle text-success rounded-pill">
+                          <i class="fa fa-industry" aria-hidden="true"></i> {{ st.industries }}
+                        </span>
+                      {% endif %}
                             </div>
                         </div>
 
                         <!-- Description -->
                         {% if st.startup_description %}
-                            <p class="startup-description">
+                            <p class="startup-description text-center">
                                 {{ st.startup_description|truncatechars:120 }}
+                            </p>
+                        {% else %}
+                            <p class="startup-description text-center">
+                                No description available
                             </p>
                         {% endif %}
 
                         <!-- Action Buttons -->
-                        <div class="action-buttons">
+                        <div class="action-buttons d-flex justify-content-center">
                             {% with status=user|connection_status:st.user %}
                                 <button class="{% if status == 'accepted' %}following-btn{% else %}follow-btn{% endif %} connect-toggle" 
                                         data-target-id="{{ st.user.id }}"

@@ -5,7 +5,10 @@
 {% block content %}
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Funding Rounds</h2>
+        <div>
+            <h2 class="mb-0">Active Funding Rounds</h2>
+            <p class="text-muted mb-0">Showing only active rounds that haven't expired</p>
+        </div>
         {% if user.is_authenticated and user.role == 'entrepreneur' %}
             <a href="{% url 'investors:create_funding_round' %}" class="btn btn-primary"><i class="bi bi-plus me-2"></i>New Round</a>
         {% endif %}
@@ -50,8 +53,16 @@
                         <strong>${{ round.total_committed|floatformat:0 }}</strong>
                     </div>
                     <div class="progress mb-3" style="height: 8px;">
-                        <div class="progress-bar {% if round.percent_raised >= 100 %}bg-success{% elif round.percent_raised >= 75 %}bg-info{% else %}bg-primary{% endif %}"
-                            role="progressbar" style="width: {{ round.percent_raised|floatformat:0 }}%" aria-valuenow="{{ round.percent_raised|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar 
+                            {% if round.percent_raised >= 100 %}bg-success
+                            {% elif round.percent_raised >= 75 %}bg-info
+                            {% else %}bg-primary{% endif %}"
+                            role="progressbar" 
+                            style="width: {{ round.percent_raised|floatformat:0 }}%" 
+                            aria-valuenow="{{ round.percent_raised|floatformat:0 }}" 
+                            aria-valuemin="0" 
+                            aria-valuemax="100">
+                        </div>
                     </div>
                     <div class="d-flex gap-2">
                         {% if user.is_authenticated and user.role == 'investor' and round.status == 'active' %}
@@ -69,7 +80,10 @@
         </div>
         {% empty %}
         <div class="col-12">
-            <div class="alert alert-info text-center">No funding rounds found.</div>
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>
+                No active funding rounds found. All current rounds may have expired or been completed.
+            </div>
         </div>
         {% endfor %}
     </div>

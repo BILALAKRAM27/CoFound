@@ -1189,10 +1189,23 @@ def close_funding_round(request):
 
 @login_required
 def funding_rounds_list(request):
+    from django.utils import timezone
+    
+    # Filter for active rounds that haven't passed their deadline
+    current_date = timezone.now().date()
+    
     if request.user.role == 'entrepreneur':
-        rounds = FundingRound.objects.filter(startup__entrepreneur=request.user).order_by('-created_at')
+        rounds = FundingRound.objects.filter(
+            startup__entrepreneur=request.user,
+            status='active',
+            deadline__gte=current_date
+        ).order_by('-created_at')
     else:
-        rounds = FundingRound.objects.all().order_by('-created_at')
+        rounds = FundingRound.objects.filter(
+            status='active',
+            deadline__gte=current_date
+        ).order_by('-created_at')
+    
     rounds = annotate_percent_raised(rounds)
     return render(request, 'Investors/funding_rounds.html', {'rounds': rounds, 'user': request.user})
 

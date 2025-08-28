@@ -18,21 +18,10 @@
       <!-- Search and Filter Controls -->
       <div class="filter-controls d-flex flex-column flex-sm-row gap-2">
         <div class="input-group" style="max-width: 300px;">
-          <span class="input-group-text bg-light border-end-0">
+          <span class="input-group-text border-end-0">
             <i class="bi bi-search text-muted"></i>
           </span>
-          <input type="text" class="form-control border-start-0 bg-light" placeholder="Search investors..." id="investorSearch">
-        </div>
-        <div class="dropdown">
-          <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-            <i class="bi bi-funnel me-1"></i>Filter
-          </button>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#">All Stages</a></li>
-            <li><a class="dropdown-item" href="#">Seed Stage</a></li>
-            <li><a class="dropdown-item" href="#">Series A</a></li>
-            <li><a class="dropdown-item" href="#">Series B+</a></li>
-          </ul>
+          <input type="text" class="form-control border-start-0 " placeholder="Search investors..." id="investorSearch">
         </div>
       </div>
     </div>
@@ -78,7 +67,17 @@
                       </span>
                       {% if inv.get_investment_stage_display %}
                         <span class="badge bg-accent-subtle text-accent rounded-pill">
-                          {{ inv.get_investment_stage_display }}
+                          <i class="fa fa-credit-card-alt" aria-hidden="true"></i> {{ inv.get_investment_stage_display }}
+                        </span>
+                      {% endif %}
+                      {% if inv.firm_name %}
+                        <span class="badge bg-info-subtle text-info rounded-pill">
+                          <i class="fa fa-building-o" aria-hidden="true"></i> {{ inv.firm_name }}
+                        </span>
+                      {% endif %}
+                      {% if inv.preferred_industries %}
+                        <span class="badge bg-success-subtle text-success rounded-pill">
+                          <i class="fa fa-industry" aria-hidden="true"></i> {{ inv.preferred_industries }}
                         </span>
                       {% endif %}
                     </div>
@@ -89,6 +88,10 @@
                 {% if inv.bio %}
                   <div class="bio-section mb-4">
                     <p class="bio-text text-muted mb-0">{{ inv.bio|truncatechars:120 }}</p>
+                  </div>
+                {% else %}
+                  <div class="bio-section mb-4">
+                    <p class="bio-text text-muted mb-0">No bio available</p>
                   </div>
                 {% endif %}
 
@@ -150,6 +153,22 @@
   transition: all 0.3s ease;
   background-color: var(--bs-body-bg);
   overflow: hidden;
+  width: 100%; /* Ensure full width within column */
+  height: 100%; /* Ensure consistent height */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure all cards have the same width */
+.investors-grid .col-12.col-sm-6.col-xl-4 {
+  display: flex;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.investors-grid .col-12.col-sm-6.col-xl-4 > .investor-card {
+  width: 100%;
+  flex: 1;
 }
 
 .investor-card:hover {
@@ -245,11 +264,41 @@
 .bio-text {
   line-height: 1.5;
   font-size: 0.9rem;
+  flex-grow: 1; /* Allow bio to expand and push action buttons to bottom */
+}
+
+/* Ensure consistent card content distribution */
+.investor-card .card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1.5rem;
+}
+
+.investor-card .profile-section {
+  flex-shrink: 0; /* Don't shrink profile section */
+}
+
+.investor-card .bio-section {
+  flex-grow: 1; /* Allow bio to expand */
+  min-height: 0; /* Allow shrinking if needed */
 }
 
 /* Action Buttons */
 .action-section {
   margin-top: auto;
+  width: 100%;
+}
+
+/* Ensure action buttons are consistent */
+.action-section .btn {
+  min-width: 0;
+  flex: 1;
+}
+
+.action-section .message-btn {
+  flex: 0 0 auto;
+  min-width: 44px; /* Minimum touch target size */
 }
 
 .btn {
@@ -286,6 +335,67 @@
 
 .message-btn .btn-text-mobile {
   display: none;
+}
+
+/* Message button theme-responsive styling */
+.message-btn {
+  transition: all 0.3s ease;
+}
+
+/* Light theme (default) */
+.message-btn {
+  background-color: transparent;
+  border-color: var(--cf-primary);
+  color: var(--cf-primary);
+}
+
+.message-btn:hover {
+  background-color: var(--cf-primary);
+  border-color: var(--cf-primary);
+  color: white;
+}
+
+/* Dark theme */
+[data-bs-theme="dark"] .message-btn {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+[data-bs-theme="dark"] .message-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+/* Alternative dark theme detection for custom themes */
+body.dark-theme .message-btn,
+body[data-theme="dark"] .message-btn {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+body.dark-theme .message-btn:hover,
+body[data-theme="dark"] .message-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+/* Ensure message button works with theme changes */
+html[data-bs-theme="dark"] .message-btn,
+body[data-bs-theme="dark"] .message-btn {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+html[data-bs-theme="dark"] .message-btn:hover,
+body[data-bs-theme="dark"] .message-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
 }
 
 /* Additional Info Stats */
@@ -337,6 +447,54 @@
   opacity: 0.5;
 }
 
+/* Hidden cards styling */
+.investor-card.hidden {
+  display: none !important;
+}
+
+/* Ensure consistent grid spacing */
+.investors-grid .row.g-4 {
+  --bs-gutter-x: 1.5rem;
+  --bs-gutter-y: 1.5rem;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+/* Ensure all grid items have equal height */
+.investors-grid .row.g-4 > * {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Grid reflow improvements */
+.investors-grid .row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.investors-grid .col-12.col-sm-6.col-xl-4 {
+  display: flex;
+  padding: 0.75rem;
+}
+
+/* Ensure uniform card sizing */
+.investors-grid .col-12.col-sm-6.col-xl-4 > .investor-card {
+  width: 100%;
+  max-width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.investors-grid .col-12.col-sm-6.col-xl-4 > .investor-card > .card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Responsive Design */
 @media (max-width: 767.98px) {
   .content-container {
@@ -347,6 +505,42 @@
     padding: 1rem 0;
     margin-bottom: 2rem !important;
   }
+  
+  /* Ensure cards maintain consistent width on mobile */
+  .investors-grid .col-12.col-sm-6.col-xl-4 {
+    padding: 0.5rem;
+  }
+  
+  .investor-card {
+    min-height: 260px; /* Slightly smaller on mobile */
+  }
+  
+  .investor-card .card-body {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199.98px) {
+  /* Tablet specific adjustments */
+  .investors-grid .col-12.col-sm-6.col-xl-4 {
+    padding: 0.75rem;
+  }
+  
+  .investor-card {
+    min-height: 280px;
+  }
+}
+
+@media (min-width: 1200px) {
+  /* Desktop specific adjustments */
+  .investors-grid .col-12.col-sm-6.col-xl-4 {
+    padding: 1rem;
+  }
+  
+  .investor-card {
+    min-height: 300px;
+  }
+}
   
   .filter-controls {
     width: 100%;
@@ -439,11 +633,6 @@
   animation: pulse 1.5s infinite;
 }
 
-/* Search functionality */
-.investor-card.hidden {
-  display: none;
-}
-
 /* Tooltip styling */
 .tooltip {
   font-size: 0.875rem;
@@ -533,32 +722,49 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Search functionality
+    // Search functionality with proper grid reflow
     const searchInput = document.getElementById('investorSearch');
     const investorCards = document.querySelectorAll('.investor-card');
+    const investorsGrid = document.querySelector('.investors-grid .row');
     
     if (searchInput) {
         searchInput.addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase().trim();
             
+            // First, hide all cards and collect visible ones
+            const visibleCards = [];
             investorCards.forEach(card => {
                 const investorName = card.dataset.investorName;
                 const bioText = card.querySelector('.bio-text')?.textContent.toLowerCase() || '';
                 
                 if (investorName.includes(searchTerm) || bioText.includes(searchTerm) || searchTerm === '') {
                     card.classList.remove('hidden');
+                    visibleCards.push(card);
                 } else {
                     card.classList.add('hidden');
                 }
             });
             
-            // Update empty state visibility
-            const visibleCards = document.querySelectorAll('.investor-card:not(.hidden)').length;
-            const emptyState = document.querySelector('.empty-state');
-            const investorsGrid = document.querySelector('.investors-grid .row');
+            // Reflow the grid by reordering visible cards
+            if (investorsGrid && visibleCards.length > 0) {
+                // Clear the grid
+                investorsGrid.innerHTML = '';
+                
+                // Add visible cards back in order
+                visibleCards.forEach(card => {
+                    // Create a new column wrapper for each card
+                    const colDiv = document.createElement('div');
+                    colDiv.className = 'col-12 col-sm-6 col-xl-4';
+                    colDiv.appendChild(card);
+                    investorsGrid.appendChild(colDiv);
+                });
+            }
             
-            if (visibleCards === 0 && searchTerm !== '' && investorsGrid) {
-                if (!document.querySelector('.search-empty-state')) {
+            // Update empty state visibility
+            const searchEmptyState = document.querySelector('.search-empty-state');
+            
+            if (visibleCards.length === 0 && searchTerm !== '') {
+                if (!searchEmptyState) {
                     const searchEmptyDiv = document.createElement('div');
                     searchEmptyDiv.className = 'search-empty-state text-center py-5';
                     searchEmptyDiv.innerHTML = `
@@ -567,21 +773,37 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <h4 class="text-muted mb-3">No results found</h4>
                         <p class="text-muted mb-4">Try different keywords or clear your search.</p>
-                        <button class="btn btn-outline-secondary" onclick="document.getElementById('investorSearch').value=''; document.getElementById('investorSearch').dispatchEvent(new Event('input'));">
+                        <button class="btn btn-outline-secondary" onclick="clearSearch()">
                             <i class="bi bi-x-circle me-1"></i>Clear Search
                         </button>
                     `;
-                    investorsGrid.style.display = 'none';
                     document.querySelector('.investors-grid').appendChild(searchEmptyDiv);
                 }
             } else {
-                const searchEmptyState = document.querySelector('.search-empty-state');
                 if (searchEmptyState) {
                     searchEmptyState.remove();
-                    if (investorsGrid) investorsGrid.style.display = '';
                 }
             }
         });
+        
+        // Function to clear search and restore original layout
+        window.clearSearch = function() {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+            
+            // Restore original grid layout
+            if (investorsGrid) {
+                investorsGrid.innerHTML = '';
+                const allCards = document.querySelectorAll('.investor-card');
+                allCards.forEach(card => {
+                    card.classList.remove('hidden');
+                    const colDiv = document.createElement('div');
+                    colDiv.className = 'col-12 col-sm-6 col-xl-4';
+                    colDiv.appendChild(card);
+                    investorsGrid.appendChild(colDiv);
+                });
+            }
+        };
     }
 });
 </script>
