@@ -934,7 +934,7 @@
                 const toastHtml = `
                     <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true" 
                          style="cursor: pointer;" data-notification-type="${notification.type}" 
-                         data-related-object-id="${notification.related_object_id}">
+                         data-related-object-id="${notification.related_object_id || ''}">
                         <div class="toast-header">
                             <i class="bi bi-bell-fill text-primary me-2"></i>
                             <strong class="me-auto">${notification.title}</strong>

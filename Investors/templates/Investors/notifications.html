@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
             div.className = 'list-group-item border-0 py-3 px-4 notification-item notification-unread';
             div.setAttribute('data-notification-id', notification.id);
             div.setAttribute('data-notification-type', notification.type);
-            div.setAttribute('data-related-object-id', notification.related_object_id);
+            div.setAttribute('data-related-object-id', notification.related_object_id || '');
             div.setAttribute('data-related-object-type', notification.related_object_type);
             div.style.cursor = 'pointer';
             div.innerHTML = `

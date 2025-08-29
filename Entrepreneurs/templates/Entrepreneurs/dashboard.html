@@ -217,9 +217,9 @@
                                         <small class="text-muted">{{ notification.time_ago }}</small>
                                     </div>
                                     <div class="flex-shrink-0">
-                                        {% if notification.notification_type == 'message' %}
+                                        {% if notification.notification_type == 'message' and notification.related_object_id %}
                                             <a href="{% url 'entrepreneurs:messages' %}?open_chat={{ notification.related_object_id }}" class="btn btn-sm btn-primary">View Chat</a>
-                                        {% elif notification.notification_type == 'follow' %}
+                                        {% elif notification.notification_type == 'follow' and notification.related_object_id %}
                                             <a href="{% url 'entrepreneurs:profile_detail' notification.related_object_id %}" class="btn btn-sm btn-outline-primary">View Profile</a>
                                         {% else %}
                                             <button class="btn btn-sm btn-outline-primary">View</button>
