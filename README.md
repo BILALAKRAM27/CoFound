@@ -217,9 +217,13 @@ Contributions are welcome! Please fork the repository and submit a pull request.
 
 ---
 
-## License
+### 👨‍💻 Author
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+**Bilal Akram**
+- **GitHub**: [@BILALAKRAM27](https://github.com/BILALAKRAM27)
+- **Email**: 190204ba@gmail.com
+- **LinkedIn**: [Bilal Akram](www.linkedin.com/in/bilal-akram-081b86268)
+- **Portfolio**: [Personal Website](https://bilalakram27.github.io/Portfolio/)
 
 ---
 
