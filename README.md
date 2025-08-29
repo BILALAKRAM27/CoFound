@@ -143,6 +143,41 @@ README.md                  # Project documentation
 
 ---
 
+## Running with Daphne (ASGI Server for WebSockets)
+
+**What is Daphne?**
+
+- Daphne is an ASGI server developed as part of the Django Channels project. It is used to serve Django applications that require asynchronous features, such as WebSockets for real-time communication.
+
+**Why use Daphne in this project?**
+
+- Django’s default `runserver` is sufficient for most development and testing, but it does **not** support WebSockets in production.
+- Daphne is required to power real-time features like the messaging/chat system in CoFound, as it fully supports the ASGI protocol and WebSockets.
+
+**How to run the server with Daphne:**
+
+1. **Install Daphne (if not already installed):**
+   ```bash
+   pip install daphne
+   ```
+
+2. **Run the server using Daphne:**
+   ```bash
+   daphne CoFound.asgi:application
+   ```
+   - Replace `CoFound` with your Django project directory if different.
+   - By default, Daphne runs on port 8000. To specify a different port:
+     ```bash
+     daphne -p 8080 CoFound.asgi:application
+     ```
+
+**Beginner Notes:**
+- You can use Django’s `runserver` for local development and testing, but for any real-time features (like messaging), you should use Daphne in production or when testing WebSockets.
+- Make sure your `asgi.py` is properly configured and Channels is in your `INSTALLED_APPS`.
+- For full production deployment, consider using Daphne behind a process manager (like systemd) and a reverse proxy (like Nginx).
+
+---
+
 ## Usage
 
 - **Register/Login:**  
