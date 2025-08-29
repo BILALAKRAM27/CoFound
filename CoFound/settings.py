@@ -83,6 +83,12 @@ ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_SUBJECT_PREFIX = '[CoFound] '
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http'  # Change to 'https' in production
 
+# Allauth Redirect Settings (these work with the main LOGIN_URL setting)
+ACCOUNT_LOGIN_ON_GET = False
+ACCOUNT_LOGOUT_ON_GET = True
+ACCOUNT_LOGOUT_REDIRECT_URL = '/'
+ACCOUNT_SIGNUP_REDIRECT_URL = '/home/'
+
 # Social Account Settings
 SOCIALACCOUNT_AUTO_SIGNUP = False
 SOCIALACCOUNT_EMAIL_REQUIRED = True
@@ -97,6 +103,11 @@ ACCOUNT_FORMS = {
 SOCIALACCOUNT_FORMS = {
     'signup': 'Entrepreneurs.adapters.NoUsernameSocialSignupForm',
 }
+
+# Authentication Redirect Settings
+LOGIN_URL = '/'  # Redirect to landing page (root URL) when login is required
+LOGIN_REDIRECT_URL = '/home/'  # Where to redirect after successful login
+LOGOUT_REDIRECT_URL = '/'  # Where to redirect after logout
 
 # OAuth Provider Settings
 SOCIALACCOUNT_PROVIDERS = {

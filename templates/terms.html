@@ -1,0 +1,421 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service - CoFound</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --cf-primary: #1e3a8a;
+            --cf-secondary: #0ea5e9;
+            --cf-accent: #f59e0b;
+            --cf-success: #10b981;
+            --cf-sidebar-bg: #f8fafc;
+            --cf-sidebar-border: #e2e8f0;
+            --cf-text-primary: #1f2937;
+            --cf-text-secondary: #6b7280;
+            --cf-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --cf-card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-bs-theme="dark"] {
+            --cf-sidebar-bg: #1e293b;
+            --cf-sidebar-border: #334155;
+            --cf-text-primary: #f1f5f9;
+            --cf-text-secondary: #cbd5e1;
+        }
+
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--cf-sidebar-bg);
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            color: var(--cf-text-primary);
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, #2563eb 100%);
+            box-shadow: var(--cf-card-shadow);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white !important;
+        }
+        
+        .navbar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin: 0 2px;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: white !important;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .hero-section h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .hero-section p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .content-section {
+            padding: 2rem 0;
+        }
+
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: var(--cf-card-shadow);
+            transition: all 0.3s ease;
+            background-color: var(--bs-body-bg);
+            margin-bottom: 2rem;
+        }
+
+        .card:hover {
+            box-shadow: var(--cf-card-shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+            color: white;
+            border-radius: 16px 16px 0 0;
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .terms-section {
+            margin-bottom: 2rem;
+        }
+
+        .terms-section h3 {
+            color: var(--cf-primary);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .terms-section h4 {
+            color: var(--cf-text-primary);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .terms-section p {
+            margin-bottom: 1rem;
+            color: var(--cf-text-secondary);
+        }
+
+        .terms-section ul {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        .terms-section li {
+            margin-bottom: 0.5rem;
+            color: var(--cf-text-secondary);
+        }
+
+        .last-updated {
+            background: linear-gradient(135deg, var(--cf-accent) 0%, #f97316 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .footer {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, #2563eb 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+        .footer a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: 2rem;
+            }
+            
+            .hero-section p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <img src="{% static 'Investors/assests/startup.png' %}" alt="CoFound" style="width: 30px; height: 30px;">
+                CoFound
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'about' %}">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'contact' %}">Contact</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1>Terms of Service</h1>
+            <p>Please read these terms carefully before using our platform.</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container content-section">
+        <!-- Last Updated Notice -->
+        <div class="last-updated">
+            <i class="bi bi-calendar-event me-2"></i>
+            <strong>Last Updated:</strong> August 30, 2025
+        </div>
+
+        <!-- Introduction -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-file-text me-2"></i>Introduction</h2>
+            </div>
+            <div class="card-body">
+                <p>Welcome to CoFound. These Terms of Service ("Terms") govern your use of our platform and services. By accessing or using CoFound, you agree to be bound by these Terms and all applicable laws and regulations.</p>
+                <p>If you do not agree with any of these terms, you are prohibited from using or accessing this platform. The materials contained in this platform are protected by applicable copyright and trademark law.</p>
+            </div>
+        </div>
+
+        <!-- Acceptance of Terms -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-check-circle me-2"></i>Acceptance of Terms</h2>
+            </div>
+            <div class="card-body">
+                <p>By accessing and using CoFound, you accept and agree to be bound by the terms and provision of this agreement. In addition, when using this platform's particular services, you shall be subject to any posted guidelines or rules applicable to such services.</p>
+                <p>Any participation in this service will constitute acceptance of this agreement. If you do not agree to abide by the above, please do not use this service.</p>
+            </div>
+        </div>
+
+        <!-- Service Description -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-gear me-2"></i>Service Description</h2>
+            </div>
+            <div class="card-body">
+                <p>CoFound is a platform that connects entrepreneurs with investors, facilitating business relationships and investment opportunities. Our services include:</p>
+                <ul>
+                    <li>User profile creation and management</li>
+                    <li>Startup and investor matching</li>
+                    <li>Communication and messaging tools</li>
+                    <li>Investment opportunity listings</li>
+                    <li>Collaboration and networking features</li>
+                </ul>
+                <p>We reserve the right to modify, suspend, or discontinue any aspect of our service at any time.</p>
+            </div>
+        </div>
+
+        <!-- User Accounts -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-person me-2"></i>User Accounts</h2>
+            </div>
+            <div class="card-body">
+                <p>To access certain features of our platform, you must create an account. You are responsible for:</p>
+                <ul>
+                    <li>Providing accurate and complete information</li>
+                    <li>Maintaining the security of your account credentials</li>
+                    <li>All activities that occur under your account</li>
+                    <li>Notifying us immediately of any unauthorized use</li>
+                </ul>
+                <p>You must be at least 18 years old to create an account. We reserve the right to terminate accounts that violate these terms.</p>
+            </div>
+        </div>
+
+        <!-- User Conduct -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-shield-check me-2"></i>User Conduct</h2>
+            </div>
+            <div class="card-body">
+                <p>You agree not to use our platform to:</p>
+                <ul>
+                    <li>Violate any applicable laws or regulations</li>
+                    <li>Infringe on the rights of others</li>
+                    <li>Upload or transmit harmful, offensive, or inappropriate content</li>
+                    <li>Attempt to gain unauthorized access to our systems</li>
+                    <li>Interfere with the proper functioning of the platform</li>
+                    <li>Engage in spam, phishing, or other malicious activities</li>
+                </ul>
+                <p>Violation of these conduct rules may result in account suspension or termination.</p>
+            </div>
+        </div>
+
+        <!-- Content and Intellectual Property -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-copyright me-2"></i>Content and Intellectual Property</h2>
+            </div>
+            <div class="card-body">
+                <p>Our platform contains content owned by CoFound and our users. You retain ownership of content you create, but grant us a license to use it in connection with our services.</p>
+                <p>You may not:</p>
+                <ul>
+                    <li>Copy, modify, or distribute our proprietary content</li>
+                    <li>Use our trademarks or branding without permission</li>
+                    <li>Reverse engineer or attempt to extract our source code</li>
+                    <li>Remove or alter any copyright notices</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Privacy and Data -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Privacy and Data</h2>
+            </div>
+            <div class="card-body">
+                <p>Your privacy is important to us. Our collection and use of personal information is governed by our Privacy Policy, which is incorporated into these Terms by reference.</p>
+                <p>By using our platform, you consent to:</p>
+                <ul>
+                    <li>The collection and use of your information as described in our Privacy Policy</li>
+                    <li>The processing of your data in accordance with applicable data protection laws</li>
+                    <li>Receiving communications from us regarding our services</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Disclaimers and Limitations -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Disclaimers and Limitations</h2>
+            </div>
+            <div class="card-body">
+                <p>Our platform is provided "as is" without warranties of any kind. We do not guarantee:</p>
+                <ul>
+                    <li>That our services will be uninterrupted or error-free</li>
+                    <li>The accuracy or completeness of any information</li>
+                    <li>That any investment opportunities will be successful</li>
+                    <li>The security of information transmitted through our platform</li>
+                </ul>
+                <p>We are not responsible for any decisions made based on information provided through our platform.</p>
+            </div>
+        </div>
+
+        <!-- Termination -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-x-circle me-2"></i>Termination</h2>
+            </div>
+            <div class="card-body">
+                <p>We may terminate or suspend your account and access to our services at any time, with or without cause, with or without notice.</p>
+                <p>Upon termination:</p>
+                <ul>
+                    <li>Your right to use the platform will cease immediately</li>
+                    <li>We may delete your account and associated data</li>
+                    <li>Any provisions of these Terms that should survive termination will remain in effect</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Governing Law -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-building me-2"></i>Governing Law</h2>
+            </div>
+            <div class="card-body">
+                <p>These Terms shall be governed by and construed in accordance with the laws of the State of California, without regard to its conflict of law provisions.</p>
+                <p>Any disputes arising from these Terms or your use of our platform will be resolved in the courts of California, and you consent to the jurisdiction of such courts.</p>
+            </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-envelope me-2"></i>Contact Us</h2>
+            </div>
+            <div class="card-body">
+                <p>If you have any questions about these Terms of Service, please contact us:</p>
+                <ul>
+                    <li><strong>Email:</strong> legal@cofound.com</li>
+                    <li><strong>Phone:</strong> +1 (555) 123-4567</li>
+                    <li><strong>Address:</strong> 123 Innovation Drive, Tech Valley, CA 94000</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>
+                        <img src="{% static 'Investors/assests/startup.png' %}" alt="CoFound" style="width: 30px; height: 30px;">
+                        CoFound</h5>
+                    <p>Connecting innovation with investment</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>&copy; 2025 CoFound. All rights reserved.</p>
+                    <a href="{% url 'privacy' %}" class="me-3">Privacy Policy</a>
+                    <a href="{% url 'cookies' %}" class="me-3">Cookie Policy</a>
+                    <a href="{% url 'contact' %}">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

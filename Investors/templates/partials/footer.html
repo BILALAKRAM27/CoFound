@@ -13,13 +13,14 @@
             </div>
             <div class="col-md-6">
                 <div class="d-flex justify-content-md-end gap-4 flex-wrap">
-                    <a href="#" class="text-decoration-none text-muted small">About</a>
-                    <a href="#" class="text-decoration-none text-muted small">Privacy Policy</a>
-                    <a href="#" class="text-decoration-none text-muted small">Terms of Service</a>
-                    <a href="#" class="text-decoration-none text-muted small">Contact Us</a>
-                    <a href="#" class="text-decoration-none text-muted small">Help Center</a>
+                    <a href="{% url 'about' %}" class="text-decoration-none text-muted small">About</a>
+                    <a href="{% url 'privacy' %}" class="text-decoration-none text-muted small">Privacy Policy</a>
+                    <a href="{% url 'terms' %}" class="text-decoration-none text-muted small">Terms of Service</a>
+                    <a href="{% url 'contact' %}" class="text-decoration-none text-muted small">Contact Us</a>
+                    <a href="{% url 'cookies' %}" class="text-decoration-none text-muted small">Cookies</a>
+                    <a href="{% url 'security' %}" class="text-decoration-none text-muted small">Security</a>
                 </div>
-                <p class="text-muted small mb-0 text-md-end mt-2">© 2024 CoFound. All rights reserved.</p>
+                <p class="text-muted small mb-0 text-md-end mt-2">© 2025 CoFound. All rights reserved.</p>
             </div>
         </div>
     </div>

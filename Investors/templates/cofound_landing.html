@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CoFound - Connecting Entrepreneurs & Investors</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <style>
         * {
             margin: 0;
@@ -27,7 +30,7 @@
 
         /* Hero Section */
         .hero {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -118,7 +121,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            
             transition: left 0.5s;
         }
 
@@ -162,7 +165,7 @@
         .dot-green { background: #27ca3f; }
 
         .mockup-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
             height: 300px;
             border-radius: 12px;
             position: relative;
@@ -170,7 +173,6 @@
         }
 
         .mockup-content::before {
-            content: 'CoFound Dashboard';
             position: absolute;
             top: 20px;
             left: 20px;
@@ -257,7 +259,7 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
         }
 
         .feature-card:hover {
@@ -269,7 +271,7 @@
             width: 80px;
             height: 80px;
             margin: 0 auto 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
             border-radius: 20px;
             display: flex;
             align-items: center;
@@ -339,7 +341,7 @@
         /* Testimonials Section */
         .testimonials {
             padding: 100px 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
             position: relative;
         }
 
@@ -398,7 +400,7 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -590,9 +592,16 @@
                             <div class="mockup-dot dot-green"></div>
                         </div>
                         <div class="mockup-content">
+                            <span style="display: flex; align-items: center; color: whitesmoke; margin-left: 10px;margin-top: 10px;">
+                                <img src="{% static 'Investors/assests/startup.png' %}" 
+                                     alt="CoFound Dashboard" 
+                                     style="width: 30px; height: 30px;">
+                                <strong style="margin-left: 10px;">CoFound Dashboard</strong>
+                              </span>
+                              
                             <div class="floating-elements">
-                                <div class="float-card">💼 New Connection</div>
-                                <div class="float-card">📊 Project Update</div>
+                                <div class="float-card">➕ New Connection</div>
+                                <div class="float-card">📊 Funding Update</div>
                                 <div class="float-card">💬 Message Received</div>
                             </div>
                         </div>
@@ -719,25 +728,23 @@
                     <h3>CoFound</h3>
                     <p>Connecting entrepreneurs and investors worldwide to build the next generation of innovative companies and partnerships.</p>
                     <div class="social-icons">
-                        <a href="#" class="social-icon">📘</a>
-                        <a href="#" class="social-icon">🐦</a>
-                        <a href="#" class="social-icon">💼</a>
-                        <a href="#" class="social-icon">📷</a>
-                    </div>
+                        <a href="https://www.youtube.com/watch?v=xvFZjo5PgG0&ab_channel=Duran" class="social-icon"><i class="fa-brands fa-youtube" style="color:#ff0000;"></i></a>
+                        <a href="https://www.youtube.com/watch?v=xvFZjo5PgG0&ab_channel=Duran" class="social-icon"><i class="fa-brands fa-x-twitter" style="color:#000;"></i></a>
+                        <a href="https://www.linkedin.com/in/bilalakram27-software-engineer" class="social-icon"><i class="fa-brands fa-linkedin" style="color:#0a66c2;"></i></a>
+                        <a href="https://github.com/BILALAKRAM27/CoFound.git" class="social-icon"><i class="fa-brands fa-github" style="color:#333;"></i></a>
+                      </div>
                 </div>
                 <div class="footer-links">
                     <h4>Company</h4>
-                    <a href="#">About</a>
-                    <a href="#">Contact</a>
-                    <a href="#">Careers</a>
-                    <a href="#">Press</a>
+                    <a href="{% url 'about' %}">About</a>
+                    <a href="{% url 'contact' %}">Contact</a>
+                    <a href="{% url 'terms' %}">Terms of Service</a>
                 </div>
                 <div class="footer-links">
                     <h4>Legal</h4>
-                    <a href="#">Privacy Policy</a>
-                    <a href="#">Terms of Service</a>
-                    <a href="#">Cookie Policy</a>
-                    <a href="#">Security</a>
+                    <a href="{% url 'privacy' %}">Privacy Policy</a>
+                    <a href="{% url 'cookies' %}">Cookie Policy</a>
+                    <a href="{% url 'security' %}">Security</a>
                 </div>
             </div>
             <div class="footer-bottom">

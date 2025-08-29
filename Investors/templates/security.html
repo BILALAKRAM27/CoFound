@@ -1,0 +1,561 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security - CoFound</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --cf-primary: #1e3a8a;
+            --cf-secondary: #0ea5e9;
+            --cf-accent: #f59e0b;
+            --cf-success: #10b981;
+            --cf-sidebar-bg: #f8fafc;
+            --cf-sidebar-border: #e2e8f0;
+            --cf-text-primary: #1f2937;
+            --cf-text-secondary: #6b7280;
+            --cf-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --cf-card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-bs-theme="dark"] {
+            --cf-sidebar-bg: #1e293b;
+            --cf-sidebar-border: #334155;
+            --cf-text-primary: #f1f5f9;
+            --cf-text-secondary: #cbd5e1;
+        }
+
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--cf-sidebar-bg);
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            color: var(--cf-text-primary);
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, #2563eb 100%);
+            box-shadow: var(--cf-card-shadow);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white !important;
+        }
+        
+        .navbar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin: 0 2px;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: white !important;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .hero-section h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .hero-section p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .content-section {
+            padding: 2rem 0;
+        }
+
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: var(--cf-card-shadow);
+            transition: all 0.3s ease;
+            background-color: var(--bs-body-bg);
+            margin-bottom: 2rem;
+        }
+
+        .card:hover {
+            box-shadow: var(--cf-card-shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+            color: white;
+            border-radius: 16px 16px 0 0;
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .security-section {
+            margin-bottom: 2rem;
+        }
+
+        .security-section h3 {
+            color: var(--cf-primary);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .security-section h4 {
+            color: var(--cf-text-primary);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .security-section p {
+            margin-bottom: 1rem;
+            color: var(--cf-text-secondary);
+        }
+
+        .security-section ul {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        .security-section li {
+            margin-bottom: 0.5rem;
+            color: var(--cf-text-secondary);
+        }
+
+        .security-feature {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: var(--bs-body-bg);
+            border-radius: 12px;
+            box-shadow: var(--cf-card-shadow);
+        }
+
+        .security-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--cf-success) 0%, #059669 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .security-details h5 {
+            margin-bottom: 0.5rem;
+            color: var(--cf-success);
+        }
+
+        .security-details p {
+            margin-bottom: 0;
+            color: var(--cf-text-secondary);
+        }
+
+        .certification-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--cf-accent) 0%, #f97316 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 0.25rem;
+        }
+
+        .footer {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, #2563eb 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+        .footer a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: 2rem;
+            }
+            
+            .hero-section p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="bi bi-lightning-charge me-2"></i>CoFound
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'about' %}">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'contact' %}">Contact</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1>Security</h1>
+            <p>Your security is our top priority. Learn about the measures we take to protect your data.</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container content-section">
+        <!-- Security Overview -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-shield-check me-2"></i>Security Overview</h2>
+            </div>
+            <div class="card-body">
+                <p class="lead">At CoFound, we understand that security is paramount when dealing with sensitive business and financial information. We implement industry-leading security measures to protect your data and ensure a safe, trustworthy platform.</p>
+                <p>Our security framework is built on multiple layers of protection, continuous monitoring, and regular security assessments to maintain the highest standards of data protection.</p>
+            </div>
+        </div>
+
+        <!-- Core Security Features -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-gear-wide-connected me-2"></i>Core Security Features</h2>
+            </div>
+            <div class="card-body">
+                <div class="security-feature">
+                    <div class="security-icon">
+                        <i class="bi bi-lock"></i>
+                    </div>
+                    <div class="security-details">
+                        <h5>End-to-End Encryption</h5>
+                        <p>All data transmitted between your device and our servers is encrypted using TLS 1.3, the highest standard for internet security. This ensures that your information remains confidential during transmission.</p>
+                    </div>
+                </div>
+
+                <div class="security-feature">
+                    <div class="security-icon">
+                        <i class="bi bi-database-lock"></i>
+                    </div>
+                    <div class="security-details">
+                        <h5>Data Encryption at Rest</h5>
+                        <p>Your data is encrypted when stored in our databases using AES-256 encryption, the same standard used by banks and government agencies. This protects your information even if our systems are compromised.</p>
+                    </div>
+                </div>
+
+                <div class="security-feature">
+                    <div class="security-icon">
+                        <i class="bi bi-person-check"></i>
+                    </div>
+                    <div class="security-details">
+                        <h5>Multi-Factor Authentication</h5>
+                        <p>We support multiple authentication methods including SMS, authenticator apps, and hardware security keys. This adds an extra layer of protection beyond just passwords.</p>
+                    </div>
+                </div>
+
+                <div class="security-feature">
+                    <div class="security-icon">
+                        <i class="bi bi-shield-exclamation"></i>
+                    </div>
+                    <div class="security-details">
+                        <h5>Advanced Threat Detection</h5>
+                        <p>Our systems continuously monitor for suspicious activities, using machine learning algorithms to detect and prevent potential security threats in real-time.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Infrastructure Security -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-server me-2"></i>Infrastructure Security</h2>
+            </div>
+            <div class="card-body">
+                <div class="security-section">
+                    <h3>Cloud Security</h3>
+                    <p>We leverage industry-leading cloud infrastructure with built-in security features:</p>
+                    <ul>
+                        <li><strong>Data Centers:</strong> Tier IV data centers with redundant power, cooling, and network systems</li>
+                        <li><strong>Physical Security:</strong> 24/7 monitoring, biometric access controls, and security personnel</li>
+                        <li><strong>Network Security:</strong> DDoS protection, intrusion detection, and firewall systems</li>
+                        <li><strong>Backup Systems:</strong> Automated backups with geographic redundancy</li>
+                    </ul>
+                </div>
+
+                <div class="security-section">
+                    <h3>Application Security</h3>
+                    <p>Our development process includes comprehensive security measures:</p>
+                    <ul>
+                        <li><strong>Code Reviews:</strong> All code changes undergo security-focused peer reviews</li>
+                        <li><strong>Automated Testing:</strong> Security scanning tools integrated into our CI/CD pipeline</li>
+                        <li><strong>Vulnerability Management:</strong> Regular security assessments and penetration testing</li>
+                        <li><strong>Dependency Monitoring:</strong> Continuous monitoring of third-party libraries for security vulnerabilities</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Protection -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Data Protection</h2>
+            </div>
+            <div class="card-body">
+                <div class="security-section">
+                    <h3>Data Classification</h3>
+                    <p>We classify data based on sensitivity and implement appropriate protection measures:</p>
+                    <ul>
+                        <li><strong>Public Data:</strong> Information that can be freely shared (company descriptions, public profiles)</li>
+                        <li><strong>Internal Data:</strong> Business information with limited access (user preferences, analytics)</li>
+                        <li><strong>Confidential Data:</strong> Sensitive information requiring strict protection (financial data, personal information)</li>
+                        <li><strong>Restricted Data:</strong> Highly sensitive data with the highest level of protection (authentication credentials, encryption keys)</li>
+                    </ul>
+                </div>
+
+                <div class="security-section">
+                    <h3>Access Controls</h3>
+                    <p>We implement strict access controls to ensure data security:</p>
+                    <ul>
+                        <li><strong>Role-Based Access:</strong> Users only have access to data necessary for their role</li>
+                        <li><strong>Principle of Least Privilege:</strong> Users receive minimal permissions required for their tasks</li>
+                        <li><strong>Access Logging:</strong> All data access is logged and monitored for suspicious activity</li>
+                        <li><strong>Session Management:</strong> Automatic session timeouts and secure session handling</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compliance and Certifications -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-award me-2"></i>Compliance and Certifications</h2>
+            </div>
+            <div class="card-body">
+                <p>We maintain compliance with industry standards and regulations to ensure the highest level of security:</p>
+                
+                <div class="text-center mb-4">
+                    <span class="certification-badge">SOC 2 Type II</span>
+                    <span class="certification-badge">GDPR Compliant</span>
+                    <span class="certification-badge">CCPA Compliant</span>
+                    <span class="certification-badge">ISO 27001</span>
+                    <span class="certification-badge">PCI DSS</span>
+                </div>
+
+                <div class="security-section">
+                    <h3>Regulatory Compliance</h3>
+                    <ul>
+                        <li><strong>GDPR:</strong> Full compliance with European data protection regulations</li>
+                        <li><strong>CCPA:</strong> Compliance with California Consumer Privacy Act</li>
+                        <li><strong>Financial Regulations:</strong> Adherence to relevant financial services regulations</li>
+                        <li><strong>Industry Standards:</strong> Following best practices for fintech and investment platforms</li>
+                    </ul>
+                </div>
+
+                <div class="security-section">
+                    <h3>Regular Audits</h3>
+                    <p>We undergo regular third-party security audits and assessments:</p>
+                    <ul>
+                        <li>Annual SOC 2 Type II audits</li>
+                        <li>Quarterly penetration testing</li>
+                        <li>Monthly vulnerability assessments</li>
+                        <li>Continuous security monitoring</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Incident Response -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Incident Response</h2>
+            </div>
+            <div class="card-body">
+                <p>We have a comprehensive incident response plan to handle security incidents quickly and effectively:</p>
+                
+                <div class="security-section">
+                    <h3>Response Team</h3>
+                    <p>Our dedicated security team is available 24/7 to respond to security incidents:</p>
+                    <ul>
+                        <li><strong>Security Analysts:</strong> Monitor systems and investigate potential threats</li>
+                        <li><strong>Incident Responders:</strong> Handle security incidents and coordinate response efforts</li>
+                        <li><strong>Forensic Specialists:</strong> Conduct detailed analysis of security events</li>
+                        <li><strong>Legal and Compliance:</strong> Ensure proper reporting and regulatory compliance</li>
+                    </ul>
+                </div>
+
+                <div class="security-section">
+                    <h3>Response Process</h3>
+                    <p>Our incident response process follows industry best practices:</p>
+                    <ul>
+                        <li><strong>Detection:</strong> Automated systems and human analysts identify potential incidents</li>
+                        <li><strong>Assessment:</strong> Quick evaluation of incident severity and impact</li>
+                        <li><strong>Containment:</strong> Immediate steps to limit damage and prevent escalation</li>
+                        <li><strong>Eradication:</strong> Complete removal of threats and vulnerabilities</li>
+                        <li><strong>Recovery:</strong> Restoration of normal operations</li>
+                        <li><strong>Lessons Learned:</strong> Analysis and improvement of security measures</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Security Best Practices -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-person-shield me-2"></i>User Security Best Practices</h2>
+            </div>
+            <div class="card-body">
+                <p>While we implement robust security measures, users also play a crucial role in maintaining security:</p>
+                
+                <div class="security-section">
+                    <h3>Password Security</h3>
+                    <ul>
+                        <li>Use strong, unique passwords for your account</li>
+                        <li>Enable multi-factor authentication</li>
+                        <li>Never share your credentials with others</li>
+                        <li>Regularly update your passwords</li>
+                    </ul>
+                </div>
+
+                <div class="security-section">
+                    <h3>Account Protection</h3>
+                    <ul>
+                        <li>Monitor your account for suspicious activity</li>
+                        <li>Log out from shared or public devices</li>
+                        <li>Keep your contact information up to date</li>
+                        <li>Report any suspicious activity immediately</li>
+                    </ul>
+                </div>
+
+                <div class="security-section">
+                    <h3>Device Security</h3>
+                    <ul>
+                        <li>Keep your devices and software updated</li>
+                        <li>Use antivirus software and firewalls</li>
+                        <li>Avoid accessing your account from public Wi-Fi</li>
+                        <li>Enable device encryption when available</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Transparency -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-eye me-2"></i>Security Transparency</h2>
+            </div>
+            <div class="card-body">
+                <p>We believe in transparency when it comes to security. We regularly share information about our security practices and any incidents that may affect users.</p>
+                
+                <div class="security-section">
+                    <h3>Security Updates</h3>
+                    <p>We provide regular updates on our security practices:</p>
+                    <ul>
+                        <li>Quarterly security reports</li>
+                        <li>Security feature announcements</li>
+                        <li>Vulnerability disclosure program</li>
+                        <li>Security blog and updates</li>
+                    </ul>
+                </div>
+
+                <div class="security-section">
+                    <h3>Bug Bounty Program</h3>
+                    <p>We maintain a bug bounty program to encourage security researchers to report vulnerabilities:</p>
+                    <ul>
+                        <li>Rewards for valid security findings</li>
+                        <li>Responsible disclosure guidelines</li>
+                        <li>Recognition in our security hall of fame</li>
+                        <li>Partnership with security research community</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Security Team -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-envelope me-2"></i>Contact Our Security Team</h2>
+            </div>
+            <div class="card-body">
+                <p>If you have security concerns or need to report a security issue, please contact our dedicated security team:</p>
+                <ul>
+                    <li><strong>Security Email:</strong> security@cofound.com</li>
+                    <li><strong>Security Hotline:</strong> +1 (555) 123-4567</li>
+                    <li><strong>Bug Reports:</strong> bugs.cofound.com</li>
+                    <li><strong>Emergency Contact:</strong> Available 24/7 for critical security incidents</li>
+                </ul>
+                <p><strong>Note:</strong> For urgent security matters, please use the security hotline or email with "URGENT" in the subject line.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>CoFound</h5>
+                    <p>Connecting innovation with investment</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>&copy; 2024 CoFound. All rights reserved.</p>
+                    <a href="{% url 'privacy' %}" class="me-3">Privacy Policy</a>
+                    <a href="{% url 'terms' %}" class="me-3">Terms of Service</a>
+                    <a href="{% url 'contact' %}">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

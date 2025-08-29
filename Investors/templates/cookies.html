@@ -1,0 +1,516 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Policy - CoFound</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --cf-primary: #1e3a8a;
+            --cf-secondary: #0ea5e9;
+            --cf-accent: #f59e0b;
+            --cf-success: #10b981;
+            --cf-sidebar-bg: #f8fafc;
+            --cf-sidebar-border: #e2e8f0;
+            --cf-text-primary: #1f2937;
+            --cf-text-secondary: #6b7280;
+            --cf-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --cf-card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-bs-theme="dark"] {
+            --cf-sidebar-bg: #1e293b;
+            --cf-sidebar-border: #334155;
+            --cf-text-primary: #f1f5f9;
+            --cf-text-secondary: #cbd5e1;
+        }
+
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--cf-sidebar-bg);
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            color: var(--cf-text-primary);
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, #2563eb 100%);
+            box-shadow: var(--cf-card-shadow);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white !important;
+        }
+        
+        .navbar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin: 0 2px;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: white !important;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .hero-section h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .hero-section p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .content-section {
+            padding: 2rem 0;
+        }
+
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: var(--cf-card-shadow);
+            transition: all 0.3s ease;
+            background-color: var(--bs-body-bg);
+            margin-bottom: 2rem;
+        }
+
+        .card:hover {
+            box-shadow: var(--cf-card-shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+            color: white;
+            border-radius: 16px 16px 0 0;
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .cookie-section {
+            margin-bottom: 2rem;
+        }
+
+        .cookie-section h3 {
+            color: var(--cf-primary);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .cookie-section h4 {
+            color: var(--cf-text-primary);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .cookie-section p {
+            margin-bottom: 1rem;
+            color: var(--cf-text-secondary);
+        }
+
+        .cookie-section ul {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        .cookie-section li {
+            margin-bottom: 0.5rem;
+            color: var(--cf-text-secondary);
+        }
+
+        .last-updated {
+            background: linear-gradient(135deg, var(--cf-accent) 0%, #f97316 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .cookie-table {
+            background-color: var(--bs-body-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--cf-card-shadow);
+        }
+
+        .cookie-table th {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, var(--cf-secondary) 100%);
+            color: white;
+            border: none;
+            padding: 1rem;
+        }
+
+        .cookie-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--cf-sidebar-border);
+            color: var(--cf-text-secondary);
+        }
+
+        .cookie-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .footer {
+            background: linear-gradient(135deg, var(--cf-primary) 0%, #2563eb 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+        .footer a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: 2rem;
+            }
+            
+            .hero-section p {
+                font-size: 1rem;
+            }
+            
+            .cookie-table {
+                font-size: 0.9rem;
+            }
+            
+            .cookie-table th,
+            .cookie-table td {
+                padding: 0.75rem 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="bi bi-lightning-charge me-2"></i>CoFound
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'about' %}">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'contact' %}">Contact</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1>Cookie Policy</h1>
+            <p>Learn how we use cookies and similar technologies to enhance your experience.</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container content-section">
+        <!-- Last Updated Notice -->
+        <div class="last-updated">
+            <i class="bi bi-calendar-event me-2"></i>
+            <strong>Last Updated:</strong> January 15, 2024
+        </div>
+
+        <!-- Introduction -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-cookie me-2"></i>What Are Cookies?</h2>
+            </div>
+            <div class="card-body">
+                <p>Cookies are small text files that are stored on your device when you visit our website. They help us provide you with a better experience by remembering your preferences, analyzing how you use our platform, and personalizing content.</p>
+                <p>This Cookie Policy explains how CoFound uses cookies and similar technologies, what types of cookies we use, and how you can control them.</p>
+            </div>
+        </div>
+
+        <!-- Types of Cookies We Use -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-list-ul me-2"></i>Types of Cookies We Use</h2>
+            </div>
+            <div class="card-body">
+                <div class="cookie-section">
+                    <h3>Essential Cookies</h3>
+                    <p>These cookies are necessary for the website to function properly. They enable basic functions like page navigation, access to secure areas, and form submissions.</p>
+                    <ul>
+                        <li><strong>Authentication:</strong> Remember your login status and session information</li>
+                        <li><strong>Security:</strong> Protect against fraud and maintain platform security</li>
+                        <li><strong>Functionality:</strong> Enable core platform features and services</li>
+                    </ul>
+                    <p><em>These cookies cannot be disabled as they are essential for platform operation.</em></p>
+                </div>
+
+                <div class="cookie-section">
+                    <h3>Performance Cookies</h3>
+                    <p>These cookies help us understand how visitors interact with our platform by collecting and reporting information anonymously.</p>
+                    <ul>
+                        <li><strong>Analytics:</strong> Track page views, user behavior, and platform performance</li>
+                        <li><strong>Error Monitoring:</strong> Identify and fix technical issues</li>
+                        <li><strong>Load Testing:</strong> Monitor platform speed and responsiveness</li>
+                    </ul>
+                </div>
+
+                <div class="cookie-section">
+                    <h3>Functional Cookies</h3>
+                    <p>These cookies remember your preferences and settings to provide enhanced functionality and personalization.</p>
+                    <ul>
+                        <li><strong>Language Preferences:</strong> Remember your preferred language</li>
+                        <li><strong>Theme Settings:</strong> Store your light/dark mode preference</li>
+                        <li><strong>Display Options:</strong> Remember your layout and view preferences</li>
+                        <li><strong>Form Data:</strong> Remember information you've entered in forms</li>
+                    </ul>
+                </div>
+
+                <div class="cookie-section">
+                    <h3>Marketing Cookies</h3>
+                    <p>These cookies are used to deliver relevant advertisements and track marketing campaign performance.</p>
+                    <ul>
+                        <li><strong>Advertising:</strong> Display relevant ads based on your interests</li>
+                        <li><strong>Campaign Tracking:</strong> Measure the effectiveness of marketing campaigns</li>
+                        <li><strong>Retargeting:</strong> Show ads to users who have visited our platform</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cookie Details Table -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-table me-2"></i>Detailed Cookie Information</h2>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table cookie-table">
+                        <thead>
+                            <tr>
+                                <th>Cookie Name</th>
+                                <th>Purpose</th>
+                                <th>Duration</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>sessionid</strong></td>
+                                <td>Maintains your login session and authentication status</td>
+                                <td>Session</td>
+                                <td>Essential</td>
+                            </tr>
+                            <tr>
+                                <td><strong>csrftoken</strong></td>
+                                <td>Protects against cross-site request forgery attacks</td>
+                                <td>Session</td>
+                                <td>Essential</td>
+                            </tr>
+                            <tr>
+                                <td><strong>cf-theme</strong></td>
+                                <td>Remembers your light/dark theme preference</td>
+                                <td>1 year</td>
+                                <td>Functional</td>
+                            </tr>
+                            <tr>
+                                <td><strong>cf-language</strong></td>
+                                <td>Stores your preferred language setting</td>
+                                <td>1 year</td>
+                                <td>Functional</td>
+                            </tr>
+                            <tr>
+                                <td><strong>_ga</strong></td>
+                                <td>Google Analytics - tracks unique visitors and sessions</td>
+                                <td>2 years</td>
+                                <td>Performance</td>
+                            </tr>
+                            <tr>
+                                <td><strong>_gid</strong></td>
+                                <td>Google Analytics - tracks user behavior and interactions</td>
+                                <td>24 hours</td>
+                                <td>Performance</td>
+                            </tr>
+                            <tr>
+                                <td><strong>_fbp</strong></td>
+                                <td>Facebook Pixel - tracks conversions and ad performance</td>
+                                <td>3 months</td>
+                                <td>Marketing</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Third-Party Cookies -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-share me-2"></i>Third-Party Cookies</h2>
+            </div>
+            <div class="card-body">
+                <p>Some cookies on our platform are set by third-party services that we use to enhance functionality and analyze usage:</p>
+                <ul>
+                    <li><strong>Google Analytics:</strong> Helps us understand how visitors use our platform</li>
+                    <li><strong>Facebook Pixel:</strong> Enables social media advertising and conversion tracking</li>
+                    <li><strong>LinkedIn Insight Tag:</strong> Tracks professional networking and business interactions</li>
+                    <li><strong>Hotjar:</strong> Provides heatmaps and user behavior analytics</li>
+                </ul>
+                <p>These third-party services have their own privacy policies and cookie practices. We recommend reviewing their policies for more information.</p>
+            </div>
+        </div>
+
+        <!-- Managing Your Cookie Preferences -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-gear me-2"></i>Managing Your Cookie Preferences</h2>
+            </div>
+            <div class="card-body">
+                <div class="cookie-section">
+                    <h3>Browser Settings</h3>
+                    <p>You can control cookies through your web browser settings:</p>
+                    <ul>
+                        <li><strong>Chrome:</strong> Settings → Privacy and security → Cookies and other site data</li>
+                        <li><strong>Firefox:</strong> Options → Privacy & Security → Cookies and Site Data</li>
+                        <li><strong>Safari:</strong> Preferences → Privacy → Manage Website Data</li>
+                        <li><strong>Edge:</strong> Settings → Cookies and site permissions → Cookies and site data</li>
+                    </ul>
+                </div>
+
+                <div class="cookie-section">
+                    <h3>Cookie Consent Manager</h3>
+                    <p>We provide a cookie consent manager that allows you to:</p>
+                    <ul>
+                        <li>Accept or decline non-essential cookies</li>
+                        <li>Customize your cookie preferences</li>
+                        <li>Update your choices at any time</li>
+                        <li>View detailed information about each cookie type</li>
+                    </ul>
+                </div>
+
+                <div class="cookie-section">
+                    <h3>Opt-Out Options</h3>
+                    <p>For specific third-party services, you can opt out directly:</p>
+                    <ul>
+                        <li><strong>Google Analytics:</strong> <a href="https://tools.google.com/dlpage/gaoptout" target="_blank">Google Analytics Opt-out Browser Add-on</a></li>
+                        <li><strong>Facebook:</strong> <a href="https://www.facebook.com/settings?tab=ads" target="_blank">Facebook Ad Preferences</a></li>
+                        <li><strong>LinkedIn:</strong> <a href="https://www.linkedin.com/psettings/guest-controls" target="_blank">LinkedIn Cookie Settings</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Impact of Disabling Cookies -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Impact of Disabling Cookies</h2>
+            </div>
+            <div class="card-body">
+                <p>While you can disable cookies, please note that doing so may affect your experience:</p>
+                <ul>
+                    <li><strong>Essential Cookies:</strong> Disabling these will prevent the platform from functioning properly</li>
+                    <li><strong>Functional Cookies:</strong> You may need to re-enter preferences each time you visit</li>
+                    <li><strong>Performance Cookies:</strong> We won't be able to identify and fix technical issues as quickly</li>
+                    <li><strong>Marketing Cookies:</strong> You may see less relevant advertisements</li>
+                </ul>
+                <p>We recommend keeping essential and functional cookies enabled for the best user experience.</p>
+            </div>
+        </div>
+
+        <!-- Updates to This Policy -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-arrow-clockwise me-2"></i>Updates to This Policy</h2>
+            </div>
+            <div class="card-body">
+                <p>We may update this Cookie Policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons.</p>
+                <p>When we make changes, we will:</p>
+                <ul>
+                    <li>Update the "Last Updated" date at the top of this policy</li>
+                    <li>Notify you through our platform or email</li>
+                    <li>Provide a summary of significant changes</li>
+                </ul>
+                <p>Your continued use of our platform after any changes constitutes acceptance of the updated policy.</p>
+            </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="bi bi-envelope me-2"></i>Contact Us</h2>
+            </div>
+            <div class="card-body">
+                <p>If you have any questions about our use of cookies or this Cookie Policy, please contact us:</p>
+                <ul>
+                    <li><strong>Email:</strong> privacy@cofound.com</li>
+                    <li><strong>Phone:</strong> +1 (555) 123-4567</li>
+                    <li><strong>Address:</strong> 123 Innovation Drive, Tech Valley, CA 94000</li>
+                </ul>
+                <p>We will respond to your inquiry within 30 days.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>CoFound</h5>
+                    <p>Connecting innovation with investment</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>&copy; 2024 CoFound. All rights reserved.</p>
+                    <a href="{% url 'privacy' %}" class="me-3">Privacy Policy</a>
+                    <a href="{% url 'terms' %}" class="me-3">Terms of Service</a>
+                    <a href="{% url 'contact' %}">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
